@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "iosfwd": "cpp"
+    },
+    "cmake.buildDirectory": "${workspaceRoot}/build/${buildType}",
+    "cmake.generator": "Unix Makefiles"
+}
