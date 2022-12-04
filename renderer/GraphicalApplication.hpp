@@ -12,11 +12,23 @@
     #define GLFW_EXPOSE_NATIVE_X11
 #endif
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
 struct GLFWwindow;
+
+struct UniformBuffer
+{
+    VkBuffer buffer;
+    void* mapped;
+    VkDeviceMemory memory;
+};
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -93,6 +105,7 @@ private:
     void createSyncObjects();
 
     void updateUniformBuffer(uint32_t currentImage);
+    void updateDynUniformBuffer(uint32_t currentImage);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void drawFrame();
 
@@ -133,6 +146,7 @@ private:
     VkQueue m_vkGraphicsQueue;
     VkDevice m_vkLogicalDevice;
     VkPhysicalDevice m_vkPhysicalDevice;
+    VkPhysicalDeviceLimits m_vkPhysicalDeviceLimits;
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 
     VkPipeline m_vkPipeline;
@@ -150,9 +164,6 @@ private:
     VkDeviceMemory m_vkVertexBufferMemory;
     VkBuffer m_vkIndexBuffer;
     VkDeviceMemory m_vkIndexBufferMemory;
-    std::vector<VkBuffer> m_vkUniformBuffers;
-    std::vector<VkDeviceMemory> m_vkUniformBuffersMemory;
-    std::vector<void*> m_vkUniformBuffersMapped;
     VkDescriptorPool m_vkDescriptorPool;
     std::vector<VkDescriptorSet> m_vkDescriptorSets;
 
@@ -163,6 +174,15 @@ private:
     VkImage m_vkDepthImage;
     VkDeviceMemory m_vkDepthImageMemory;
     VkImageView m_vkDepthImageView;
+
+    struct UniformBuffers
+    {
+        UniformBuffer m_viewProjectionBuffer;
+        UniformBuffer m_modelBufffer;
+    };
+    uint32_t m_dynamicAlignment;
+    std::vector<UniformBuffers> m_uniformBuffers;
+    std::vector<glm::mat4x4*> m_modelBuffers;
 
     VkSwapchainKHR m_vkSwapChain;
     VkExtent2D m_vkSwapChainExtent;

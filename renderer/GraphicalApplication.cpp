@@ -10,11 +10,6 @@
 #include <filesystem>
 #include <functional>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #ifdef _WIN32
 #include <windows.h>    //GetModuleFileNameW
 #else
@@ -39,11 +34,22 @@ std::filesystem::path getExePath()
 namespace
 {
 
-struct UniformBufferObject
+template<typename LayoutType>
+struct UBObject
 {
-    glm::mat4 model;
+    LayoutType layout;
+    static constexpr uint32_t size = sizeof(LayoutType);
+};
+
+struct UBOViewProj
+{
     glm::mat4 view;
     glm::mat4 proj;
+} s_viewProj;
+
+struct UBOModel
+{
+    glm::mat4 model;
 };
 
 struct Vertex {
@@ -106,10 +112,12 @@ static const std::vector<uint16_t> s_kekIndices = {
         7, 5, 4
 };
 
+static constexpr auto s_objectCount = 50;
+
 #ifdef NDEBUG
     const bool s_enableValidationLayers = false;
 #else
-    const bool s_enableValidationLayers = true;
+    const bool s_enableValidationLayers = false;
 #endif
 
 #if defined(VK_USE_PLATFORM_XCB_KHR)
@@ -149,7 +157,11 @@ VkResult vkCreatePlatformSurface(
 }
 
 const std::vector<const char*> s_validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
+    "VK_LAYER_KHRONOS_validation",
+    "VK_LAYER_LUNARG_api_dump",
+    "VK_LAYER_INTEL_nullhw",
+    "VK_LAYER_MESA_device_select",
+    "VK_LAYER_LUNARG_monitor"
 };
 
 const std::vector<const char*> s_deviceExtensions = {
@@ -162,10 +174,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
 
-    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
-    {
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-    }
+    std::cout << "Warning: " << pCallbackData->messageIdNumber << ": " << pCallbackData->pMessageIdName << ":" <<  pCallbackData->pMessage << std::endl;
+
     return VK_FALSE;
 }
 
@@ -181,6 +191,7 @@ bool requiredValidationLayerSupported()
         bool exists = false;
         for (auto& x : availableLayers)
         {
+            std::cout << x.layerName << std::endl;
             if (!std::strcmp(x.layerName, required))
             {
                 exists = true;
@@ -263,7 +274,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
 }
@@ -307,10 +318,13 @@ GraphicalApplication::GraphicalApplication()
 GraphicalApplication::~GraphicalApplication()
 {
     cleanupSwapChain();
-    for (size_t i = 0; i < m_maxFramesInFlight; ++i)
+    for (size_t i = 0; i <  m_uniformBuffers.size(); ++i)
     {
-        vkDestroyBuffer(m_vkLogicalDevice, m_vkUniformBuffers[i], nullptr);
-        vkFreeMemory(m_vkLogicalDevice, m_vkUniformBuffersMemory[i], nullptr);
+        vkDestroyBuffer(m_vkLogicalDevice, m_uniformBuffers[i].m_viewProjectionBuffer.buffer, nullptr);
+        vkFreeMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_viewProjectionBuffer.memory, nullptr);
+        vkDestroyBuffer(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.buffer, nullptr);
+        vkFreeMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.memory, nullptr);
+        std::free(m_modelBuffers[i]);
     }
     vkDestroyDescriptorPool(m_vkLogicalDevice, m_vkDescriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(m_vkLogicalDevice, m_vkDescriptorSetLayout, nullptr);
@@ -491,6 +505,7 @@ bool GraphicalApplication::isDeviceSuitable(VkPhysicalDevice device)
     VkPhysicalDeviceProperties deviceProperties;
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
+    m_vkPhysicalDeviceLimits = deviceProperties.limits;
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
     const bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -864,8 +879,8 @@ VkDescriptorSetLayoutBinding createSetLayoutBinding(VkDescriptorType descriptorT
 void GraphicalApplication::createDescriptorSetLayout()
 {
     std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-        createSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
-        createSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 1)
+        createSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 0),
+        createSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1)
     };
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -1301,19 +1316,44 @@ void GraphicalApplication::createIndexBuffer()
 
 void GraphicalApplication::createUniformBuffers()
 {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+    m_uniformBuffers.resize(m_maxFramesInFlight);
+    m_modelBuffers.resize(m_maxFramesInFlight);
 
-    m_vkUniformBuffers.resize(m_maxFramesInFlight);
-    m_vkUniformBuffersMemory.resize(m_maxFramesInFlight);
-    m_vkUniformBuffersMapped.resize(m_maxFramesInFlight);
+    const auto minAlignment = m_vkPhysicalDeviceLimits.minUniformBufferOffsetAlignment;
+    m_dynamicAlignment = sizeof(glm::mat4x4);
+    if (minAlignment > 0)
+    {
+        m_dynamicAlignment - (m_dynamicAlignment + minAlignment - 1) & ~(minAlignment - 1);
+    }
+
+    VkDeviceSize modelSize = m_dynamicAlignment* s_objectCount;
+    VkDeviceSize viewProjSize = sizeof(UBOViewProj);
 
     for (size_t i = 0; i < m_maxFramesInFlight; i++)
     {
-        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        //m_modelBuffers[i] = reinterpret_cast<glm::mat4x4*>(std::aligned_alloc(m_dynamicAlignment, s_objectCount * m_dynamicAlignment));
+
+        void* data = nullptr;
+        int res = posix_memalign(&data, m_dynamicAlignment, s_objectCount * m_dynamicAlignment);
+	    if (res != 0)
+		    data = nullptr;
+        m_modelBuffers[i] = reinterpret_cast<glm::mat4x4*>(data);
+
+        createBuffer(modelSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            m_uniformBuffers[i].m_modelBufffer.buffer, m_uniformBuffers[i].m_modelBufffer.memory);
+        vkMapMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.memory, 0,
+            modelSize, 0, &m_uniformBuffers[i].m_modelBufffer.mapped);
+
+        createBuffer(viewProjSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            m_vkUniformBuffers[i], m_vkUniformBuffersMemory[i]);
-        vkMapMemory(m_vkLogicalDevice, m_vkUniformBuffersMemory[i], 0, bufferSize, 0, &m_vkUniformBuffersMapped[i]);
+            m_uniformBuffers[i].m_viewProjectionBuffer.buffer, m_uniformBuffers[i].m_viewProjectionBuffer.memory);
+        vkMapMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_viewProjectionBuffer.memory, 0,
+            viewProjSize, 0, &m_uniformBuffers[i].m_viewProjectionBuffer.mapped);
+        updateUniformBuffer(i);
+        updateDynUniformBuffer(i);
     }
+
 }
 
 VkDescriptorPoolSize createDescriptorPoolSize(
@@ -1329,15 +1369,15 @@ VkDescriptorPoolSize createDescriptorPoolSize(
 void GraphicalApplication::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes{
-        createDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
-        createDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1),
+        createDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 2),
+        createDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
     };
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = 2;
+    poolInfo.maxSets = m_maxFramesInFlight * 2;
 
     if (vkCreateDescriptorPool(m_vkLogicalDevice, &poolInfo, nullptr, &m_vkDescriptorPool) != VK_SUCCESS)
     {
@@ -1373,21 +1413,39 @@ void GraphicalApplication::createDescriptorSets()
 
     for (size_t i = 0; i < m_maxFramesInFlight; i++)
     {
+        std::array<VkWriteDescriptorSet, 2> writes;
+
+        VkDescriptorBufferInfo bufferInfoDyn{};
+        bufferInfoDyn.buffer = m_uniformBuffers[i].m_modelBufffer.buffer;
+        bufferInfoDyn.offset = 0;
+        bufferInfoDyn.range = m_dynamicAlignment;
+
+        VkWriteDescriptorSet descriptorWriteDyn{};
+        descriptorWriteDyn.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWriteDyn.dstSet = m_vkDescriptorSets[i];
+        descriptorWriteDyn.dstArrayElement = 0;
+        descriptorWriteDyn.dstBinding = 0;
+        descriptorWriteDyn.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        descriptorWriteDyn.descriptorCount = 1;
+        descriptorWriteDyn.pBufferInfo = &bufferInfoDyn;
+        writes[0] = descriptorWriteDyn;
+
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_vkUniformBuffers[i];
+        bufferInfo.buffer = m_uniformBuffers[i].m_viewProjectionBuffer.buffer;
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
+        bufferInfo.range = sizeof(UBOViewProj);
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrite.dstSet = m_vkDescriptorSets[i];
-        descriptorWrite.dstBinding = 0;
         descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.dstBinding = 1;
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descriptorWrite.descriptorCount = 1;
         descriptorWrite.pBufferInfo = &bufferInfo;
+        writes[1] = descriptorWrite;
 
-        vkUpdateDescriptorSets(m_vkLogicalDevice, 1, &descriptorWrite, 0, nullptr);
+        vkUpdateDescriptorSets(m_vkLogicalDevice, 2, &writes[0], 0, nullptr);
     }
 }
 
@@ -1474,10 +1532,15 @@ void GraphicalApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, ui
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_vkIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_vkPipelineLayout, 0, 1, &m_vkDescriptorSets[m_currentFrame], 0, nullptr);
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(s_kekIndices.size()), 1, 0, 0, 0);
-    updateUniformBuffer(m_currentFrame);
+    for(uint32_t i = 0; i < s_objectCount; ++i)
+    {
+        uint32_t offset = i * m_dynamicAlignment;
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_vkPipelineLayout, 0, 1, &m_vkDescriptorSets[m_currentFrame], 1, &offset);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(s_kekIndices.size()), 1, 0, 0, 0);
+    }
+
+    //updateDynUniformBuffer(m_currentFrame);
 
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -1493,23 +1556,36 @@ void GraphicalApplication::updateUniformBuffer(uint32_t currentImage)
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    UniformBufferObject ubo{};
-    ubo.model = glm::rotate(
-        glm::mat4(1.0f),
-        time * glm::radians(90.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(
-        glm::vec3(2.0f, 2.0f, 2.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = glm::perspective(
-        glm::radians(90.0f),
-        m_vkSwapChainExtent.width / static_cast<float>(m_vkSwapChainExtent.height),
-        0.1f,
-        10.0f);
-    ubo.proj[1][1] *= -1;
+     s_viewProj.view = glm::lookAt(
+         glm::vec3(2.0f, 2.0f, 2.0f),
+         glm::vec3(0.0f, 0.0f, 0.0f),
+         glm::vec3(0.0f, 0.0f, 1.0f));
+     s_viewProj.proj = glm::perspective(
+         glm::radians(90.0f),
+         m_vkSwapChainExtent.width / static_cast<float>(m_vkSwapChainExtent.height),
+         0.1f,
+         10.0f);
+     s_viewProj.proj[1][1] *= -1;
+     memcpy(m_uniformBuffers[currentImage].m_viewProjectionBuffer.mapped, &s_viewProj, sizeof(UBOViewProj));
+}
 
-    memcpy(m_vkUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+void GraphicalApplication::updateDynUniformBuffer(uint32_t currentImage)
+{
+    for(uint32_t i = 0; i < s_objectCount; ++i)
+    {
+        glm::mat4x4* model = reinterpret_cast<glm::mat4x4*>(reinterpret_cast<uint64_t>(m_modelBuffers[currentImage]) + i * m_dynamicAlignment);
+
+        *model = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, i % 2 == 0 ? i * 0.5f : -i * 0.5f));
+        *model = glm::rotate(
+            *model,
+            glm::radians(90.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+    memcpy(m_uniformBuffers[currentImage].m_modelBufffer.mapped, m_modelBuffers[currentImage], m_dynamicAlignment * s_objectCount);
+    VkMappedMemoryRange memoryRange{};
+    memoryRange.memory = m_uniformBuffers[currentImage].m_modelBufffer.memory;
+    memoryRange.size = m_dynamicAlignment * s_objectCount;
+    vkFlushMappedMemoryRanges(m_vkLogicalDevice, 1, &memoryRange);
 }
 
 void GraphicalApplication::drawFrame()
@@ -1550,6 +1626,8 @@ void GraphicalApplication::drawFrame()
     {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
+
+    updateDynUniformBuffer(m_currentFrame);
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
