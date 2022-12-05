@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Utils.hpp"
+#include "utils.hpp"
 
 namespace vk { namespace create {
 
@@ -29,6 +29,19 @@ inline VkMemoryAllocateInfo memoryAllocateInfo(VkDeviceSize size, uint32_t memor
 
     return allocInfo;
 }
+
+ inline VkCommandBufferAllocateInfo commandBufferAllocateInfo(VkCommandPool commandPool,
+    VkCommandBufferLevel level, uint32_t commandBufferCount, const void* pNext = nullptr)
+ {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = level;
+    allocInfo.commandPool = commandPool;
+    allocInfo.commandBufferCount = commandBufferCount;
+    allocInfo.pNext = pNext;
+
+    return allocInfo;
+ }
 
 inline void buffer(VkDevice device, VkPhysicalDevice physicalDevice,
     VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
@@ -162,16 +175,6 @@ inline VkImageCreateInfo imageCreateInfo(VkImageType type, VkExtent3D extent,
     imageInfo.sharingMode = sharingMode;
 
     return imageInfo;
-}
-
-inline VkMemoryAllocateInfo memoryAllocateInfo(VkDeviceSize allocationSize, uint32_t memoryTypeIndex, const void* pNext = nullptr)
-{
-    VkMemoryAllocateInfo allocateInfo{};
-    allocateInfo.allocationSize = allocationSize;
-    allocateInfo.memoryTypeIndex = memoryTypeIndex;
-    allocateInfo.pNext = pNext;
-
-    return allocateInfo;
 }
 
 }

@@ -1,4 +1,7 @@
-#include "GraphicalApplication.hpp"
+#include "graphical_application.hpp"
+
+#include "utils.hpp"
+#include "creators.hpp"
 
 #include <limits>
 #include <fstream>
@@ -6,9 +9,6 @@
 #include <algorithm>
 #include <stdexcept>
 #include <functional>
-
-#include "Creators.hpp"
-#include "Utils.hpp"
 
 using namespace vk;
 
@@ -791,10 +791,10 @@ void GraphicalApplication::createDescriptorSetLayout()
 
 void GraphicalApplication::createGraphicsPipeline()
 {
-    auto vertShaderCode = utils::fs::readFile("./shaders/shader.vert.spv");
-    auto fragShaderCode = utils::fs::readFile("./shaders/shader.frag.spv");
-    VkShaderModule vertShaderModule = create::shaderModule(m_vkLogicalDevice, vertShaderCode);
-    VkShaderModule fragShaderModule = create::shaderModule(m_vkLogicalDevice, fragShaderCode);
+    const auto vertShaderCode = utils::fs::readFile("./shaders/shader.vert.spv");
+    const auto fragShaderCode = utils::fs::readFile("./shaders/shader.frag.spv");
+    const auto vertShaderModule = create::shaderModule(m_vkLogicalDevice, vertShaderCode);
+    const auto fragShaderModule = create::shaderModule(m_vkLogicalDevice, fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1046,7 +1046,7 @@ void GraphicalApplication::createImage(uint32_t width, uint32_t height,
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(m_vkLogicalDevice, image, &memRequirements);
 
-    VkMemoryAllocateInfo allocInfo = create::memoryAllocateInfo(memRequirements.size,
+    auto allocInfo = create::memoryAllocateInfo(memRequirements.size,
         utils::findMemoryType(m_vkPhysicalDevice, memRequirements.memoryTypeBits, properties));
 
     if (vkAllocateMemory(m_vkLogicalDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
@@ -1066,11 +1066,8 @@ void GraphicalApplication::createDepthResources()
 }
 
 void GraphicalApplication::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = m_vkCommandPool;
-    allocInfo.commandBufferCount = 1;
+    const auto allocInfo =
+        create::commandBufferAllocateInfo(m_vkCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 
     VkCommandBuffer commandBuffer;
     vkAllocateCommandBuffers(m_vkLogicalDevice, &allocInfo, &commandBuffer);
@@ -1218,7 +1215,7 @@ void GraphicalApplication::createDescriptorPool()
 void GraphicalApplication::createDescriptorSets()
 {
     std::vector<VkDescriptorSetLayout> layouts(m_maxFramesInFlight, m_vkDescriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo =
+    const auto allocInfo =
             create::descriptorSetAllocateInfo(m_vkDescriptorPool, layouts.data(), static_cast<uint32_t>(m_maxFramesInFlight));
 
     m_vkDescriptorSets.resize(m_maxFramesInFlight);

@@ -26,10 +26,10 @@ find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 
 add_executable(${PROJECT_NAME} main.cpp
-	renderer/Utils.hpp
-	renderer/Creators.hpp
-    renderer/GraphicalApplication.hpp
-    renderer/GraphicalApplication.cpp
+	renderer/utils.hpp
+	renderer/creators.hpp
+    renderer/graphical_application.hpp
+    renderer/graphical_application.cpp
     tetris/tetris.hpp
 	tetris/tetris.cpp
 	${SHADER_SOURCES})

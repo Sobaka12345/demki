@@ -6,7 +6,7 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-#include "renderer/GraphicalApplication.hpp"
+#include "renderer/graphical_application.hpp"
 
 int main() {
     auto& app = GraphicalApplication::instance();
