@@ -10,7 +10,7 @@
 
 int main() {
     auto& app = GraphicalApplication::instance();
-    app.setWindowSize(600, 600);
+    app.setWindowSize(640, 480);
 
     return app.exec();
 }

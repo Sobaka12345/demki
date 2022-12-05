@@ -17,15 +17,22 @@ execute_process (
 	COMMAND bash -c "bash ${CMAKE_SOURCE_DIR}/shaders/compile_shaders.sh ${CMAKE_SOURCE_DIR}/shaders  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders"
 )
 
+set(SHADER_SOURCES
+	shaders/shader.frag
+	shaders/shader.vert)
+
 find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 
 add_executable(${PROJECT_NAME} main.cpp
+	renderer/Utils.hpp
+	renderer/Creators.hpp
     renderer/GraphicalApplication.hpp
     renderer/GraphicalApplication.cpp
     tetris/tetris.hpp
-    tetris/tetris.cpp)
+	tetris/tetris.cpp
+	${SHADER_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan glm::glm)
 

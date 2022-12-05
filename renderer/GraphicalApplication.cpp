@@ -1,35 +1,16 @@
 #include "GraphicalApplication.hpp"
 
-#include <vector>
 #include <limits>
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <algorithm>
 #include <stdexcept>
-#include <filesystem>
 #include <functional>
 
-#ifdef _WIN32
-#include <windows.h>    //GetModuleFileNameW
-#else
-#include <limits.h>
-#include <unistd.h>     //readlink
-#endif
+#include "Creators.hpp"
+#include "Utils.hpp"
 
-std::filesystem::path getExePath()
-{
-#ifdef _WIN32
-    wchar_t path[MAX_PATH] = { 0 };
-    GetModuleFileNameW(NULL, path, MAX_PATH);
-    return path;
-#else
-    char result[PATH_MAX];
-    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-    return std::string(result, (count > 0) ? count : 0);
-#endif
-}
-
+using namespace vk;
 
 namespace
 {
@@ -179,35 +160,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     return VK_FALSE;
 }
 
-bool requiredValidationLayerSupported()
-{
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    for(auto& required : s_validationLayers)
-    {
-        bool exists = false;
-        for (auto& x : availableLayers)
-        {
-            std::cout << x.layerName << std::endl;
-            if (!std::strcmp(x.layerName, required))
-            {
-                exists = true;
-                break;
-            }
-        }
-
-        if (exists == false)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 std::vector<const char*> getRequiredExtensions() {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
@@ -221,33 +173,6 @@ std::vector<const char*> getRequiredExtensions() {
     }
 
     return extensions;
-}
-
-bool requiredExtensionsSupported(const std::vector<const char*>& required)
-{
-    uint32_t systemExtensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &systemExtensionCount, nullptr);
-    std::vector<VkExtensionProperties> systemExtensions(systemExtensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &systemExtensionCount, systemExtensions.data());
-    for(auto& required : required)
-    {
-        bool exists = false;
-        for (auto& x : systemExtensions)
-        {
-            if (!std::strcmp(x.extensionName, required))
-            {
-                exists = true;
-                break;
-            }
-        }
-
-        if (exists == false)
-        {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
@@ -277,23 +202,6 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
-}
-
-std::vector<char> readFile(const std::string& filename)
-{
-    static std::filesystem::path executablePath = getExePath().parent_path();
-    std::ifstream file(executablePath / filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file: " + (executablePath / filename).string());
-    }
-    size_t fileSize = static_cast<size_t>(file.tellg());
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
-    return buffer;
 }
 
 }
@@ -431,7 +339,7 @@ void GraphicalApplication::createInstance()
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (s_enableValidationLayers)
     {
-        if(!requiredValidationLayerSupported())
+        if(!utils::requiredValidationLayerSupported(s_validationLayers))
         {
             throw std::runtime_error("required validation layers are absent");
         }
@@ -449,7 +357,7 @@ void GraphicalApplication::createInstance()
     }
 
     const auto extensions = getRequiredExtensions();
-    if (!requiredExtensionsSupported(extensions))
+    if (!utils::requiredExtensionsSupported(extensions))
     {
         throw std::runtime_error("required extensions are absent");
     }
@@ -595,7 +503,8 @@ VkPresentModeKHR GraphicalApplication::chooseSwapPresentMode(const std::vector<V
 }
 
 VkExtent2D GraphicalApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+    {
         return capabilities.currentExtent;
     }
     else
@@ -638,20 +547,6 @@ SwapChainSupportDetails GraphicalApplication::querySwapChainSupport(VkPhysicalDe
     }
 
     return details;
-}
-
-VkShaderModule GraphicalApplication::createShaderModule(const std::vector<char> &code)
-{
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-    VkShaderModule shaderModule;
-    if (vkCreateShaderModule(m_vkLogicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create shader module!");
-    }
-    return shaderModule;
 }
 
 void GraphicalApplication::createLogicalDevice()
@@ -896,10 +791,10 @@ void GraphicalApplication::createDescriptorSetLayout()
 
 void GraphicalApplication::createGraphicsPipeline()
 {
-    auto vertShaderCode = readFile("./shaders/shader.vert.spv");
-    auto fragShaderCode = readFile("./shaders/shader.frag.spv");
-    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+    auto vertShaderCode = utils::fs::readFile("./shaders/shader.vert.spv");
+    auto fragShaderCode = utils::fs::readFile("./shaders/shader.frag.spv");
+    VkShaderModule vertShaderModule = create::shaderModule(m_vkLogicalDevice, vertShaderCode);
+    VkShaderModule fragShaderModule = create::shaderModule(m_vkLogicalDevice, fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1172,7 +1067,7 @@ void GraphicalApplication::createImage(uint32_t width, uint32_t height,
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+    allocInfo.memoryTypeIndex = utils::findMemoryType(m_vkPhysicalDevice, memRequirements.memoryTypeBits, properties);
 
     if (vkAllocateMemory(m_vkLogicalDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
     {
@@ -1188,51 +1083,6 @@ void GraphicalApplication::createDepthResources()
     createImage(m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, depthFormat,
         VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vkDepthImage, m_vkDepthImageMemory);
     m_vkDepthImageView = createImageView(m_vkDepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-}
-
-uint32_t GraphicalApplication::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-{
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(m_vkPhysicalDevice, &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-    {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-        {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
-}
-
- void GraphicalApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
- {
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    if (vkCreateBuffer(m_vkLogicalDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create buffer!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(m_vkLogicalDevice, buffer, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(m_vkLogicalDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate buffer memory!");
-    }
-
-    vkBindBufferMemory(m_vkLogicalDevice, buffer, bufferMemory, 0);
 }
 
 void GraphicalApplication::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
@@ -1274,7 +1124,7 @@ void GraphicalApplication::createVertexBuffer()
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     void* data;
@@ -1282,7 +1132,7 @@ void GraphicalApplication::createVertexBuffer()
     memcpy(data, s_kekVertices.data(), static_cast<size_t>(bufferSize));
     vkUnmapMemory(m_vkLogicalDevice, stagingBufferMemory);
 
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vkVertexBuffer, m_vkVertexBufferMemory);
 
     copyBuffer(stagingBuffer, m_vkVertexBuffer, bufferSize);
@@ -1297,7 +1147,7 @@ void GraphicalApplication::createIndexBuffer()
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     void* data;
@@ -1305,7 +1155,8 @@ void GraphicalApplication::createIndexBuffer()
     memcpy(data, s_kekIndices.data(), static_cast<size_t>(bufferSize));
     vkUnmapMemory(m_vkLogicalDevice, stagingBufferMemory);
 
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+    create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vkIndexBuffer, m_vkIndexBufferMemory);
 
     copyBuffer(stagingBuffer, m_vkIndexBuffer, bufferSize);
@@ -1323,7 +1174,7 @@ void GraphicalApplication::createUniformBuffers()
     m_dynamicAlignment = sizeof(glm::mat4x4);
     if (minAlignment > 0)
     {
-        m_dynamicAlignment - (m_dynamicAlignment + minAlignment - 1) & ~(minAlignment - 1);
+        m_dynamicAlignment = (m_dynamicAlignment + minAlignment - 1) & ~(minAlignment - 1);
     }
 
     VkDeviceSize modelSize = m_dynamicAlignment* s_objectCount;
@@ -1331,25 +1182,24 @@ void GraphicalApplication::createUniformBuffers()
 
     for (size_t i = 0; i < m_maxFramesInFlight; i++)
     {
-        //m_modelBuffers[i] = reinterpret_cast<glm::mat4x4*>(std::aligned_alloc(m_dynamicAlignment, s_objectCount * m_dynamicAlignment));
+        m_modelBuffers[i] = reinterpret_cast<glm::mat4x4*>(std::aligned_alloc(m_dynamicAlignment, s_objectCount * m_dynamicAlignment));
 
-        void* data = nullptr;
-        int res = posix_memalign(&data, m_dynamicAlignment, s_objectCount * m_dynamicAlignment);
-	    if (res != 0)
-		    data = nullptr;
-        m_modelBuffers[i] = reinterpret_cast<glm::mat4x4*>(data);
-
-        createBuffer(modelSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+        create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, modelSize,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
             m_uniformBuffers[i].m_modelBufffer.buffer, m_uniformBuffers[i].m_modelBufffer.memory);
         vkMapMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.memory, 0,
             modelSize, 0, &m_uniformBuffers[i].m_modelBufffer.mapped);
+        m_uniformBuffers[i].m_modelBufffer.descriptor =
+                create::descriptorBufferInfo(m_uniformBuffers[i].m_modelBufffer.buffer, 0, m_dynamicAlignment);
 
-        createBuffer(viewProjSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, viewProjSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             m_uniformBuffers[i].m_viewProjectionBuffer.buffer, m_uniformBuffers[i].m_viewProjectionBuffer.memory);
         vkMapMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_viewProjectionBuffer.memory, 0,
             viewProjSize, 0, &m_uniformBuffers[i].m_viewProjectionBuffer.mapped);
+        m_uniformBuffers[i].m_viewProjectionBuffer.descriptor =
+                create::descriptorBufferInfo(m_uniformBuffers[i].m_viewProjectionBuffer.buffer, 0, sizeof(UBOViewProj));
+
         updateUniformBuffer(i);
         updateDynUniformBuffer(i);
     }
@@ -1385,25 +1235,11 @@ void GraphicalApplication::createDescriptorPool()
     }
 }
 
-VkDescriptorSetAllocateInfo createDescriptorSetAllocateInfo(
-			VkDescriptorPool descriptorPool, const VkDescriptorSetLayout* pSetLayouts, uint32_t descriptorSetCount)
-{
-    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo {};
-    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocateInfo.descriptorPool = descriptorPool;
-    descriptorSetAllocateInfo.pSetLayouts = pSetLayouts;
-    descriptorSetAllocateInfo.descriptorSetCount = descriptorSetCount;
-    return descriptorSetAllocateInfo;
-}
-
 void GraphicalApplication::createDescriptorSets()
 {
     std::vector<VkDescriptorSetLayout> layouts(m_maxFramesInFlight, m_vkDescriptorSetLayout);
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = m_vkDescriptorPool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(m_maxFramesInFlight);
-    allocInfo.pSetLayouts = layouts.data();
+    VkDescriptorSetAllocateInfo allocInfo =
+            create::descriptorSetAllocateInfo(m_vkDescriptorPool, layouts.data(), static_cast<uint32_t>(m_maxFramesInFlight));
 
     m_vkDescriptorSets.resize(m_maxFramesInFlight);
     if (vkAllocateDescriptorSets(m_vkLogicalDevice, &allocInfo, m_vkDescriptorSets.data()) != VK_SUCCESS)
@@ -1413,39 +1249,13 @@ void GraphicalApplication::createDescriptorSets()
 
     for (size_t i = 0; i < m_maxFramesInFlight; i++)
     {
-        std::array<VkWriteDescriptorSet, 2> writes;
-
-        VkDescriptorBufferInfo bufferInfoDyn{};
-        bufferInfoDyn.buffer = m_uniformBuffers[i].m_modelBufffer.buffer;
-        bufferInfoDyn.offset = 0;
-        bufferInfoDyn.range = m_dynamicAlignment;
-
-        VkWriteDescriptorSet descriptorWriteDyn{};
-        descriptorWriteDyn.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWriteDyn.dstSet = m_vkDescriptorSets[i];
-        descriptorWriteDyn.dstArrayElement = 0;
-        descriptorWriteDyn.dstBinding = 0;
-        descriptorWriteDyn.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        descriptorWriteDyn.descriptorCount = 1;
-        descriptorWriteDyn.pBufferInfo = &bufferInfoDyn;
-        writes[0] = descriptorWriteDyn;
-
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i].m_viewProjectionBuffer.buffer;
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UBOViewProj);
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = m_vkDescriptorSets[i];
-        descriptorWrite.dstArrayElement = 0;
-        descriptorWrite.dstBinding = 1;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pBufferInfo = &bufferInfo;
-        writes[1] = descriptorWrite;
-
-        vkUpdateDescriptorSets(m_vkLogicalDevice, 2, &writes[0], 0, nullptr);
+        std::array<VkWriteDescriptorSet, 2> writes = {
+            create::writeDescriptorSet(m_vkDescriptorSets[i], 0,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &m_uniformBuffers[i].m_modelBufffer.descriptor),
+            create::writeDescriptorSet(m_vkDescriptorSets[i], 1,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &m_uniformBuffers[i].m_viewProjectionBuffer.descriptor),
+        };
+        vkUpdateDescriptorSets(m_vkLogicalDevice, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
     }
 }
 
@@ -1540,8 +1350,6 @@ void GraphicalApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, ui
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(s_kekIndices.size()), 1, 0, 0, 0);
     }
 
-    //updateDynUniformBuffer(m_currentFrame);
-
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
     {
@@ -1557,14 +1365,14 @@ void GraphicalApplication::updateUniformBuffer(uint32_t currentImage)
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
      s_viewProj.view = glm::lookAt(
-         glm::vec3(2.0f, 2.0f, 2.0f),
+         glm::vec3(3.0f, 3.0f, 3.0f),
          glm::vec3(0.0f, 0.0f, 0.0f),
          glm::vec3(0.0f, 0.0f, 1.0f));
      s_viewProj.proj = glm::perspective(
          glm::radians(90.0f),
          m_vkSwapChainExtent.width / static_cast<float>(m_vkSwapChainExtent.height),
          0.1f,
-         10.0f);
+         20.0f);
      s_viewProj.proj[1][1] *= -1;
      memcpy(m_uniformBuffers[currentImage].m_viewProjectionBuffer.mapped, &s_viewProj, sizeof(UBOViewProj));
 }
@@ -1575,7 +1383,7 @@ void GraphicalApplication::updateDynUniformBuffer(uint32_t currentImage)
     {
         glm::mat4x4* model = reinterpret_cast<glm::mat4x4*>(reinterpret_cast<uint64_t>(m_modelBuffers[currentImage]) + i * m_dynamicAlignment);
 
-        *model = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, i % 2 == 0 ? i * 0.5f : -i * 0.5f));
+        *model = glm::translate(glm::mat4x4(1.0f), -glm::vec3(0.0f, i * 1.0f, 0.0f));
         *model = glm::rotate(
             *model,
             glm::radians(90.0f),
