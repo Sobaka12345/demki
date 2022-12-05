@@ -1018,16 +1018,8 @@ bool GraphicalApplication::hasStencilComponent(VkFormat format)
 }
 
 VkImageView GraphicalApplication::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = aspectFlags;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
+    const auto viewInfo = create::imageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format,
+        create::imageSubresourceRange(aspectFlags, 0, 1, 0, 1));
 
     VkImageView imageView;
     if (vkCreateImageView(m_vkLogicalDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
@@ -1041,20 +1033,10 @@ VkImageView GraphicalApplication::createImageView(VkImage image, VkFormat format
 void GraphicalApplication::createImage(uint32_t width, uint32_t height,
     VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
     VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = usage;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkImageCreateInfo imageInfo =
+        create::imageCreateInfo(VK_IMAGE_TYPE_2D, create::extent3D(width, height, 1),
+        1, 1, format, tiling, VK_IMAGE_LAYOUT_UNDEFINED,
+        usage, VK_SAMPLE_COUNT_1_BIT, VK_SHARING_MODE_EXCLUSIVE);
 
     if (vkCreateImage(m_vkLogicalDevice, &imageInfo, nullptr, &image) != VK_SUCCESS)
     {
@@ -1064,10 +1046,8 @@ void GraphicalApplication::createImage(uint32_t width, uint32_t height,
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(m_vkLogicalDevice, image, &memRequirements);
 
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = utils::findMemoryType(m_vkPhysicalDevice, memRequirements.memoryTypeBits, properties);
+    VkMemoryAllocateInfo allocInfo = create::memoryAllocateInfo(memRequirements.size,
+        utils::findMemoryType(m_vkPhysicalDevice, memRequirements.memoryTypeBits, properties));
 
     if (vkAllocateMemory(m_vkLogicalDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
     {

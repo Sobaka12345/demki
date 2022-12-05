@@ -105,5 +105,74 @@ inline VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, ui
     return descriptorWrite;
 }
 
+inline VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlags aspectFlags,
+    uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount)
+{
+    VkImageSubresourceRange subresourceRange{};
+    subresourceRange.aspectMask = aspectFlags;
+    subresourceRange.baseMipLevel = 0;
+    subresourceRange.levelCount = 1;
+    subresourceRange.baseArrayLayer = 0;
+    subresourceRange.layerCount = 1;
+
+    return subresourceRange;
+}
+
+inline VkImageViewCreateInfo imageViewCreateInfo(VkImage image, VkImageViewType type, VkFormat format,
+    VkImageSubresourceRange subresourceRange, VkComponentMapping components = {}, const void* pNext = nullptr)
+{
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = image;
+    viewInfo.viewType = type;
+    viewInfo.format = format;
+    viewInfo.subresourceRange = subresourceRange;
+    viewInfo.components = components;
+    viewInfo.pNext = pNext;
+
+    return viewInfo;
+}
+
+inline VkExtent3D extent3D(uint32_t width, uint32_t height, uint32_t depth)
+{
+    VkExtent3D extent{};
+    extent.width = width;
+    extent.height = height;
+    extent.depth = depth;
+
+    return extent;
+}
+
+inline VkImageCreateInfo imageCreateInfo(VkImageType type, VkExtent3D extent,
+    uint32_t mipLevels, uint32_t arrayLayers, VkFormat format, VkImageTiling tiling,
+    VkImageLayout initialLayout, VkImageUsageFlags usage, VkSampleCountFlagBits samples,
+    VkSharingMode sharingMode)
+{
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent = extent;
+    imageInfo.mipLevels = mipLevels;
+    imageInfo.arrayLayers = arrayLayers;
+    imageInfo.format = format;
+    imageInfo.tiling = tiling;
+    imageInfo.initialLayout = initialLayout;
+    imageInfo.usage = usage;
+    imageInfo.samples = samples;
+    imageInfo.sharingMode = sharingMode;
+
+    return imageInfo;
+}
+
+inline VkMemoryAllocateInfo memoryAllocateInfo(VkDeviceSize allocationSize, uint32_t memoryTypeIndex, const void* pNext = nullptr)
+{
+    VkMemoryAllocateInfo allocateInfo{};
+    allocateInfo.allocationSize = allocationSize;
+    allocateInfo.memoryTypeIndex = memoryTypeIndex;
+    allocateInfo.pNext = pNext;
+
+    return allocateInfo;
+}
+
 }
 }
