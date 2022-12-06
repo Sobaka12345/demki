@@ -239,8 +239,7 @@ GraphicalApplication::~GraphicalApplication()
     vkDestroyDescriptorSetLayout(m_vkLogicalDevice, m_vkDescriptorSetLayout, nullptr);
     vkDestroyBuffer(m_vkLogicalDevice, m_vkIndexBuffer, nullptr);
     vkFreeMemory(m_vkLogicalDevice, m_vkIndexBufferMemory, nullptr);
-    vkDestroyBuffer(m_vkLogicalDevice, m_vkVertexBuffer, nullptr);
-    vkFreeMemory(m_vkLogicalDevice, m_vkVertexBufferMemory, nullptr);
+    m_vertexBuffer.reset();
     vkDestroyPipeline(m_vkLogicalDevice, m_vkPipeline, nullptr);
     vkDestroyPipelineLayout(m_vkLogicalDevice, m_vkPipelineLayout, nullptr);
 
@@ -1100,25 +1099,22 @@ void GraphicalApplication::createVertexBuffer()
 {
     VkDeviceSize bufferSize = sizeof(s_kekVertices[0]) * s_kekVertices.size();
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-
-
     Buffer buffer(m_vkLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE);
-    auto memory = buffer.allocateMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    const auto& memory = buffer.allocateAndBindMemory(m_vkPhysicalDevice,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* data;
-    vkMapMemory(m_vkLogicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+    buffer.mapMemory(&data);
     memcpy(data, s_kekVertices.data(), static_cast<size_t>(bufferSize));
-    vkUnmapMemory(m_vkLogicalDevice, stagingBufferMemory);
+    buffer.unmapMemory();
 
-    create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vkVertexBuffer, m_vkVertexBufferMemory);
+    m_vertexBuffer = std::make_unique<Buffer>(
+        m_vkLogicalDevice, bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_SHARING_MODE_EXCLUSIVE);
+    m_vertexBuffer->allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    copyBuffer(stagingBuffer, m_vkVertexBuffer, bufferSize);
-
-    vkDestroyBuffer(m_vkLogicalDevice, stagingBuffer, nullptr);
-    vkFreeMemory(m_vkLogicalDevice, stagingBufferMemory, nullptr);
+    buffer.copyTo(*m_vertexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
 }
 
 void GraphicalApplication::createIndexBuffer()
@@ -1318,7 +1314,7 @@ void GraphicalApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, ui
     scissor.extent = m_vkSwapChainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = {m_vkVertexBuffer};
+    VkBuffer vertexBuffers[] = {m_vertexBuffer->buffer()};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_vkIndexBuffer, 0, VK_INDEX_TYPE_UINT16);

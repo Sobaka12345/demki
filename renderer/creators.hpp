@@ -8,6 +8,16 @@
 
 namespace vk { namespace create {
 
+inline VkBufferCopy bufferCopy(VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0)
+{
+    VkBufferCopy bufferCopy{};
+    bufferCopy.size = size;
+    bufferCopy.srcOffset = srcOffset;
+    bufferCopy.dstOffset = dstOffset;
+
+    return bufferCopy;
+}
+
 inline VkBufferCreateInfo bufferCreateInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode)
 {
     VkBufferCreateInfo bufferInfo{};

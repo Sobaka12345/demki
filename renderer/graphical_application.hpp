@@ -2,6 +2,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <memory>
 #include <optional>
 
 #if defined(_WIN32) || defined(WIN32)
@@ -22,6 +23,9 @@
 #include <GLFW/glfw3native.h>
 
 struct GLFWwindow;
+namespace vk {
+class Buffer;
+}
 
 struct UniformBuffer
 {
@@ -157,8 +161,7 @@ private:
 
     uint8_t m_currentFrame;
 
-    VkBuffer m_vkVertexBuffer;
-    VkDeviceMemory m_vkVertexBufferMemory;
+    std::unique_ptr<vk::Buffer> m_vertexBuffer;
     VkBuffer m_vkIndexBuffer;
     VkDeviceMemory m_vkIndexBufferMemory;
     VkDescriptorPool m_vkDescriptorPool;
