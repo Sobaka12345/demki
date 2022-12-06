@@ -1,4 +1,7 @@
 #pragma once
+
+#include "utils.hpp"
+
 #include <set>
 #include <string>
 #include <vector>
@@ -33,35 +36,6 @@ struct UniformBuffer
     void* mapped;
     VkDeviceMemory memory;
     VkDescriptorBufferInfo descriptor;
-};
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
-struct QueueFamilyIndices
-{
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    std::set<uint32_t> uniqueQueueFamilies() const
-    {
-        if (isComplete())
-        {
-            return {
-                presentFamily.value(),
-                graphicsFamily.value(),
-            };
-        }
-        return {};
-    }
-
-    bool isComplete() const
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
 };
 
 class GraphicalApplication
@@ -116,14 +90,11 @@ private:
 
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
         VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
 
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
         VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
@@ -139,7 +110,7 @@ private:
     bool m_framebufferResized;
     bool m_windowIconified;
 
-    QueueFamilyIndices m_queueFamilyIndices;
+    vk::utils::QueueFamilyIndices m_queueFamilyIndices;
 
     VkInstance m_vkInstance;
     VkSurfaceKHR m_vkSurface;
@@ -162,8 +133,8 @@ private:
     uint8_t m_currentFrame;
 
     std::unique_ptr<vk::Buffer> m_vertexBuffer;
-    VkBuffer m_vkIndexBuffer;
-    VkDeviceMemory m_vkIndexBufferMemory;
+    std::unique_ptr<vk::Buffer> m_indexBuffer;
+
     VkDescriptorPool m_vkDescriptorPool;
     std::vector<VkDescriptorSet> m_vkDescriptorSets;
 

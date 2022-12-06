@@ -91,6 +91,16 @@ inline VkShaderModule shaderModule(VkDevice device, const std::vector<char> &cod
     return shaderModule;
 }
 
+inline VkDescriptorPoolSize descriptorPoolSize(VkDescriptorType type, uint32_t descriptorCount)
+{
+    VkDescriptorPoolSize descriptorPoolSize{};
+    descriptorPoolSize.type = type;
+    descriptorPoolSize.descriptorCount = descriptorCount;
+
+    return descriptorPoolSize;
+}
+
+
 inline VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(
             VkDescriptorPool descriptorPool, const VkDescriptorSetLayout* pSetLayouts, uint32_t descriptorSetCount)
 {

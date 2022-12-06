@@ -1,6 +1,5 @@
 #include "graphical_application.hpp"
 
-#include "utils.hpp"
 #include "buffer.hpp"
 #include "creators.hpp"
 
@@ -102,42 +101,6 @@ static constexpr auto s_objectCount = 50;
     const bool s_enableValidationLayers = false;
 #endif
 
-#if defined(VK_USE_PLATFORM_XCB_KHR)
-    using VkPlatformSurfaceCreateInfo = VkXcbSurfaceCreateInfoKHR;
-#elif defined(VK_USE_PLATFORM_WIN32_KHR)
-    using VkPlatformSurfaceCreateInfo = VkWin32SurfaceCreateInfoKHR;
-#endif
-
-VkPlatformSurfaceCreateInfo createVkPlatformSurfaceCreateInfo(GLFWwindow* window)
-{
-#if defined(VK_USE_PLATFORM_XCB_KHR)
-    VkXcbSurfaceCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-    createInfo.window = glfwGetX11Window(window);
-    //createInfo.connection = GetModuleHandle(nullptr);
-#elif defined(VK_USE_PLATFORM_WIN32_KHR)
-    VkWin32SurfaceCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    createInfo.hwnd = glfwGetWin32Window(window);
-    createInfo.hinstance = GetModuleHandle(nullptr);
-#endif
-
-    return createInfo;
-}
-
-VkResult vkCreatePlatformSurface(
-    VkInstance                         instance,
-    const VkPlatformSurfaceCreateInfo* pCreateInfo,
-    const VkAllocationCallbacks*       pAllocator,
-    VkSurfaceKHR*                      pSurface)
-{
-#if defined(VK_USE_PLATFORM_XCB_KHR)
-    return vkCreateXcbSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
-#elif defined(VK_USE_PLATFORM_WIN32_KHR)
-    return vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
-#endif
-}
-
 const std::vector<const char*> s_validationLayers = {
     "VK_LAYER_KHRONOS_validation",
     "VK_LAYER_LUNARG_api_dump",
@@ -235,11 +198,13 @@ GraphicalApplication::~GraphicalApplication()
         vkFreeMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.memory, nullptr);
         std::free(m_modelBuffers[i]);
     }
+
     vkDestroyDescriptorPool(m_vkLogicalDevice, m_vkDescriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(m_vkLogicalDevice, m_vkDescriptorSetLayout, nullptr);
-    vkDestroyBuffer(m_vkLogicalDevice, m_vkIndexBuffer, nullptr);
-    vkFreeMemory(m_vkLogicalDevice, m_vkIndexBufferMemory, nullptr);
+
+    m_indexBuffer.reset();
     m_vertexBuffer.reset();
+
     vkDestroyPipeline(m_vkLogicalDevice, m_vkPipeline, nullptr);
     vkDestroyPipelineLayout(m_vkLogicalDevice, m_vkPipelineLayout, nullptr);
 
@@ -420,11 +385,11 @@ bool GraphicalApplication::isDeviceSuitable(VkPhysicalDevice device)
     bool swapChainAdequate = false;
     if (extensionsSupported)
     {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        const auto swapChainSupportDetails = utils::swapChainSupportDetails(device, m_vkSurface);
+        swapChainAdequate = !swapChainSupportDetails.formats.empty() && !swapChainSupportDetails.presentModes.empty();
     }
 
-    return findQueueFamilies(device).isComplete()
+    return utils::findQueueFamilies(device, m_vkSurface).isComplete()
            && extensionsSupported
            && swapChainAdequate;
 }
@@ -444,37 +409,6 @@ bool GraphicalApplication::checkDeviceExtensionSupport(VkPhysicalDevice device) 
     }
 
     return requiredExtensions.empty();
-}
-
-QueueFamilyIndices GraphicalApplication::findQueueFamilies(VkPhysicalDevice device)
-{
-    QueueFamilyIndices result;
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    for (int i = 0; i < queueFamilies.size(); ++i)
-    {
-        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            result.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_vkSurface, &presentSupport);
-        if (presentSupport)
-        {
-            result.presentFamily = i;
-        }
-
-        if (result.isComplete())
-        {
-            return result;
-        }
-    }
-
-    return result;
 }
 
 VkSurfaceFormatKHR GraphicalApplication::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
@@ -524,34 +458,9 @@ VkExtent2D GraphicalApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR
     }
 }
 
-SwapChainSupportDetails GraphicalApplication::querySwapChainSupport(VkPhysicalDevice device) {
-    SwapChainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_vkSurface, &details.capabilities);
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_vkSurface, &formatCount, nullptr);
-
-    if (formatCount != 0)
-    {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_vkSurface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_vkSurface, &presentModeCount, nullptr);
-
-    if (presentModeCount != 0)
-    {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_vkSurface, &presentModeCount, details.presentModes.data());
-    }
-
-    return details;
-}
-
 void GraphicalApplication::createLogicalDevice()
 {
-    m_queueFamilyIndices = findQueueFamilies(m_vkPhysicalDevice);
+    m_queueFamilyIndices = utils::findQueueFamilies(m_vkPhysicalDevice, m_vkSurface);
 
     VkPhysicalDeviceFeatures deviceFeatures{};
 
@@ -594,15 +503,15 @@ void GraphicalApplication::createLogicalDevice()
 }
 
 void GraphicalApplication::createSwapChain() {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_vkPhysicalDevice);
+    const auto swapChainSupportDetails = utils::swapChainSupportDetails(m_vkPhysicalDevice, m_vkSurface);
 
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupportDetails.formats);
+    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupportDetails.presentModes);
+    VkExtent2D extent = chooseSwapExtent(swapChainSupportDetails.capabilities);
+    uint32_t imageCount = swapChainSupportDetails.capabilities.minImageCount + 1;
+    if (swapChainSupportDetails.capabilities.maxImageCount > 0 && imageCount > swapChainSupportDetails.capabilities.maxImageCount)
     {
-        imageCount = swapChainSupport.capabilities.maxImageCount;
+        imageCount = swapChainSupportDetails.capabilities.maxImageCount;
     }
 
     VkSwapchainCreateInfoKHR createInfo{};
@@ -615,7 +524,7 @@ void GraphicalApplication::createSwapChain() {
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndices indices = findQueueFamilies(m_vkPhysicalDevice);
+    utils::QueueFamilyIndices indices = utils::findQueueFamilies(m_vkPhysicalDevice, m_vkSurface);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
     if (indices.graphicsFamily != indices.presentFamily)
@@ -631,7 +540,7 @@ void GraphicalApplication::createSwapChain() {
         createInfo.pQueueFamilyIndices = nullptr; // Optional
     }
 
-    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+    createInfo.preTransform = swapChainSupportDetails.capabilities.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
@@ -970,7 +879,7 @@ void GraphicalApplication::createFramebuffers()
 
 void GraphicalApplication::createCommandPool()
 {
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_vkPhysicalDevice);
+    utils::QueueFamilyIndices queueFamilyIndices = utils::findQueueFamilies(m_vkPhysicalDevice, m_vkSurface);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -1065,48 +974,18 @@ void GraphicalApplication::createDepthResources()
     m_vkDepthImageView = createImageView(m_vkDepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
-void GraphicalApplication::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-    const auto allocInfo =
-        create::commandBufferAllocateInfo(m_vkCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-
-    VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(m_vkLogicalDevice, &allocInfo, &commandBuffer);
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    vkQueueSubmit(m_vkGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(m_vkGraphicsQueue);
-
-    vkFreeCommandBuffers(m_vkLogicalDevice, m_vkCommandPool, 1, &commandBuffer);
-}
-
 void GraphicalApplication::createVertexBuffer()
 {
     VkDeviceSize bufferSize = sizeof(s_kekVertices[0]) * s_kekVertices.size();
 
-    Buffer buffer(m_vkLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE);
-    const auto& memory = buffer.allocateAndBindMemory(m_vkPhysicalDevice,
+    Buffer stagingBuffer(m_vkLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE);
+    const auto& memory = stagingBuffer.allocateAndBindMemory(m_vkPhysicalDevice,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* data;
-    buffer.mapMemory(&data);
+    stagingBuffer.mapMemory(&data);
     memcpy(data, s_kekVertices.data(), static_cast<size_t>(bufferSize));
-    buffer.unmapMemory();
+    stagingBuffer.unmapMemory();
 
     m_vertexBuffer = std::make_unique<Buffer>(
         m_vkLogicalDevice, bufferSize,
@@ -1114,31 +993,29 @@ void GraphicalApplication::createVertexBuffer()
         VK_SHARING_MODE_EXCLUSIVE);
     m_vertexBuffer->allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    buffer.copyTo(*m_vertexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
+    stagingBuffer.copyTo(*m_vertexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
 }
 
 void GraphicalApplication::createIndexBuffer()
 {
     VkDeviceSize bufferSize = sizeof(s_kekIndices[0]) * s_kekIndices.size();
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    Buffer stagingBuffer(m_vkLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE);
+    const auto& memory = stagingBuffer.allocateAndBindMemory(m_vkPhysicalDevice,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* data;
-    vkMapMemory(m_vkLogicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+    stagingBuffer.mapMemory(&data);
     memcpy(data, s_kekIndices.data(), static_cast<size_t>(bufferSize));
-    vkUnmapMemory(m_vkLogicalDevice, stagingBufferMemory);
+    stagingBuffer.unmapMemory();
 
-    create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, bufferSize,
+    m_indexBuffer = std::make_unique<Buffer>(
+        m_vkLogicalDevice, bufferSize,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vkIndexBuffer, m_vkIndexBufferMemory);
+        VK_SHARING_MODE_EXCLUSIVE);
+    m_indexBuffer->allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    copyBuffer(stagingBuffer, m_vkIndexBuffer, bufferSize);
-
-    vkDestroyBuffer(m_vkLogicalDevice, stagingBuffer, nullptr);
-    vkFreeMemory(m_vkLogicalDevice, stagingBufferMemory, nullptr);
+    stagingBuffer.copyTo(*m_indexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
 }
 
 void GraphicalApplication::createUniformBuffers()
@@ -1182,21 +1059,11 @@ void GraphicalApplication::createUniformBuffers()
 
 }
 
-VkDescriptorPoolSize createDescriptorPoolSize(
-	VkDescriptorType type, uint32_t descriptorCount)
-{
-    VkDescriptorPoolSize descriptorPoolSize{};
-    descriptorPoolSize.type = type;
-    descriptorPoolSize.descriptorCount = descriptorCount;
-
-    return descriptorPoolSize;
-}
-
 void GraphicalApplication::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes{
-        createDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 2),
-        createDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
+        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 2),
+        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
     };
 
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -1317,7 +1184,7 @@ void GraphicalApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, ui
     VkBuffer vertexBuffers[] = {m_vertexBuffer->buffer()};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_vkIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
     for(uint32_t i = 0; i < s_objectCount; ++i)
     {
         uint32_t offset = i * m_dynamicAlignment;
