@@ -39,7 +39,7 @@ public:
 
     void copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue queue, VkBufferCopy copyRegion);
 
-private:
+protected:
     VkBuffer m_buffer;
     VkDevice m_device;
     VkDeviceSize m_size;

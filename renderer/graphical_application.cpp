@@ -1043,7 +1043,7 @@ void GraphicalApplication::createUniformBuffers()
         vkMapMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.memory, 0,
             modelSize, 0, &m_uniformBuffers[i].m_modelBufffer.mapped);
         m_uniformBuffers[i].m_modelBufffer.descriptor =
-                create::descriptorBufferInfo(m_uniformBuffers[i].m_modelBufffer.buffer, 0, m_dynamicAlignment);
+            create::descriptorBufferInfo(m_uniformBuffers[i].m_modelBufffer.buffer, 0, m_dynamicAlignment);
 
         create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, viewProjSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -1051,7 +1051,7 @@ void GraphicalApplication::createUniformBuffers()
         vkMapMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_viewProjectionBuffer.memory, 0,
             viewProjSize, 0, &m_uniformBuffers[i].m_viewProjectionBuffer.mapped);
         m_uniformBuffers[i].m_viewProjectionBuffer.descriptor =
-                create::descriptorBufferInfo(m_uniformBuffers[i].m_viewProjectionBuffer.buffer, 0, sizeof(UBOViewProj));
+            create::descriptorBufferInfo(m_uniformBuffers[i].m_viewProjectionBuffer.buffer, 0, sizeof(UBOViewProj));
 
         updateUniformBuffer(i);
         updateDynUniformBuffer(i);
