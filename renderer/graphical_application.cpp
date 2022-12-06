@@ -1,6 +1,7 @@
 #include "graphical_application.hpp"
 
 #include "utils.hpp"
+#include "buffer.hpp"
 #include "creators.hpp"
 
 #include <limits>
@@ -1101,8 +1102,10 @@ void GraphicalApplication::createVertexBuffer()
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+
+    Buffer buffer(m_vkLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE);
+    auto memory = buffer.allocateMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* data;
     vkMapMemory(m_vkLogicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);

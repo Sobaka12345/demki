@@ -1,31 +1,30 @@
 #pragma once
 
-#include "creators.hpp"
-
+#include <list>
 #include <vulkan/vulkan.h>
 
 namespace vk {
 
 class Buffer
 {
-    Buffer(VkDevice device, VkPhysicalDevice physicalDevice,
-    VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-{
-   VkBufferCreateInfo bufferInfo = create::bufferCreateInfo(size, usage, VK_SHARING_MODE_EXCLUSIVE);
-   assert(vkCreateBuffer(device, &bufferInfo, nullptr, &m_buffer) == VK_SUCCESS);
+public:
+    class Memory
+    {
+        VkDeviceMemory m_memory;
+    }
 
-   VkMemoryRequirements memRequirements;
-   vkGetBufferMemoryRequirements(device, m_buffer, &memRequirements);
+    Buffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode);
+    ~Buffer();
 
-   VkMemoryAllocateInfo allocInfo = create::memoryAllocateInfo(
-               memRequirements.size, utils::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties));
-   assert(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) == VK_SUCCESS);
+    VkDeviceSize size() const { return m_size; }
 
-   vkBindBufferMemory(device, m_buffer, bufferMemory, 0);
-}
+    VkDeviceMemory allocateMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t bindingOffset = 0);
 
+private:
     VkBuffer m_buffer;
-    VkDeviceMemory bufferMemory;
+    VkDevice m_device;
+    VkDeviceSize m_size;
+    std::list<VkDeviceMemory> m_memoryList;
 };
 
 }
