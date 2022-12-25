@@ -28,6 +28,7 @@ find_package(Vulkan REQUIRED)
 add_executable(${PROJECT_NAME} main.cpp
 	renderer/buffer.hpp
 	renderer/buffer.cpp
+	renderer/vertex.hpp
 	renderer/utils.hpp
 	renderer/creators.hpp
     renderer/graphical_application.hpp

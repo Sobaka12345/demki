@@ -197,5 +197,22 @@ inline VkImageCreateInfo imageCreateInfo(VkImageType type, VkExtent3D extent,
     return imageInfo;
 }
 
+inline VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(
+    VkShaderStageFlagBits stage, VkShaderModule module, const char* pName = "main",
+    VkPipelineShaderStageCreateFlags flags = 0, const VkSpecializationInfo* pSpecializationInfo = nullptr,
+    const void* pNext = nullptr)
+{
+    VkPipelineShaderStageCreateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    result.stage = stage;
+    result.pName = pName;
+    result.flags = flags;
+    result.module = module;
+    result.pNext = pNext;
+    result.pSpecializationInfo = pSpecializationInfo;
+
+    return result;
+}
+
 }
 }

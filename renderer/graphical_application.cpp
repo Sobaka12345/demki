@@ -1,6 +1,7 @@
 #include "graphical_application.hpp"
 
 #include "buffer.hpp"
+#include "vertex.hpp"
 #include "creators.hpp"
 
 #include <limits>
@@ -33,35 +34,7 @@ struct UBOModel
     glm::mat4 model;
 };
 
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
-
-    static VkVertexInputBindingDescription getBindingDescription() {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        return bindingDescription;
-    }
-
-    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-        return attributeDescriptions;
-    }
-};
-
-static const std::vector<Vertex> s_kekVertices = {
+static const std::vector<Vertex3DColored> s_kekVertices = {
     {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}}, //0
     {{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}}, //1
     {{-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}, //2
@@ -98,7 +71,7 @@ static constexpr auto s_objectCount = 50;
 #ifdef NDEBUG
     const bool s_enableValidationLayers = false;
 #else
-    const bool s_enableValidationLayers = false;
+    const bool s_enableValidationLayers = true;
 #endif
 
 const std::vector<const char*> s_validationLayers = {
@@ -705,19 +678,10 @@ void GraphicalApplication::createGraphicsPipeline()
     const auto vertShaderModule = create::shaderModule(m_vkLogicalDevice, vertShaderCode);
     const auto fragShaderModule = create::shaderModule(m_vkLogicalDevice, fragShaderCode);
 
-    VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertShaderStageInfo.module = vertShaderModule;
-    vertShaderStageInfo.pName = "main";
-
-    VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragShaderStageInfo.module = fragShaderModule;
-    fragShaderStageInfo.pName = "main";
-
-    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+    const VkPipelineShaderStageCreateInfo shaderStages[] = {
+        create::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule),
+        create::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule)
+    };
 
     std::vector<VkDynamicState> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
@@ -737,8 +701,8 @@ void GraphicalApplication::createGraphicsPipeline()
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    const auto bindingDescription = Vertex::getBindingDescription();
-    const auto attributeDescriptions = Vertex::getAttributeDescriptions();
+    const auto bindingDescription = Vertex3DColored::getBindingDescription();
+    const auto attributeDescriptions = Vertex3DColored::getAttributeDescriptions();
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
