@@ -1,36 +1,8 @@
 #pragma once
 
-class Block
-{
+#include "../renderer/graphical_application.hpp"
 
-};
-
-class Figure
-{
-
-};
-
-class LFigure
-{
-
-};
-
-class LRFigure
-{
-
-};
-
-class ZFigure
-{
-
-};
-
-class ZRFigure
-{
-
-};
-
-class OFigure
+class Tetris:
 {
 
 };

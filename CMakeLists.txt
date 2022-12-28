@@ -7,7 +7,7 @@ project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 include(${CMAKE_BINARY_DIR}/install/conanbuildinfo.cmake)
 conan_basic_setup()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -34,8 +34,10 @@ add_executable(${PROJECT_NAME} main.cpp
     renderer/graphical_application.hpp
     renderer/graphical_application.cpp
     tetris/tetris.hpp
-	tetris/tetris.cpp
-	${SHADER_SOURCES})
+    tetris/tetris.cpp
+    tetris/figure.hpp
+    tetris/figure.cpp
+    ${SHADER_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan glm::glm)
 

@@ -12,12 +12,12 @@ struct Vertex3DColored
     glm::vec3 pos;
     glm::vec3 color;
 
-    static constexpr VkVertexInputBindingDescription getBindingDescription() {
+    static constexpr std::array<VkVertexInputBindingDescription, 1> getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
         bindingDescription.binding = 0;
         bindingDescription.stride = sizeof(Vertex3DColored);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        return bindingDescription;
+        return { bindingDescription };
     }
 
     static constexpr std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
