@@ -1,6 +1,5 @@
 #include "graphical_application.hpp"
 
-#include "buffer.hpp"
 #include "vertex.hpp"
 #include "creators.hpp"
 
@@ -15,58 +14,6 @@ using namespace vk;
 
 namespace
 {
-
-template<typename LayoutType>
-struct UBObject
-{
-    LayoutType layout;
-    static constexpr uint32_t size = sizeof(LayoutType);
-};
-
-struct UBOViewProj
-{
-    glm::mat4 view;
-    glm::mat4 proj;
-} s_viewProj;
-
-struct UBOModel
-{
-    glm::mat4 model;
-};
-
-static const std::vector<Vertex3DColored> s_kekVertices = {
-    {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}}, //0
-    {{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}}, //1
-    {{-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}, //2
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}}, //3
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}, //4
-    {{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}, //5
-    {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}, //6
-    {{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}  //7
-};
-
-static const std::vector<uint16_t> s_kekIndices = {
-        //Top
-        7, 6, 2,
-        2, 3, 7,
-        //Bottom
-        0, 4, 5,
-        5, 1, 0,
-        //Left
-        0, 2, 6,
-        6, 4, 0,
-        //Right
-        7, 3, 1,
-        1, 5, 7,
-        //Front
-        3, 2, 0,
-        0, 1, 3,
-        //Back
-        4, 6, 7,
-        7, 5, 4
-};
-
-static constexpr auto s_objectCount = 50;
 
 #ifdef NDEBUG
     const bool s_enableValidationLayers = false;
@@ -143,12 +90,6 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 }
 
-GraphicalApplication& GraphicalApplication::instance()
-{
-    static GraphicalApplication instance;
-    return instance;
-}
-
 GraphicalApplication::GraphicalApplication()
     : m_windowWidth(640)
     , m_windowHeight(480)
@@ -163,23 +104,6 @@ GraphicalApplication::GraphicalApplication()
 GraphicalApplication::~GraphicalApplication()
 {
     cleanupSwapChain();
-    for (size_t i = 0; i <  m_uniformBuffers.size(); ++i)
-    {
-        vkDestroyBuffer(m_vkLogicalDevice, m_uniformBuffers[i].m_viewProjectionBuffer.buffer, nullptr);
-        vkFreeMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_viewProjectionBuffer.memory, nullptr);
-        vkDestroyBuffer(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.buffer, nullptr);
-        vkFreeMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.memory, nullptr);
-        std::free(m_modelBuffers[i]);
-    }
-
-    vkDestroyDescriptorPool(m_vkLogicalDevice, m_vkDescriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(m_vkLogicalDevice, m_vkDescriptorSetLayout, nullptr);
-
-    m_indexBuffer.reset();
-    m_vertexBuffer.reset();
-
-    vkDestroyPipeline(m_vkLogicalDevice, m_vkPipeline, nullptr);
-    vkDestroyPipelineLayout(m_vkLogicalDevice, m_vkPipelineLayout, nullptr);
 
     vkDestroyRenderPass(m_vkLogicalDevice, m_vkRenderPass, nullptr);
     for (size_t i = 0; i < m_maxFramesInFlight; ++i)
@@ -236,28 +160,24 @@ void GraphicalApplication::initWindow()
     glfwSetWindowIconifyCallback(m_window, windowIconifyCallback);
 }
 
-void GraphicalApplication::initVulkan()
+void GraphicalApplication::initBase()
 {
+    // Basic
     createInstance();
     setupDebugMessenger();
     createWindowSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createSyncObjects();
+    createCommandPool();
+
+    // Swap Chain
     createSwapChain();
     createImageViews();
     createRenderPass();
-    createDescriptorSetLayout();
-    createGraphicsPipeline();
-    createCommandPool();
-    createDepthResources();
     createFramebuffers();
-    createVertexBuffer();
-    createIndexBuffer();
-    createUniformBuffers();
-    createDescriptorPool();
-    createDescriptorSets();
+
     createCommandBuffers();
-    createSyncObjects();
 }
 
 void GraphicalApplication::createInstance()
@@ -437,7 +357,7 @@ void GraphicalApplication::createLogicalDevice()
 
     VkPhysicalDeviceFeatures deviceFeatures{};
 
-    float queuePriority = 1.0f;
+    const float queuePriority = 1.0f;
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     for (auto& queueFamily : m_queueFamilyIndices.uniqueQueueFamilies())
     {
@@ -544,7 +464,6 @@ void GraphicalApplication::recreateSwapChain()
 
     createSwapChain();
     createImageViews();
-    createDepthResources();
     createFramebuffers();
 }
 
@@ -640,34 +559,13 @@ void GraphicalApplication::createRenderPass()
     }
 }
 
-void GraphicalApplication::createDescriptorSetLayout()
+VkPipeline GraphicalApplication::defaultGraphicsPipeline(VkDevice device,
+    VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
+    VkShaderModule vertexShader, VkShaderModule fragmentShader)
 {
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-        create::setLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 0),
-        create::setLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1)
-    };
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-
-    if (vkCreateDescriptorSetLayout(m_vkLogicalDevice, &layoutInfo, nullptr, &m_vkDescriptorSetLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
-}
-
-void GraphicalApplication::createGraphicsPipeline()
-{
-    const auto vertShaderCode = utils::fs::readFile("./shaders/shader.vert.spv");
-    const auto fragShaderCode = utils::fs::readFile("./shaders/shader.frag.spv");
-    const auto vertShaderModule = create::shaderModule(m_vkLogicalDevice, vertShaderCode);
-    const auto fragShaderModule = create::shaderModule(m_vkLogicalDevice, fragShaderCode);
-
     const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
-        create::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule),
-        create::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule)
+        create::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertexShader),
+        create::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader)
     };
 
     static constexpr std::array<VkDynamicState, 2> dynamicStates = {
@@ -698,7 +596,7 @@ void GraphicalApplication::createGraphicsPipeline()
         VK_FALSE
     );
 
-    VkPipelineMultisampleStateCreateInfo multisampling =
+    constexpr VkPipelineMultisampleStateCreateInfo multisampling =
         create::pipelineMultisampleStateCreateInfo(VK_FALSE, VK_SAMPLE_COUNT_1_BIT);
 
     constexpr VkPipelineDepthStencilStateCreateInfo depthStencil = create::pipelineDepthStencilStateCreateInfo(
@@ -714,39 +612,37 @@ void GraphicalApplication::createGraphicsPipeline()
     VkPipelineColorBlendStateCreateInfo colorBlending =
         create::pipelineColorBlendStateCreateInfo(colorBlendAttachments);
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = create::pipelineLayoutCreateInfo(
-        std::array<VkDescriptorSetLayout, 1>{m_vkDescriptorSetLayout},
-        std::array<VkPushConstantRange, 0>{}
-    );
-
-    if (vkCreatePipelineLayout(m_vkLogicalDevice, &pipelineLayoutInfo, nullptr, &m_vkPipelineLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
-
     const VkGraphicsPipelineCreateInfo pipelineInfo =
         create::graphicsPipelineCreateInfo(
-            m_vkPipelineLayout, m_vkRenderPass, 0, shaderStages,
+            pipelineLayout, renderPass, 0, shaderStages,
             &vertexInputInfo, &inputAssembly, nullptr, &viewportState, &rasterizer, &multisampling,
             &colorBlending, &dynamicState, &depthStencil);
 
-    if (vkCreateGraphicsPipelines(m_vkLogicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_vkPipeline) != VK_SUCCESS)
+    VkPipeline result;
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &result) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
-    vkDestroyShaderModule(m_vkLogicalDevice, fragShaderModule, nullptr);
-    vkDestroyShaderModule(m_vkLogicalDevice, vertShaderModule, nullptr);
+    return result;
 }
+
 
 void GraphicalApplication::createFramebuffers()
 {
+    VkFormat depthFormat = findDepthFormat();
+    VkImage depthImage;
+    VkDeviceMemory depthMemory;
+    createImage(m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, depthFormat,
+        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthMemory);
+    const auto depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
     m_vkSwapChainFramebuffers.resize(m_vkSwapChainImageViews.size());
     for (size_t i = 0; i < m_vkSwapChainImageViews.size(); i++)
     {
         const std::array<VkImageView, 2> attachments = {
             m_vkSwapChainImageViews[i],
-            m_vkDepthImageView
+            depthImageView
         };
 
         const VkFramebufferCreateInfo framebufferInfo = create::frameBufferCreateInfo(
@@ -849,142 +745,6 @@ void GraphicalApplication::createImage(uint32_t width, uint32_t height,
     vkBindImageMemory(m_vkLogicalDevice, image, imageMemory, 0);
 }
 
-void GraphicalApplication::createDepthResources()
-{
-    VkFormat depthFormat = findDepthFormat();
-    createImage(m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, depthFormat,
-        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vkDepthImage, m_vkDepthImageMemory);
-    m_vkDepthImageView = createImageView(m_vkDepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-}
-
-void GraphicalApplication::createVertexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(s_kekVertices[0]) * s_kekVertices.size();
-
-    Buffer stagingBuffer(m_vkLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE);
-    const auto& memory = stagingBuffer.allocateAndBindMemory(m_vkPhysicalDevice,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    void* data;
-    stagingBuffer.mapMemory(&data);
-    memcpy(data, s_kekVertices.data(), static_cast<size_t>(bufferSize));
-    stagingBuffer.unmapMemory();
-
-    m_vertexBuffer = std::make_unique<Buffer>(
-        m_vkLogicalDevice, bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_SHARING_MODE_EXCLUSIVE);
-    m_vertexBuffer->allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    stagingBuffer.copyTo(*m_vertexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
-}
-
-void GraphicalApplication::createIndexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(s_kekIndices[0]) * s_kekIndices.size();
-
-    Buffer stagingBuffer(m_vkLogicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE);
-    const auto& memory = stagingBuffer.allocateAndBindMemory(m_vkPhysicalDevice,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    void* data;
-    stagingBuffer.mapMemory(&data);
-    memcpy(data, s_kekIndices.data(), static_cast<size_t>(bufferSize));
-    stagingBuffer.unmapMemory();
-
-    m_indexBuffer = std::make_unique<Buffer>(
-        m_vkLogicalDevice, bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VK_SHARING_MODE_EXCLUSIVE);
-    m_indexBuffer->allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    stagingBuffer.copyTo(*m_indexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
-}
-
-void GraphicalApplication::createUniformBuffers()
-{
-    m_uniformBuffers.resize(m_maxFramesInFlight);
-    m_modelBuffers.resize(m_maxFramesInFlight);
-
-    const auto minAlignment = m_vkPhysicalDeviceLimits.minUniformBufferOffsetAlignment;
-    m_dynamicAlignment = sizeof(glm::mat4x4);
-    if (minAlignment > 0)
-    {
-        m_dynamicAlignment = (m_dynamicAlignment + minAlignment - 1) & ~(minAlignment - 1);
-    }
-
-    VkDeviceSize modelSize = m_dynamicAlignment* s_objectCount;
-    VkDeviceSize viewProjSize = sizeof(UBOViewProj);
-
-    for (size_t i = 0; i < m_maxFramesInFlight; i++)
-    {
-        m_modelBuffers[i] = reinterpret_cast<glm::mat4x4*>(std::aligned_alloc(m_dynamicAlignment, s_objectCount * m_dynamicAlignment));
-
-        create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, modelSize,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            m_uniformBuffers[i].m_modelBufffer.buffer, m_uniformBuffers[i].m_modelBufffer.memory);
-        vkMapMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_modelBufffer.memory, 0,
-            modelSize, 0, &m_uniformBuffers[i].m_modelBufffer.mapped);
-        m_uniformBuffers[i].m_modelBufffer.descriptor =
-            create::descriptorBufferInfo(m_uniformBuffers[i].m_modelBufffer.buffer, 0, m_dynamicAlignment);
-
-        create::buffer(m_vkLogicalDevice, m_vkPhysicalDevice, viewProjSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            m_uniformBuffers[i].m_viewProjectionBuffer.buffer, m_uniformBuffers[i].m_viewProjectionBuffer.memory);
-        vkMapMemory(m_vkLogicalDevice, m_uniformBuffers[i].m_viewProjectionBuffer.memory, 0,
-            viewProjSize, 0, &m_uniformBuffers[i].m_viewProjectionBuffer.mapped);
-        m_uniformBuffers[i].m_viewProjectionBuffer.descriptor =
-            create::descriptorBufferInfo(m_uniformBuffers[i].m_viewProjectionBuffer.buffer, 0, sizeof(UBOViewProj));
-
-        updateUniformBuffer(i);
-        updateDynUniformBuffer(i);
-    }
-
-}
-
-void GraphicalApplication::createDescriptorPool()
-{
-    std::array<VkDescriptorPoolSize, 2> poolSizes{
-        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 2),
-        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
-    };
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-    poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = m_maxFramesInFlight * 2;
-
-    if (vkCreateDescriptorPool(m_vkLogicalDevice, &poolInfo, nullptr, &m_vkDescriptorPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create descriptor pool!");
-    }
-}
-
-void GraphicalApplication::createDescriptorSets()
-{
-    std::vector<VkDescriptorSetLayout> layouts(m_maxFramesInFlight, m_vkDescriptorSetLayout);
-    const auto allocInfo =
-            create::descriptorSetAllocateInfo(m_vkDescriptorPool, layouts.data(), static_cast<uint32_t>(m_maxFramesInFlight));
-
-    m_vkDescriptorSets.resize(m_maxFramesInFlight);
-    if (vkAllocateDescriptorSets(m_vkLogicalDevice, &allocInfo, m_vkDescriptorSets.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate descriptor sets!");
-    }
-
-    for (size_t i = 0; i < m_maxFramesInFlight; i++)
-    {
-        std::array<VkWriteDescriptorSet, 2> writes = {
-            create::writeDescriptorSet(m_vkDescriptorSets[i], 0,
-                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &m_uniformBuffers[i].m_modelBufffer.descriptor),
-            create::writeDescriptorSet(m_vkDescriptorSets[i], 1,
-                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &m_uniformBuffers[i].m_viewProjectionBuffer.descriptor),
-        };
-        vkUpdateDescriptorSets(m_vkLogicalDevice, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-    }
-}
-
 void GraphicalApplication::createCommandBuffers()
 {
     m_vkCommandBuffers.resize(m_maxFramesInFlight);
@@ -1021,105 +781,6 @@ void GraphicalApplication::createSyncObjects()
             throw std::runtime_error("failed to create semaphores!");
         }
     }
-}
-
-void GraphicalApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
-{
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0;
-    beginInfo.pInheritanceInfo = nullptr;
-
-    if (vkBeginCommandBuffer(m_vkCommandBuffers[m_currentFrame], &beginInfo) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
-
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_vkRenderPass;
-    renderPassInfo.framebuffer = m_vkSwapChainFramebuffers[imageIndex];
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = m_vkSwapChainExtent;
-
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-    clearValues[1].depthStencil = {1.0f, 0};
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
-
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(m_vkSwapChainExtent.width);
-    viewport.height = static_cast<float>(m_vkSwapChainExtent.height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = m_vkSwapChainExtent;
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-    VkBuffer vertexBuffers[] = {m_vertexBuffer->buffer()};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
-    for(uint32_t i = 0; i < s_objectCount; ++i)
-    {
-        uint32_t offset = i * m_dynamicAlignment;
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_vkPipelineLayout, 0, 1, &m_vkDescriptorSets[m_currentFrame], 1, &offset);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(s_kekIndices.size()), 1, 0, 0, 0);
-    }
-
-    vkCmdEndRenderPass(commandBuffer);
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to record command buffer!");
-    }
-}
-
-void GraphicalApplication::updateUniformBuffer(uint32_t currentImage)
-{
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-     s_viewProj.view = glm::lookAt(
-         glm::vec3(3.0f, 3.0f, 3.0f),
-         glm::vec3(0.0f, 0.0f, 0.0f),
-         glm::vec3(0.0f, 0.0f, 1.0f));
-     s_viewProj.proj = glm::perspective(
-         glm::radians(90.0f),
-         m_vkSwapChainExtent.width / static_cast<float>(m_vkSwapChainExtent.height),
-         0.1f,
-         20.0f);
-     s_viewProj.proj[1][1] *= -1;
-     memcpy(m_uniformBuffers[currentImage].m_viewProjectionBuffer.mapped, &s_viewProj, sizeof(UBOViewProj));
-}
-
-void GraphicalApplication::updateDynUniformBuffer(uint32_t currentImage)
-{
-    for(uint32_t i = 0; i < s_objectCount; ++i)
-    {
-        glm::mat4x4* model = reinterpret_cast<glm::mat4x4*>(reinterpret_cast<uint64_t>(m_modelBuffers[currentImage]) + i * m_dynamicAlignment);
-
-        *model = glm::translate(glm::mat4x4(1.0f), -glm::vec3(0.0f, i * 1.0f, 0.0f));
-        *model = glm::rotate(
-            *model,
-            glm::radians(90.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f));
-    }
-    memcpy(m_uniformBuffers[currentImage].m_modelBufffer.mapped, m_modelBuffers[currentImage], m_dynamicAlignment * s_objectCount);
-    VkMappedMemoryRange memoryRange{};
-    memoryRange.memory = m_uniformBuffers[currentImage].m_modelBufffer.memory;
-    memoryRange.size = m_dynamicAlignment * s_objectCount;
-    vkFlushMappedMemoryRanges(m_vkLogicalDevice, 1, &memoryRange);
 }
 
 void GraphicalApplication::drawFrame()
@@ -1161,8 +822,6 @@ void GraphicalApplication::drawFrame()
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
-    updateDynUniformBuffer(m_currentFrame);
-
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
@@ -1191,7 +850,8 @@ void GraphicalApplication::drawFrame()
 int GraphicalApplication::exec()
 {
     initWindow();
-    initVulkan();
+    initBase();
+    initApplication();
     return mainLoop();
 }
 

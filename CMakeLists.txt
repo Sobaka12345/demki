@@ -31,6 +31,8 @@ add_executable(${PROJECT_NAME} main.cpp
 	renderer/vertex.hpp
 	renderer/utils.hpp
 	renderer/creators.hpp
+	renderer/model.cpp
+	renderer/model.hpp
     renderer/graphical_application.hpp
     renderer/graphical_application.cpp
     tetris/tetris.hpp

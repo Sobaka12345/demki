@@ -6,10 +6,10 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-#include "renderer/graphical_application.hpp"
+#include "tetris/tetris.hpp"
 
 int main() {
-    auto& app = GraphicalApplication::instance();
+    Tetris app;
     app.setWindowSize(640, 480);
 
     return app.exec();

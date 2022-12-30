@@ -25,11 +25,6 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-struct GLFWwindow;
-namespace vk {
-class Buffer;
-}
-
 struct UniformBuffer
 {
     VkBuffer buffer;
@@ -41,23 +36,26 @@ struct UniformBuffer
 class GraphicalApplication
 {
 public:
-    static GraphicalApplication& instance();
-
     int exec();
 
     void setWindowSize(int width, int height);
     void setApplicationName(std::string applicationName);
+    GraphicalApplication();
+    virtual ~GraphicalApplication();
+
+protected:
+    static VkPipeline defaultGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
+        VkPipelineLayout pipelineLayout, VkShaderModule vertexShader, VkShaderModule fragmentShader);
 
 private:
-    GraphicalApplication();
-    ~GraphicalApplication();
-
     int mainLoop();
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     static void windowIconifyCallback(GLFWwindow* window, int flag);
-    void initWindow();
-    void initVulkan();
+
+    virtual void initWindow();
+    virtual void initBase();
+    virtual void initApplication() = 0;
 
     // Vulkan
     void createInstance();
@@ -70,22 +68,12 @@ private:
     void createWindowSurface();
     void createImageViews();
     void createRenderPass();
-    void createDescriptorSetLayout();
-    void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
-    void createDepthResources();
-    void createVertexBuffer();
-    void createIndexBuffer();
-    void createUniformBuffers();
-    void createDescriptorPool();
-    void createDescriptorSets();
     void createCommandBuffers();
     void createSyncObjects();
 
-    void updateUniformBuffer(uint32_t currentImage);
-    void updateDynUniformBuffer(uint32_t currentImage);
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) = 0;
     void drawFrame();
 
     bool isDeviceSuitable(VkPhysicalDevice device);
@@ -106,11 +94,14 @@ private:
     GLFWwindow* m_window;
     int m_windowWidth;
     int m_windowHeight;
-    int m_maxFramesInFlight;
     bool m_framebufferResized;
     bool m_windowIconified;
 
     vk::utils::QueueFamilyIndices m_queueFamilyIndices;
+
+protected:
+    uint8_t m_currentFrame;
+    int m_maxFramesInFlight;
 
     VkInstance m_vkInstance;
     VkSurfaceKHR m_vkSurface;
@@ -120,43 +111,23 @@ private:
     VkPhysicalDevice m_vkPhysicalDevice;
     VkPhysicalDeviceLimits m_vkPhysicalDeviceLimits;
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
-
-    VkPipeline m_vkPipeline;
+    VkExtent2D m_vkSwapChainExtent;
+    VkCommandPool m_vkCommandPool;
     VkRenderPass m_vkRenderPass;
-    VkPipelineLayout m_vkPipelineLayout;
-    VkDescriptorSetLayout m_vkDescriptorSetLayout;
+    std::vector<VkFramebuffer> m_vkSwapChainFramebuffers;
 
+private:
     std::vector<VkSemaphore> m_vkImageAvailableSemaphores;
     std::vector<VkSemaphore> m_vkRenderFinishedSemaphores;
     std::vector<VkFence> m_vkInFlightFences;
 
-    uint8_t m_currentFrame;
-
-    std::unique_ptr<vk::Buffer> m_vertexBuffer;
-    std::unique_ptr<vk::Buffer> m_indexBuffer;
-
-    VkDescriptorPool m_vkDescriptorPool;
-    std::vector<VkDescriptorSet> m_vkDescriptorSets;
-
-    VkCommandPool m_vkCommandPool;
     std::vector<VkCommandBuffer> m_vkCommandBuffers;
-    std::vector<VkFramebuffer> m_vkSwapChainFramebuffers;
 
     VkImage m_vkDepthImage;
     VkDeviceMemory m_vkDepthImageMemory;
     VkImageView m_vkDepthImageView;
 
-    struct UniformBuffers
-    {
-        UniformBuffer m_viewProjectionBuffer;
-        UniformBuffer m_modelBufffer;
-    };
-    uint32_t m_dynamicAlignment;
-    std::vector<UniformBuffers> m_uniformBuffers;
-    std::vector<glm::mat4x4*> m_modelBuffers;
-
     VkSwapchainKHR m_vkSwapChain;
-    VkExtent2D m_vkSwapChainExtent;
     VkFormat m_vkSwapChainImageFormat;
     std::vector<VkImage> m_vkSwapChainImages;
     std::vector<VkImageView> m_vkSwapChainImageViews;

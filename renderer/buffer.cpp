@@ -17,6 +17,23 @@ Buffer::Memory::~Memory()
     vkFreeMemory(buffer.device(), deviceMemory, nullptr);
 }
 
+Buffer::MappedMemory::MappedMemory(const Memory& memory, VkMemoryMapFlags flags, VkDeviceSize offset)
+    : memory(memory)
+{
+    assert(vkMapMemory(memory.buffer.device(), memory.deviceMemory,
+        offset, memory.size, flags, &data) == VK_SUCCESS);
+}
+
+Buffer::MappedMemory::~MappedMemory()
+{
+    vkUnmapMemory(memory.buffer.device(), memory.deviceMemory);
+}
+
+void Buffer::MappedMemory::write(const void* src, VkDeviceSize size)
+{
+    std::memcpy(data, src, static_cast<size_t>(size));
+}
+
 Buffer::Buffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode)
     : m_device(device)
     , m_size(size)
@@ -55,14 +72,29 @@ const Buffer::Memory& Buffer::allocateAndBindMemory(VkPhysicalDevice physicalDev
     return *m_memory;
 }
 
-bool Buffer::mapMemory(void** data, VkMemoryMapFlags flags, VkDeviceSize offset)
+Buffer::MappedMemory Buffer::mappedMemory()
 {
-    return vkMapMemory(m_device, m_memory->deviceMemory, 0, size(), 0, data) == VK_SUCCESS;
+    assert(m_memory);
+    assert(m_mapped);
+
+    return *m_mapped;
+}
+
+Buffer::MappedMemory Buffer::mapMemory(VkMemoryMapFlags flags, VkDeviceSize offset)
+{
+    assert(!m_mapped);
+    assert(m_memory);
+    m_mapped = std::make_unique<MappedMemory>(*m_memory.get(), flags, offset);
+
+    return *m_mapped;
 }
 
 void Buffer::unmapMemory()
 {
-    vkUnmapMemory(m_device, m_memory->deviceMemory);
+    if (m_mapped)
+    {
+        m_mapped.reset();
+    }
 }
 
 void Buffer::copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue queue, VkBufferCopy copyRegion)

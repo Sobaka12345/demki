@@ -353,6 +353,21 @@ inline constexpr VkDescriptorSetLayoutBinding setLayoutBinding(
     return result;
 }
 
+inline constexpr VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(
+    const IsArrayContainer auto&           bindings,
+    VkDescriptorSetLayoutCreateFlags       flags = 0,
+    const void*                            pNext = nullptr)
+{
+    VkDescriptorSetLayoutCreateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    result.bindingCount = static_cast<uint32_t>(bindings.size());
+    result.pBindings = bindings.data();
+    result.flags = flags;
+    result.pNext = pNext;
+
+    return result;
+}
+
 inline constexpr VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlags aspectFlags,
     uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount)
 {
