@@ -12,44 +12,49 @@ class Buffer
 public:
     struct Memory
     {
+        struct Mapped
+        {
+            Mapped(const Memory& memory, VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
+            ~Mapped();
+            void write(const void* src, VkDeviceSize size);
+
+            const Memory& memory;
+            void* data;
+            VkDeviceSize offset;
+        };
+
         Memory(const Buffer& buffer, VkMemoryAllocateInfo size);
-        Memory(const Memory& other) = delete;
         ~Memory();
+
+        std::shared_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
+        void unmap();
 
         const Buffer& buffer;
         VkDeviceSize size;
         VkDeviceMemory deviceMemory;
+        std::shared_ptr<Mapped> mapped;
         uint32_t memoryType;
     };
 
-    struct MappedMemory
-    {
-        MappedMemory(const Memory& memory, VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
-        ~MappedMemory();
-        void write(const void* src, VkDeviceSize size);
-
-        void* data;
-        VkDeviceSize offset;
-        const Memory& memory;
-    };
+public:
+    static Buffer indexBuffer(VkDevice device, VkDeviceSize size);
+    static Buffer vertexBuffer(VkDevice device, VkDeviceSize size);
+    static Buffer stagingBuffer(VkDevice device, VkDeviceSize size);
 
 public:
-    Buffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode);
-    Buffer(const Buffer& other) = delete;
+    Buffer();
+    Buffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage,
+        VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
     ~Buffer();
 
     VkBuffer buffer() const { return m_buffer; }
     VkDevice device() const { return m_device; }
     VkDeviceSize size() const { return m_size; }
-
+    std::shared_ptr<Memory> memory() const { return m_memory; }
 
     bool bindMemory(uint32_t bindingOffset);
-    const Memory& allocateMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties);
-    const Memory& allocateAndBindMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t bindingOffset = 0);
-
-    MappedMemory mappedMemory();
-    MappedMemory mapMemory(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
-    void unmapMemory();
+    std::shared_ptr<Memory> allocateMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties);
+    std::shared_ptr<Memory> allocateAndBindMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t bindingOffset = 0);
 
     void copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue queue, VkBufferCopy copyRegion);
 
@@ -57,8 +62,8 @@ protected:
     VkBuffer m_buffer;
     VkDevice m_device;
     VkDeviceSize m_size;
-    std::unique_ptr<Memory> m_memory;
-    std::unique_ptr<MappedMemory> m_mapped;
+    // TO DO: Implement multiple memory allocations
+    std::shared_ptr<Memory> m_memory;
 };
 
 }

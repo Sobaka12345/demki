@@ -325,7 +325,7 @@ inline constexpr VkDescriptorBufferInfo descriptorBufferInfo(VkBuffer buffer, Vk
 }
 
 inline constexpr VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t dstBinding,
-    VkDescriptorType descriptorType, uint32_t descriptorCount, VkDescriptorBufferInfo* bufferInfo, uint32_t dstArrayElement = 0)
+    VkDescriptorType descriptorType, uint32_t descriptorCount, const VkDescriptorBufferInfo* bufferInfo, uint32_t dstArrayElement = 0)
 {
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

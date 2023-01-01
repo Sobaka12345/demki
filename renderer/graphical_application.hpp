@@ -25,14 +25,6 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-struct UniformBuffer
-{
-    VkBuffer buffer;
-    void* mapped;
-    VkDeviceMemory memory;
-    VkDescriptorBufferInfo descriptor;
-};
-
 class GraphicalApplication
 {
 public:
