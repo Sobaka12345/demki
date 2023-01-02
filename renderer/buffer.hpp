@@ -1,5 +1,7 @@
 #pragma once
 
+#include "device.hpp"
+
 #include <vulkan/vulkan.h>
 #include <list>
 #include <memory>
@@ -37,14 +39,14 @@ public:
     };
 
 public:
-    static Buffer indexBuffer(VkDevice device, VkDeviceSize size);
-    static Buffer vertexBuffer(VkDevice device, VkDeviceSize size);
-    static Buffer stagingBuffer(VkDevice device, VkDeviceSize size);
+    static Buffer indexBuffer(const Device& device, VkDeviceSize size);
+    static Buffer vertexBuffer(const Device& device, VkDeviceSize size);
+    static Buffer stagingBuffer(const Device& device, VkDeviceSize size);
 
 public:
     Buffer(Buffer&& other);
     Buffer(const Buffer& other) = delete;
-    Buffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage,
+    Buffer(const Device& device, VkDeviceSize size, VkBufferUsageFlags usage,
         VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
     ~Buffer();
 
@@ -54,15 +56,15 @@ public:
     std::shared_ptr<Memory> memory() const { return m_memory; }
 
     bool bindMemory(uint32_t bindingOffset);
-    std::shared_ptr<Memory> allocateMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties);
-    std::shared_ptr<Memory> allocateAndBindMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t bindingOffset = 0);
+    std::shared_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties);
+    std::shared_ptr<Memory> allocateAndBindMemory(VkMemoryPropertyFlags properties, uint32_t bindingOffset = 0);
 
     void copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue queue, VkBufferCopy copyRegion);
 
 protected:
     VkBuffer m_buffer;
-    VkDevice m_device;
     VkDeviceSize m_size;
+    const Device& m_device;
     // TO DO: Implement multiple memory allocations
     std::shared_ptr<Memory> m_memory;
 };

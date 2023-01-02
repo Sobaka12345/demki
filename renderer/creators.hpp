@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <array>
 #include <cassert>
 #include <concepts>
@@ -15,6 +16,46 @@ concept IsArrayContainer = requires (const T& o) {
     o.data();
     o.size();
 };
+
+inline VkDeviceQueueCreateInfo deviceQueueCreateInfo(
+    uint32_t                    queueFamilyIndex,
+    const std::span<const float>      queuePriorities,
+    VkDeviceQueueCreateFlags    flags = 0,
+    const void*                 pNext = nullptr)
+{
+    VkDeviceQueueCreateInfo result;
+    result.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    result.queueFamilyIndex = queueFamilyIndex;
+    result.queueCount = static_cast<uint32_t>(queuePriorities.size());
+    result.pQueuePriorities = queuePriorities.data();
+    result.flags = flags;
+    result.pNext = pNext;
+
+    return result;
+}
+
+inline constexpr VkDeviceCreateInfo deviceCreateInfo(
+    const std::span<VkDeviceQueueCreateInfo> queueCreateInfos,
+    const std::span<const char* const> enabledExtensionNames,
+    const std::span<const char* const> enabledLayerNames = std::span<const char* const, 0>(),
+    const VkPhysicalDeviceFeatures*    pEnabledFeatures = nullptr,
+    VkDeviceCreateFlags                flags = 0,
+    const void*                        pNext = nullptr)
+{
+    VkDeviceCreateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    result.queueCreateInfoCount = static_cast<size_t>(queueCreateInfos.size());
+    result.pQueueCreateInfos = queueCreateInfos.data();
+    result.enabledLayerCount = static_cast<size_t>(enabledLayerNames.size());
+    result.ppEnabledLayerNames = enabledLayerNames.data();
+    result.enabledExtensionCount = static_cast<size_t>(enabledExtensionNames.size());
+    result.ppEnabledExtensionNames = enabledExtensionNames.data();
+    result.pEnabledFeatures = pEnabledFeatures;
+    result.flags = flags;
+    result.pNext = pNext;
+
+    return result;
+}
 
 inline constexpr VkBufferCopy bufferCopy(VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0)
 {

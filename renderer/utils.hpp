@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <span>
 #include <vector>
 #include <cassert>
 #include <cstring>
@@ -97,7 +98,7 @@ inline bool requiredExtensionsSupported(const std::vector<const char*>& required
     return true;
 }
 
-inline bool requiredValidationLayerSupported(const std::vector<const char*>& required)
+inline bool requiredValidationLayerSupported(const std::span<const char* const> required)
 {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -153,60 +154,6 @@ inline SwapChainSupportDetails swapChainSupportDetails(VkPhysicalDevice physical
     }
 
     return details;
-}
-
-struct QueueFamilyIndices
-{
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    std::set<uint32_t> uniqueQueueFamilies() const
-    {
-        if (isComplete())
-        {
-            return {
-                presentFamily.value(),
-                graphicsFamily.value(),
-            };
-        }
-        return {};
-    }
-
-    bool isComplete() const
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
-inline QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-    QueueFamilyIndices result;
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-    for (int i = 0; i < queueFamilies.size(); ++i)
-    {
-        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            result.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
-        if (presentSupport)
-        {
-            result.presentFamily = i;
-        }
-
-        if (result.isComplete())
-        {
-            return result;
-        }
-    }
-
-    return result;
 }
 
 }

@@ -51,7 +51,7 @@ void Buffer::Memory::unmap()
     }
 }
 
-Buffer Buffer::indexBuffer(VkDevice device, VkDeviceSize size)
+Buffer Buffer::indexBuffer(const Device& device, VkDeviceSize size)
 {
     return {
         device, size,
@@ -60,7 +60,7 @@ Buffer Buffer::indexBuffer(VkDevice device, VkDeviceSize size)
     };
 }
 
-Buffer Buffer::vertexBuffer(VkDevice device, VkDeviceSize size)
+Buffer Buffer::vertexBuffer(const Device& device, VkDeviceSize size)
 {
     return {
         device, size,
@@ -69,7 +69,7 @@ Buffer Buffer::vertexBuffer(VkDevice device, VkDeviceSize size)
     };
 }
 
-Buffer Buffer::stagingBuffer(VkDevice device, VkDeviceSize size)
+Buffer Buffer::stagingBuffer(const Device& device, VkDeviceSize size)
 {
     return {
         device, size,
@@ -87,7 +87,7 @@ Buffer::Buffer(Buffer&& other)
     other.m_buffer = VK_NULL_HANDLE;
 }
 
-Buffer::Buffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode)
+Buffer::Buffer(const Device& device, VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode)
     : m_device(device)
     , m_size(size)
 {
@@ -105,22 +105,22 @@ bool Buffer::bindMemory(uint32_t bindingOffset)
     return vkBindBufferMemory(m_device, m_buffer, m_memory->deviceMemory, bindingOffset) == VK_SUCCESS;
 }
 
-std::shared_ptr<Buffer::Memory> Buffer::allocateMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties)
+std::shared_ptr<Buffer::Memory> Buffer::allocateMemory(VkMemoryPropertyFlags properties)
 {
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(m_device, m_buffer, &memRequirements);
 
     m_memory = std::make_shared<Memory>(*this, create::memoryAllocateInfo(
         memRequirements.size,
-        utils::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties))
+        utils::findMemoryType(m_device.physicalDevice(), memRequirements.memoryTypeBits, properties))
     );
 
     return m_memory;
 }
 
-std::shared_ptr<Buffer::Memory> Buffer::allocateAndBindMemory(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlags properties, uint32_t bindingOffset)
+std::shared_ptr<Buffer::Memory> Buffer::allocateAndBindMemory(VkMemoryPropertyFlags properties, uint32_t bindingOffset)
 {
-    allocateMemory(physicalDevice, properties);
+    allocateMemory(properties);
     assert(bindMemory(bindingOffset));
     return m_memory;
 }

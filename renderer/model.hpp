@@ -6,20 +6,16 @@
 #include <memory>
 #include <vector>
 
-template <typename VertexType>
+//template <typename VertexType, typename IndexType = uint16_t>
 class Model
 {
-    Model(std::span<VertexType> vertices, std::span<uint16_t> indices)
+    Model(vk::Buffer vertices, vk::Buffer indices)
+        : m_indexBuffer(std::make_unique<vk::Buffer>(std::move(indices)))
+        , m_vertexBuffer(std::make_unique<vk::Buffer>(std::move(vertices)))
     {
-
-    }
-
-    vk::Buffer buffer() const
-    {
-
     }
 
 private:
-    std::unique_ptr<vk::Buffer> m_vertexBuffer;
     std::unique_ptr<vk::Buffer> m_indexBuffer;
+    std::unique_ptr<vk::Buffer> m_vertexBuffer;
 };

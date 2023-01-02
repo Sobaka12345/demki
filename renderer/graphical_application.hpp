@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.hpp"
+#include "device.hpp"
 
 #include <set>
 #include <string>
@@ -27,6 +27,10 @@
 
 class GraphicalApplication
 {
+public:
+    const static bool s_enableValidationLayers;
+    const static std::array<const char*, 5> s_validationLayers;
+
 public:
     int exec();
 
@@ -68,8 +72,6 @@ private:
     virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) = 0;
     void drawFrame();
 
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
         VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat findDepthFormat();
@@ -89,8 +91,6 @@ private:
     bool m_framebufferResized;
     bool m_windowIconified;
 
-    vk::utils::QueueFamilyIndices m_queueFamilyIndices;
-
 protected:
     uint8_t m_currentFrame;
     int m_maxFramesInFlight;
@@ -99,9 +99,7 @@ protected:
     VkSurfaceKHR m_vkSurface;
     VkQueue m_vkPresentQueue;
     VkQueue m_vkGraphicsQueue;
-    VkDevice m_vkLogicalDevice;
-    VkPhysicalDevice m_vkPhysicalDevice;
-    VkPhysicalDeviceLimits m_vkPhysicalDeviceLimits;
+    std::unique_ptr<vk::Device> m_device;
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
     VkExtent2D m_vkSwapChainExtent;
     VkCommandPool m_vkCommandPool;
