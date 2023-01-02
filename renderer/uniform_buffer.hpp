@@ -22,8 +22,6 @@ template<typename Layout>
 class UniformBuffer: public Buffer
 {
 public:
-    UniformBuffer(): Buffer() {}
-
     UniformBuffer(VkPhysicalDeviceLimits limits, VkDevice device, uint32_t objectsCount)
         : Buffer(device, (m_dynamicAlignment = dynamicAlignment(limits)) * objectsCount, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
     {

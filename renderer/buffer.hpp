@@ -42,7 +42,8 @@ public:
     static Buffer stagingBuffer(VkDevice device, VkDeviceSize size);
 
 public:
-    Buffer();
+    Buffer(Buffer&& other);
+    Buffer(const Buffer& other) = delete;
     Buffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage,
         VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
     ~Buffer();

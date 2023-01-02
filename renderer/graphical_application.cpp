@@ -734,7 +734,7 @@ void GraphicalApplication::createImage(uint32_t width, uint32_t height,
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(m_vkLogicalDevice, image, &memRequirements);
 
-    auto allocInfo = create::memoryAllocateInfo(memRequirements.size,
+    const auto allocInfo = create::memoryAllocateInfo(memRequirements.size,
         utils::findMemoryType(m_vkPhysicalDevice, memRequirements.memoryTypeBits, properties));
 
     if (vkAllocateMemory(m_vkLogicalDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)

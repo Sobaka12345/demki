@@ -2,6 +2,7 @@
 
 #include "../renderer/graphical_application.hpp"
 #include "../renderer/uniform_buffer.hpp"
+
 #include <memory>
 
 class Tetris: public GraphicalApplication
@@ -30,11 +31,11 @@ private:
     VkDescriptorPool m_vkDescriptorPool;
     VkDescriptorSetLayout m_vkDescriptorSetLayout;
 
-    vk::Buffer m_indexBuffer;
-    vk::Buffer m_vertexBuffer;
-    vk::UniformBuffer<vk::UBOModel> m_model;
-    vk::UniformBuffer<vk::UBOViewProjection> m_viewProjection;
-    vk::UBOModel* m_modelBuffers;
+    std::unique_ptr<vk::Buffer> m_vertexBuffer;
+    std::unique_ptr<vk::Buffer> m_indexBuffer;
+    std::unique_ptr<vk::UniformBuffer<vk::UBOModel>> m_modelBuffer;
+    std::unique_ptr<vk::UniformBuffer<vk::UBOViewProjection>> m_viewProjectionBuffer;
 
     VkDescriptorSet m_vkDescriptorSet;
+    vk::UBOModel* m_modelBuffers;
 };

@@ -78,8 +78,13 @@ Buffer Buffer::stagingBuffer(VkDevice device, VkDeviceSize size)
     };
 }
 
-Buffer::Buffer()
+Buffer::Buffer(Buffer&& other)
+    : m_buffer(std::move(other.m_buffer))
+    , m_device(std::move(other.m_device))
+    , m_size(std::move(other.m_size))
+    , m_memory(std::move(other.m_memory))
 {
+    other.m_buffer = VK_NULL_HANDLE;
 }
 
 Buffer::Buffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode)

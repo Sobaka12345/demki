@@ -39,7 +39,7 @@ static constexpr std::array<uint16_t, 36> s_cubeIndices = {
 };
 
 static constexpr auto s_objectCount = 50;
-static auto s_viewProj = UBOViewProjection{};
+static UBOViewProjection s_viewProjection;
 
 Tetris::~Tetris()
 {
@@ -106,73 +106,74 @@ void Tetris::createVertexBuffer()
 {
     VkDeviceSize bufferSize = sizeof(s_cubeVertices[0]) * s_cubeVertices.size();
 
-    Buffer stagingBuffer(m_vkLogicalDevice, bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE);
-    stagingBuffer.allocateAndBindMemory(m_vkPhysicalDevice,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    m_vertexBuffer = std::make_unique<Buffer>(Buffer::vertexBuffer(m_vkLogicalDevice, bufferSize));
+    m_vertexBuffer->allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    auto mappedMemory = stagingBuffer.memory()->map();
-    mappedMemory->write(s_cubeVertices.data(), bufferSize);
+    Buffer stagingBuffer = Buffer::stagingBuffer(m_vkLogicalDevice, bufferSize);
+    stagingBuffer.allocateAndBindMemory(m_vkPhysicalDevice,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+        ->map()
+        ->write(s_cubeVertices.data(), bufferSize);
     stagingBuffer.memory()->unmap();
 
-    m_vertexBuffer = Buffer(
-        m_vkLogicalDevice, bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_SHARING_MODE_EXCLUSIVE);
-    m_vertexBuffer.allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    stagingBuffer.copyTo(m_vertexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
+    stagingBuffer.copyTo(*m_vertexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
 }
 
 void Tetris::createIndexBuffer()
 {
     VkDeviceSize bufferSize = sizeof(s_cubeIndices[0]) * s_cubeIndices.size();
 
+    m_indexBuffer = std::make_unique<Buffer>(
+        m_vkLogicalDevice, bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_SHARING_MODE_EXCLUSIVE);
+    m_indexBuffer->allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
     Buffer stagingBuffer = Buffer::stagingBuffer(m_vkLogicalDevice, bufferSize);
     stagingBuffer.allocateAndBindMemory(m_vkPhysicalDevice,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+        ->map()
+        ->write(s_cubeIndices.data(), bufferSize);
 
-    auto mappedMemory = stagingBuffer.memory()->map();
-    mappedMemory->write(s_cubeIndices.data(), bufferSize);
     stagingBuffer.memory()->unmap();
-
-    m_indexBuffer = Buffer::indexBuffer(m_vkLogicalDevice, bufferSize);
-    m_indexBuffer.allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    stagingBuffer.copyTo(m_indexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
+    stagingBuffer.copyTo(*m_indexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
 }
 
 void Tetris::createUniformBuffers()
 {
-    m_model = UniformBuffer<UBOModel>(m_vkPhysicalDeviceLimits, m_vkLogicalDevice, s_objectCount);
-    m_model.allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-    ->map();
+    m_modelBuffer = std::make_unique<UniformBuffer<UBOModel>>(
+        m_vkPhysicalDeviceLimits, m_vkLogicalDevice, s_objectCount);
+    m_modelBuffer
+        ->allocateAndBindMemory(m_vkPhysicalDevice, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+        ->map();
 
     m_modelBuffers = reinterpret_cast<UBOModel*>(
-        std::aligned_alloc(
-            m_model.dynamicAlignment(), s_objectCount * m_model.dynamicAlignment()));
+        std::aligned_alloc(m_modelBuffer->dynamicAlignment(),
+            s_objectCount * m_modelBuffer->dynamicAlignment()));
 
-    m_viewProjection = UniformBuffer<UBOViewProjection>(m_vkPhysicalDeviceLimits, m_vkLogicalDevice, 1);
-    m_viewProjection.allocateAndBindMemory(m_vkPhysicalDevice,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-    ->map();
+    m_viewProjectionBuffer = std::make_unique<UniformBuffer<UBOViewProjection>>(
+        m_vkPhysicalDeviceLimits, m_vkLogicalDevice, 1);
+    m_viewProjectionBuffer
+        ->allocateAndBindMemory(m_vkPhysicalDevice,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+        ->map();
 
     updateUniformBuffer(1);
-    //updateDynUniformBuffer(1);
+    updateDynUniformBuffer(1);
 }
 
 void Tetris::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes{
-        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 2),
-        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
+        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1),
+        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
     };
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = m_maxFramesInFlight * 2;
+    poolInfo.maxSets = 2;
 
     if (vkCreateDescriptorPool(m_vkLogicalDevice, &poolInfo, nullptr, &m_vkDescriptorPool) != VK_SUCCESS)
     {
@@ -192,52 +193,45 @@ void Tetris::createDescriptorSets()
 
     std::array<VkWriteDescriptorSet, 2> writes = {
         create::writeDescriptorSet(m_vkDescriptorSet, 0,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, m_model.descriptor()),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, m_modelBuffer->descriptor()),
         create::writeDescriptorSet(m_vkDescriptorSet, 1,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, m_viewProjection.descriptor()),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, m_viewProjectionBuffer->descriptor()),
     };
     vkUpdateDescriptorSets(m_vkLogicalDevice, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 
 void Tetris::updateUniformBuffer(uint32_t currentImage)
 {
-//    static auto startTime = std::chrono::high_resolution_clock::now();
-
-//    auto currentTime = std::chrono::high_resolution_clock::now();
-//    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-     s_viewProj.view = glm::lookAt(
-         glm::vec3(3.0f, 3.0f, 3.0f),
-         glm::vec3(0.0f, 0.0f, 0.0f),
-         glm::vec3(0.0f, 0.0f, 1.0f));
-     s_viewProj.projection = glm::perspective(
-         glm::radians(90.0f),
-         m_vkSwapChainExtent.width / static_cast<float>(m_vkSwapChainExtent.height),
-         0.1f,
-         20.0f);
-     s_viewProj.projection[1][1] *= -1;
-     m_viewProjection.memory()->mapped->write(&s_viewProj, m_viewProjection.dynamicAlignment());
+    s_viewProjection.view = glm::lookAt(
+        glm::vec3(3.0f, 3.0f, 3.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f));
+    s_viewProjection.projection = glm::perspective(
+        glm::radians(90.0f),
+        m_vkSwapChainExtent.width / static_cast<float>(m_vkSwapChainExtent.height),
+        0.1f,
+        20.0f);
+    s_viewProjection.projection[1][1] *= -1;
+    m_viewProjectionBuffer->memory()->mapped->write(&s_viewProjection, sizeof(s_viewProjection));
 }
 
 void Tetris::updateDynUniformBuffer(uint32_t currentImage)
 {
+    const uint32_t dynamicAlignment = m_modelBuffer->dynamicAlignment();
     for(uint32_t i = 0; i < s_objectCount; ++i)
     {
-        glm::mat4* model = reinterpret_cast<glm::mat4*>(
-            reinterpret_cast<uint64_t>(m_modelBuffers) + i * m_model.dynamicAlignment());
+        UBOModel* model = reinterpret_cast<UBOModel*>(reinterpret_cast<ptrdiff_t>(m_modelBuffers) + i * dynamicAlignment);
 
-        *model = glm::translate(glm::mat4(1.0f), -glm::vec3(0.0f, i * 1.0f, 0.0f));
-        *model = glm::rotate(
-            *model,
+        model->model = glm::translate(glm::mat4x4(1.0f), -glm::vec3(0.0f, i * 1.0f, 0.0f));
+        model->model = glm::rotate(
+            model->model,
             glm::radians(90.0f),
             glm::vec3(0.0f, 0.0f, 1.0f));
     }
-
-    m_model.memory()->mapped->write(m_modelBuffers, m_model.dynamicAlignment() * s_objectCount);
-
+    m_modelBuffer->memory()->mapped->write(m_modelBuffers, dynamicAlignment * s_objectCount);
     VkMappedMemoryRange memoryRange{};
-    memoryRange.memory = m_model.memory()->deviceMemory;
-    memoryRange.size = m_model.dynamicAlignment() * s_objectCount;
+    memoryRange.memory = m_modelBuffer->memory()->deviceMemory;
+    memoryRange.size = dynamicAlignment * s_objectCount;
     vkFlushMappedMemoryRanges(m_vkLogicalDevice, 1, &memoryRange);
 }
 
@@ -282,13 +276,13 @@ void Tetris::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIn
     scissor.extent = m_vkSwapChainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = {m_vertexBuffer.buffer()};
+    VkBuffer vertexBuffers[] = {m_vertexBuffer->buffer()};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
     for(uint32_t i = 0; i < s_objectCount; ++i)
     {
-        uint32_t offset = i * m_model.dynamicAlignment();
+        uint32_t offset = i * m_modelBuffer->dynamicAlignment();
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_vkPipelineLayout, 0, 1, &m_vkDescriptorSet, 1, &offset);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(s_cubeIndices.size()), 1, 0, 0, 0);
