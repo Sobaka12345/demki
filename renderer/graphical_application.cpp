@@ -1,7 +1,6 @@
 #include "graphical_application.hpp"
 
 #include "vertex.hpp"
-#include "creators.hpp"
 
 #include <limits>
 #include <fstream>
@@ -122,8 +121,13 @@ GraphicalApplication::~GraphicalApplication()
 
 int GraphicalApplication::mainLoop()
 {
+    auto start = std::chrono::steady_clock::now();
     while (!glfwWindowShouldClose(m_window))
     {
+        auto end = std::chrono::steady_clock::now();
+        auto dt = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        update(dt);
+        start = end;
         glfwPollEvents();
         drawFrame();
     }
@@ -490,7 +494,7 @@ VkPipeline GraphicalApplication::defaultGraphicsPipeline(VkDevice device,
         VK_FALSE, VK_FALSE,
         VK_POLYGON_MODE_FILL,
         VK_CULL_MODE_BACK_BIT,
-        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FRONT_FACE_CLOCKWISE,
         VK_FALSE
     );
 

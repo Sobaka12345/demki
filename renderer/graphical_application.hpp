@@ -1,6 +1,8 @@
 #pragma once
 
 #include "device.hpp"
+#include "buffer.hpp"
+#include "creators.hpp"
 
 #include <set>
 #include <string>
@@ -56,7 +58,6 @@ private:
     // Vulkan
     void createInstance();
     void setupDebugMessenger();
-    void pickPhysicalDevice();
     void createLogicalDevice();
     void createSwapChain();
     void recreateSwapChain();
@@ -69,6 +70,7 @@ private:
     void createCommandBuffers();
     void createSyncObjects();
 
+    virtual void update(int64_t dt) = 0;
     virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) = 0;
     void drawFrame();
 
@@ -90,6 +92,26 @@ private:
     int m_windowHeight;
     bool m_framebufferResized;
     bool m_windowIconified;
+
+protected:
+    template <template <typename> class BufferType, class BufferData>
+    inline BufferType<BufferData>* createAndWriteGPUBuffer(const std::span<const BufferData> data)
+    {
+        BufferType<BufferData>* buffer = new BufferType<BufferData>(*m_device, data);
+        buffer->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        vk::StagingBuffer stagingBuffer(*m_device, buffer->size());
+        stagingBuffer.allocateAndBindMemory(
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+            ->map()
+            ->write(data.data(), buffer->size());
+        stagingBuffer.memory()->unmap();
+
+        stagingBuffer.copyTo(*buffer, m_vkCommandPool, m_vkGraphicsQueue,
+            vk::create::bufferCopy(buffer->size()));
+
+        return buffer;
+    }
 
 protected:
     uint8_t m_currentFrame;

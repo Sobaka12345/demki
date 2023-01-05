@@ -1,6 +1,7 @@
 #include "buffer.hpp"
 
 #include "creators.hpp"
+#include <iostream>
 
 namespace vk {
 
@@ -17,9 +18,26 @@ Buffer::Memory::Mapped::~Mapped()
     vkUnmapMemory(memory.buffer.device(), memory.deviceMemory);
 }
 
-void Buffer::Memory::Mapped::write(const void* src, VkDeviceSize size)
+void Buffer::Memory::Mapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
 {
-    std::memcpy(data, src, static_cast<size_t>(size));
+    std::memcpy(
+        reinterpret_cast<void*>(reinterpret_cast<ptrdiff_t>(data) + offset),
+        src, static_cast<size_t>(size));
+}
+
+void Buffer::Memory::Mapped::sync(VkDeviceSize size, ptrdiff_t offset)
+{
+    VkMappedMemoryRange memoryRange{};
+    memoryRange.memory = memory.deviceMemory;
+    memoryRange.size = size;
+    memoryRange.offset = static_cast<VkDeviceSize>(offset);
+    vkFlushMappedMemoryRanges(memory.buffer.device(), 1, &memoryRange);
+}
+
+void Buffer::Memory::Mapped::writeAndSync(const void *src, VkDeviceSize size, ptrdiff_t offset)
+{
+    write(src, size, offset);
+    sync(size, offset);
 }
 
 Buffer::Memory::Memory(const Buffer& buffer, VkMemoryAllocateInfo allocInfo)
@@ -49,33 +67,6 @@ void Buffer::Memory::unmap()
     {
         mapped.reset();
     }
-}
-
-Buffer Buffer::indexBuffer(const Device& device, VkDeviceSize size)
-{
-    return {
-        device, size,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VK_SHARING_MODE_EXCLUSIVE
-    };
-}
-
-Buffer Buffer::vertexBuffer(const Device& device, VkDeviceSize size)
-{
-    return {
-        device, size,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_SHARING_MODE_EXCLUSIVE
-    };
-}
-
-Buffer Buffer::stagingBuffer(const Device& device, VkDeviceSize size)
-{
-    return {
-        device, size,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_SHARING_MODE_EXCLUSIVE
-    };
 }
 
 Buffer::Buffer(Buffer&& other)

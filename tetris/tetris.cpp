@@ -1,10 +1,50 @@
 #include "tetris.hpp"
 
-#include "../renderer/buffer.hpp"
+#include "field.hpp"
+
+#include "../renderer/model.hpp"
 #include "../renderer/vertex.hpp"
 #include "../renderer/creators.hpp"
 
 using namespace vk;
+
+class TetrisDSL : public DescriptorSetLayout
+{
+public:
+    constexpr static VkDescriptorSetLayoutBinding s_modelBinding =
+        create::setLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 0);
+    constexpr static VkDescriptorSetLayoutBinding s_cameraBinding =
+        create::setLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1);
+
+    constexpr static std::array s_layoutBindings = { s_modelBinding, s_cameraBinding };
+
+public:
+    TetrisDSL(const Device& device)
+        : DescriptorSetLayout(device, create::descriptorSetLayoutCreateInfo(s_layoutBindings))
+    {}
+};
+
+class TetrisDP : public DescriptorPool
+{
+public:
+    TetrisDP(const Device& device)
+        : DescriptorPool(device, 2,
+            std::array<VkDescriptorPoolSize, 2> {
+                create::descriptorPoolSize(TetrisDSL::s_modelBinding.descriptorType, 1),
+                create::descriptorPoolSize(TetrisDSL::s_cameraBinding.descriptorType, 1),
+            }
+        )
+    {}
+};
+
+class TetrisCamera : public UBOValue<UBOViewProjection>
+{
+public:
+    TetrisCamera(const DescriptorSet* descriptorSet, std::shared_ptr<UBOHandler> handler)
+        : UBOValue<UBOViewProjection>(descriptorSet, handler)
+    {
+    }
+};
 
 static constexpr std::array<Vertex3DColored, 8> s_cubeVertices = {
     Vertex3DColored{{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}}, //0
@@ -38,114 +78,37 @@ static constexpr std::array<uint16_t, 36> s_cubeIndices = {
         7, 5, 4
 };
 
-static constexpr auto s_objectCount = 50;
+static constexpr auto s_maxObjectCount = 50;
 static UBOViewProjection s_viewProjection;
+
+Tetris::Tetris()
+    : m_timer(0)
+{
+}
 
 Tetris::~Tetris()
 {
-    std::free(m_modelBuffers);
-
-    vkDestroyDescriptorPool(*m_device, m_vkDescriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(*m_device, m_vkDescriptorSetLayout, nullptr);
-
     vkDestroyPipeline(*m_device, m_vkPipeline, nullptr);
     vkDestroyPipelineLayout(*m_device, m_vkPipelineLayout, nullptr);
 }
 
 void Tetris::initApplication()
 {
+    m_descriptorSetLayout = std::make_unique<TetrisDSL>(*m_device);
+
     // Render Pipeline
     createGraphicsPipeline();
 
     // Resources
-    createVertexBuffer();
-    createIndexBuffer();
-    createUniformBuffers();
-    createDescriptorPool();
-    createDescriptorSets();
-}
-
-void Tetris::createGraphicsPipeline()
-{
-    const VkDescriptorSetLayoutCreateInfo layoutInfo = create::descriptorSetLayoutCreateInfo(
-        std::array<VkDescriptorSetLayoutBinding, 2> {
-            create::setLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 0),
-            create::setLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1)
-        }
+    m_cube = Model::create(
+        createAndWriteGPUBuffer<VertexBufferT, Vertex3DColored>(s_cubeVertices),
+        createAndWriteGPUBuffer<IndexBufferT, uint16_t>(s_cubeIndices)
     );
 
-    if (vkCreateDescriptorSetLayout(*m_device, &layoutInfo, nullptr, &m_vkDescriptorSetLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
-
-    const auto vertShaderCode = utils::fs::readFile("./shaders/shader.vert.spv");
-    const auto fragShaderCode = utils::fs::readFile("./shaders/shader.frag.spv");
-    const auto vertShaderModule = create::shaderModule(*m_device, vertShaderCode);
-    const auto fragShaderModule = create::shaderModule(*m_device, fragShaderCode);
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = create::pipelineLayoutCreateInfo(
-        std::array<VkDescriptorSetLayout, 1>{m_vkDescriptorSetLayout},
-        std::array<VkPushConstantRange, 0>{}
-    );
-
-    if (vkCreatePipelineLayout(*m_device, &pipelineLayoutInfo, nullptr, &m_vkPipelineLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
-
-    m_vkPipeline = defaultGraphicsPipeline(*m_device, m_vkRenderPass,
-        m_vkPipelineLayout, vertShaderModule, fragShaderModule);
-
-    vkDestroyShaderModule(*m_device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(*m_device, vertShaderModule, nullptr);
-}
-
-
-void Tetris::createVertexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(s_cubeVertices[0]) * s_cubeVertices.size();
-
-    m_vertexBuffer = std::make_unique<Buffer>(Buffer::vertexBuffer(*m_device, bufferSize));
-    m_vertexBuffer->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    Buffer stagingBuffer = Buffer::stagingBuffer(*m_device, bufferSize);
-    stagingBuffer.allocateAndBindMemory(
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-        ->map()
-        ->write(s_cubeVertices.data(), bufferSize);
-    stagingBuffer.memory()->unmap();
-
-    stagingBuffer.copyTo(*m_vertexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
-}
-
-void Tetris::createIndexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(s_cubeIndices[0]) * s_cubeIndices.size();
-
-    m_indexBuffer = std::make_unique<Buffer>(Buffer::indexBuffer(*m_device, bufferSize));
-    m_indexBuffer->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    Buffer stagingBuffer = Buffer::stagingBuffer(*m_device, bufferSize);
-    stagingBuffer.allocateAndBindMemory(
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-        ->map()
-        ->write(s_cubeIndices.data(), bufferSize);
-
-    stagingBuffer.memory()->unmap();
-    stagingBuffer.copyTo(*m_indexBuffer, m_vkCommandPool, m_vkGraphicsQueue, create::bufferCopy(bufferSize));
-}
-
-void Tetris::createUniformBuffers()
-{
-    m_modelBuffer = std::make_unique<UniformBuffer<UBOModel>>(*m_device, s_objectCount);
+    m_modelBuffer = std::make_unique<UniformBuffer<UBOModel>>(*m_device, Field::s_objectsCount);
     m_modelBuffer
         ->allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         ->map();
-
-    m_modelBuffers = reinterpret_cast<UBOModel*>(
-        std::aligned_alloc(m_modelBuffer->dynamicAlignment(),
-            s_objectCount * m_modelBuffer->dynamicAlignment()));
 
     m_viewProjectionBuffer = std::make_unique<UniformBuffer<UBOViewProjection>>(*m_device, 1);
     m_viewProjectionBuffer
@@ -153,84 +116,63 @@ void Tetris::createUniformBuffers()
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
         ->map();
 
-    updateUniformBuffer(1);
-    updateDynUniformBuffer(1);
+    m_descriptorPool = std::make_unique<TetrisDP>(*m_device);
+    m_descriptorSet = m_descriptorPool->allocateSet(*m_descriptorSetLayout, m_vkPipelineLayout);
+    m_descriptorSet->write(std::array{
+        DescriptorSet::Write{m_modelBuffer->descriptorBufferInfo(), TetrisDSL::s_modelBinding},
+        DescriptorSet::Write{m_viewProjectionBuffer->descriptorBufferInfo(), TetrisDSL::s_cameraBinding},
+    });
+
+    // TO DO: MOVE TO CAMERA CLASS
+    {
+        m_camera = std::make_unique<TetrisCamera>(
+            m_descriptorSet.get(),
+            m_viewProjectionBuffer->tryGetUBOHandler());
+
+        const float fov = 45.0f;
+        const float distance = Field::s_height * 90.0f / fov;
+        UBOViewProjection viewProjection;
+        viewProjection.view = glm::lookAt(
+            glm::vec3(1.0f * Field::s_width / 2.0f, 1.0f * Field::s_height / 2.0f, distance),
+            glm::vec3(1.0f * Field::s_width / 2.0f, 1.0f * Field::s_height / 2.0f, 0.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f));
+        viewProjection.projection = glm::perspective(
+            glm::radians(fov),
+            m_vkSwapChainExtent.width / static_cast<float>(m_vkSwapChainExtent.height),
+            0.1f,
+            distance + 1.0f);
+        m_camera->set(viewProjection);
+    }
+
+    m_field = std::make_shared<Field>(m_descriptorSet.get(), m_modelBuffer.get());
+    m_field->setModel(m_cube);
+    m_renderer.pushObject(m_field);
 }
 
-void Tetris::createDescriptorPool()
+void Tetris::update(int64_t dt)
 {
-    std::array<VkDescriptorPoolSize, 2> poolSizes{
-        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1),
-        create::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
-    };
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-    poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = 2;
-
-    if (vkCreateDescriptorPool(*m_device, &poolInfo, nullptr, &m_vkDescriptorPool) != VK_SUCCESS)
+    static int kke = 1;
+    m_timer += dt;
+    if (m_timer >= 500000000)
     {
-        throw std::runtime_error("failed to create descriptor pool!");
+        m_timer = 0;
+        kke--;
+        if (kke == 0)
+        {
+            auto block = FiguresMaker::createRandomFigure(m_descriptorSet.get(), m_modelBuffer.get());
+            block->setModel(m_cube);
+            m_blocks.push_back(block);
+            m_renderer.pushObject(block);
+            kke = 2;
+        }
+        for(auto& x: m_blocks)
+        {
+            x->move(1, 1);
+        }
     }
 }
 
-void Tetris::createDescriptorSets()
-{
-    const auto allocInfo =
-        create::descriptorSetAllocateInfo(m_vkDescriptorPool, &m_vkDescriptorSetLayout, 1);
-
-    if (vkAllocateDescriptorSets(*m_device, &allocInfo, &m_vkDescriptorSet) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate descriptor sets!");
-    }
-
-    std::array<VkWriteDescriptorSet, 2> writes = {
-        create::writeDescriptorSet(m_vkDescriptorSet, 0,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, m_modelBuffer->descriptor()),
-        create::writeDescriptorSet(m_vkDescriptorSet, 1,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, m_viewProjectionBuffer->descriptor()),
-    };
-    vkUpdateDescriptorSets(*m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-}
-
-void Tetris::updateUniformBuffer(uint32_t currentImage)
-{
-    s_viewProjection.view = glm::lookAt(
-        glm::vec3(3.0f, 3.0f, 3.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f));
-    s_viewProjection.projection = glm::perspective(
-        glm::radians(90.0f),
-        m_vkSwapChainExtent.width / static_cast<float>(m_vkSwapChainExtent.height),
-        0.1f,
-        20.0f);
-    s_viewProjection.projection[1][1] *= -1;
-    m_viewProjectionBuffer->memory()->mapped->write(&s_viewProjection, sizeof(s_viewProjection));
-}
-
-void Tetris::updateDynUniformBuffer(uint32_t currentImage)
-{
-    const uint32_t dynamicAlignment = m_modelBuffer->dynamicAlignment();
-    for(uint32_t i = 0; i < s_objectCount; ++i)
-    {
-        UBOModel* model = reinterpret_cast<UBOModel*>(
-            reinterpret_cast<ptrdiff_t>(m_modelBuffers) + i * dynamicAlignment);
-
-        model->model = glm::translate(glm::mat4x4(1.0f), -glm::vec3(0.0f, i * 1.0f, 0.0f));
-        model->model = glm::rotate(
-            model->model,
-            glm::radians(90.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f));
-    }
-    m_modelBuffer->memory()->mapped->write(m_modelBuffers, dynamicAlignment * s_objectCount);
-    VkMappedMemoryRange memoryRange{};
-    memoryRange.memory = m_modelBuffer->memory()->deviceMemory;
-    memoryRange.size = dynamicAlignment * s_objectCount;
-    vkFlushMappedMemoryRanges(*m_device, 1, &memoryRange);
-}
-
+// TO DO: POSSIBLY MOVE COMMAND BUFFER TO Renderer CLASS?
 void Tetris::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     VkCommandBufferBeginInfo beginInfo{};
@@ -272,21 +214,35 @@ void Tetris::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIn
     scissor.extent = m_vkSwapChainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = {m_vertexBuffer->buffer()};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
-    for(uint32_t i = 0; i < s_objectCount; ++i)
-    {
-        uint32_t offset = i * m_modelBuffer->dynamicAlignment();
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_vkPipelineLayout, 0, 1, &m_vkDescriptorSet, 1, &offset);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(s_cubeIndices.size()), 1, 0, 0, 0);
-    }
+    m_renderer.draw(commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to record command buffer!");
     }
+}
+
+void Tetris::createGraphicsPipeline()
+{
+    const auto vertShaderCode = utils::fs::readFile("./shaders/shader.vert.spv");
+    const auto fragShaderCode = utils::fs::readFile("./shaders/shader.frag.spv");
+    const auto vertShaderModule = create::shaderModule(*m_device, vertShaderCode);
+    const auto fragShaderModule = create::shaderModule(*m_device, fragShaderCode);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = create::pipelineLayoutCreateInfo(
+        std::array<VkDescriptorSetLayout, 1>{*m_descriptorSetLayout},
+        std::array<VkPushConstantRange, 0>{}
+    );
+
+    if (vkCreatePipelineLayout(*m_device, &pipelineLayoutInfo, nullptr, &m_vkPipelineLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+
+    m_vkPipeline = defaultGraphicsPipeline(*m_device, m_vkRenderPass,
+        m_vkPipelineLayout, vertShaderModule, fragShaderModule);
+
+    vkDestroyShaderModule(*m_device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(*m_device, vertShaderModule, nullptr);
 }

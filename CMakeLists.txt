@@ -26,7 +26,15 @@ find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 
 add_executable(${PROJECT_NAME} main.cpp
-        renderer/device.hpp
+        renderer/ubo_value.hpp
+	renderer/descriptor_set.hpp
+	renderer/descriptor_pool.hpp
+	renderer/descriptor_pool.cpp
+	renderer/renderer.hpp
+	renderer/renderer.cpp
+	renderer/renderable.hpp
+	renderer/renderable.cpp
+	renderer/device.hpp
 	renderer/device.cpp
 	renderer/buffer.hpp
 	renderer/buffer.cpp
@@ -42,6 +50,10 @@ add_executable(${PROJECT_NAME} main.cpp
     tetris/tetris.cpp
     tetris/figure.hpp
     tetris/figure.cpp
+    tetris/field.hpp
+    tetris/field.cpp
+    tetris/position.hpp
+    tetris/position.cpp
     ${SHADER_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan glm::glm)

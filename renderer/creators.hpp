@@ -334,6 +334,23 @@ inline constexpr VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(
     return result;
 }
 
+inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(
+    uint32_t                       maxSets,
+    std::span<const VkDescriptorPoolSize> poolSizes,
+    VkDescriptorPoolCreateFlags    flags = 0,
+    const void*                    pNext = nullptr)
+{
+    VkDescriptorPoolCreateInfo result;
+    result.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    result.pNext = pNext;
+    result.flags = flags;
+    result.maxSets = maxSets;
+    result.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    result.pPoolSizes = poolSizes.data();
+
+    return result;
+}
+
 inline constexpr VkDescriptorPoolSize descriptorPoolSize(VkDescriptorType type, uint32_t descriptorCount)
 {
     VkDescriptorPoolSize descriptorPoolSize{};
@@ -344,7 +361,7 @@ inline constexpr VkDescriptorPoolSize descriptorPoolSize(VkDescriptorType type, 
 }
 
 inline constexpr VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(
-            VkDescriptorPool descriptorPool, const VkDescriptorSetLayout* pSetLayouts, uint32_t descriptorSetCount)
+    VkDescriptorPool descriptorPool, const VkDescriptorSetLayout* pSetLayouts, uint32_t descriptorSetCount)
 {
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
