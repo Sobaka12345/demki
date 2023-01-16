@@ -6,6 +6,8 @@
 #include "../renderer/vertex.hpp"
 #include "../renderer/creators.hpp"
 
+#include <iostream>
+
 using namespace vk;
 
 class TetrisDSL : public DescriptorSetLayout
@@ -78,12 +80,10 @@ static constexpr std::array<uint16_t, 36> s_cubeIndices = {
         7, 5, 4
 };
 
-static constexpr auto s_maxObjectCount = 50;
-static UBOViewProjection s_viewProjection;
-
 Tetris::Tetris()
-    : m_timer(0)
 {
+    m_timer.setIntervalMS(500);
+    m_keyPressTimer.setIntervalMS(100);
 }
 
 Tetris::~Tetris()
@@ -147,27 +147,38 @@ void Tetris::initApplication()
     m_field = std::make_shared<Field>(m_descriptorSet.get(), m_modelBuffer.get());
     m_field->setModel(m_cube);
     m_renderer.pushObject(m_field);
+
+    m_field->flushRowsAndSpawnFigure();
 }
 
 void Tetris::update(int64_t dt)
 {
-    static int kke = 1;
-    m_timer += dt;
-    if (m_timer >= 500000000)
+    if(m_keyPressTimer.timePassed(dt))
     {
-        m_timer = 0;
-        kke--;
-        if (kke == 0)
+        const int stateLeft = glfwGetKey(m_window, GLFW_KEY_LEFT);
+        const int stateRight = glfwGetKey(m_window, GLFW_KEY_RIGHT);
+        const int stateDown = glfwGetKey(m_window, GLFW_KEY_DOWN);
+        const int stateRotate = glfwGetKey(m_window, GLFW_KEY_SPACE);
+        const int32_t dx = (stateRight == GLFW_PRESS) - (stateLeft == GLFW_PRESS);
+        const int32_t dy = (stateDown == GLFW_PRESS);
+        if (dx || dy)
         {
-            auto block = FiguresMaker::createRandomFigure(m_descriptorSet.get(), m_modelBuffer.get());
-            block->setModel(m_cube);
-            m_blocks.push_back(block);
-            m_renderer.pushObject(block);
-            kke = 2;
+            m_field->tryMoveFigure(dx, dy);
         }
-        for(auto& x: m_blocks)
+        if (stateRotate == GLFW_PRESS)
         {
-            x->move(1, 1);
+            m_field->tryRotateFigure();
+        }
+    }
+    if (m_timer.timePassed(dt))
+    {
+        if (!m_field->tryMoveFigure(0, 1))
+        {
+            if (m_field->isBlocksOverflow())
+            {
+                std::cout << "YOU ARE LOSER" << std::endl;
+            }
+            std::cout << "FLUSHED ROWS COUNT: " << m_field->flushRowsAndSpawnFigure() << std::endl;
         }
     }
 }

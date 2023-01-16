@@ -1,9 +1,10 @@
 #pragma once
 
+#include "field.hpp"
 #include "position.hpp"
 
-#include "../renderer/ubo_value.hpp"
-#include "../renderer/renderable.hpp"
+#include <ubo_value.hpp>
+#include <renderable.hpp>
 
 #include <functional>
 
@@ -13,10 +14,13 @@ public:
     Block(std::unique_ptr<vk::UBOValue<vk::UBOModel>> position3D);
 
     virtual void draw(VkCommandBuffer commandBuffer) const override;
-
+    bool canMove(int32_t dx, int32_t dy);
+    bool canSetPosition(Position position);
     void move(int32_t dx, int32_t dy);
     void setPosition(Position position);
     Position position() const;
+
+private:
 
 protected:
     Position m_position;
@@ -25,54 +29,83 @@ protected:
 
 class Figure : public Renderable
 {
+    static Position s_blocksPositions[Field::s_height][Field::s_width];
+
 public:
     static constexpr size_t s_blocksCount = 4;
 
 public:
-    Figure(const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
-    void move(int32_t dx, int32_t dy);
+    Figure(const Field* field,
+        const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    const std::array<std::shared_ptr<Block>, s_blocksCount>& blocks() const;
+    bool hitTest(Position pos) const;
+
+    virtual bool tryMove(int32_t dx, int32_t dy);
+    virtual bool tryRotate();
+    virtual Position rotationAnchor() const = 0;
     virtual void draw(VkCommandBuffer commandBuffer) const override;
     virtual void setModel(std::weak_ptr<Model> model) override;
 
 protected:
-    std::vector<Block> m_blocks;
-    const vk::DescriptorSet* m_descriptorSet;
+    const Field* m_field;
+    std::array<std::shared_ptr<Block>, s_blocksCount> m_blocks;
 };
 
 class LFigure : public Figure
 {
 public:
-    LFigure(const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    LFigure(const Field* field,
+        const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    virtual Position rotationAnchor() const override;
 };
 
 class LRFigure : public Figure
 {
 public:
-    LRFigure(const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    LRFigure(const Field* field,
+        const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    virtual Position rotationAnchor() const override;
 };
 
 class ZFigure : public Figure
 {
 public:
-    ZFigure(const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    ZFigure(const Field* field,
+        const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    virtual Position rotationAnchor() const override;
 };
 
 class ZRFigure : public Figure
 {
 public:
-    ZRFigure(const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    ZRFigure(const Field* field,
+        const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    virtual Position rotationAnchor() const override;
 };
 
 class OFigure : public Figure
 {
 public:
-    OFigure(const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    OFigure(const Field* field,
+        const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    virtual bool tryRotate() override;
+    virtual Position rotationAnchor() const override;
 };
 
 class IFigure : public Figure
 {
 public:
-    IFigure(const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    IFigure(const Field* field,
+            const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    virtual Position rotationAnchor() const override;
+};
+
+class TFigure : public Figure
+{
+public:
+    TFigure(const Field* field,
+            const vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    virtual Position rotationAnchor() const override;
 };
 
 template <typename ...Args>
@@ -94,4 +127,4 @@ struct FiguresFactory
     }
 };
 
-using FiguresMaker = FiguresFactory<IFigure, OFigure, LFigure, LRFigure, ZFigure, ZRFigure>;
+using FiguresMaker = FiguresFactory<IFigure, OFigure, LFigure, LRFigure, ZFigure, ZRFigure, TFigure>;

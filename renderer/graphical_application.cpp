@@ -125,9 +125,11 @@ int GraphicalApplication::mainLoop()
     while (!glfwWindowShouldClose(m_window))
     {
         auto end = std::chrono::steady_clock::now();
-        auto dt = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        update(dt);
+        update(
+            std::chrono::duration_cast<std::chrono::duration<int64_t, TimeResolution>>(end - start).count()
+        );
         start = end;
+
         glfwPollEvents();
         drawFrame();
     }

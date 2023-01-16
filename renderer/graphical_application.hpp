@@ -30,6 +30,7 @@
 class GraphicalApplication
 {
 public:
+    using TimeResolution = std::nano;
     const static bool s_enableValidationLayers;
     const static std::array<const char*, 5> s_validationLayers;
 
@@ -40,6 +41,37 @@ public:
     void setApplicationName(std::string applicationName);
     GraphicalApplication();
     virtual ~GraphicalApplication();
+
+protected:
+    class UpdateTimer
+    {
+    public:
+        UpdateTimer(int32_t interval = TimeResolution::den)
+            : m_interval(interval)
+            , m_timer(0)
+        {}
+
+        bool timePassed(int64_t dt)
+        {
+            return (m_timer += dt) > m_interval ? m_timer = 0, true : false;
+        }
+
+        void setIntervalMS(int64_t intervalMS)
+        {
+            setInterval<std::milli>(intervalMS);
+        }
+
+        template <typename ResolutionType>
+        void setInterval(int64_t interval)
+        {
+            m_interval = (interval / double(ResolutionType::den)) * TimeResolution::den;
+        }
+
+    private:
+        int64_t m_timer;
+        int64_t m_interval;
+    };
+
 
 protected:
     static VkPipeline defaultGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
@@ -85,7 +117,9 @@ private:
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-private:
+
+// TO DO: WINDOW CLASS
+protected:
     std::string m_appName;
     GLFWwindow* m_window;
     int m_windowWidth;

@@ -14,49 +14,21 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(${CMAKE_BINARY_DIR}/install/conan_paths.cmake)
 
 execute_process (
-	COMMAND bash -c "bash ${CMAKE_SOURCE_DIR}/shaders/compile_shaders.sh ${CMAKE_SOURCE_DIR}/shaders  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders"
+    COMMAND bash -c "bash ${CMAKE_SOURCE_DIR}/shaders/compile_shaders.sh ${CMAKE_SOURCE_DIR}/shaders  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders"
 )
 
 set(SHADER_SOURCES
-	shaders/shader.frag
-	shaders/shader.vert)
+    ${CMAKE_SOURCE_DIR}/shaders/shader.frag
+    ${CMAKE_SOURCE_DIR}/shaders/shader.vert)
 
 find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 
-add_executable(${PROJECT_NAME} main.cpp
-        renderer/ubo_value.hpp
-	renderer/descriptor_set.hpp
-	renderer/descriptor_pool.hpp
-	renderer/descriptor_pool.cpp
-	renderer/renderer.hpp
-	renderer/renderer.cpp
-	renderer/renderable.hpp
-	renderer/renderable.cpp
-	renderer/device.hpp
-	renderer/device.cpp
-	renderer/buffer.hpp
-	renderer/buffer.cpp
-	renderer/uniform_buffer.hpp
-	renderer/vertex.hpp
-	renderer/utils.hpp
-	renderer/creators.hpp
-	renderer/model.cpp
-	renderer/model.hpp
-    renderer/graphical_application.hpp
-    renderer/graphical_application.cpp
-    tetris/tetris.hpp
-    tetris/tetris.cpp
-    tetris/figure.hpp
-    tetris/figure.cpp
-    tetris/field.hpp
-    tetris/field.cpp
-    tetris/position.hpp
-    tetris/position.cpp
-    ${SHADER_SOURCES})
+add_subdirectory(renderer)
+add_subdirectory(tetris)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw Vulkan::Vulkan glm::glm)
+target_link_libraries(tetris PRIVATE renderer glfw Vulkan::Vulkan glm::glm)
 
 execute_process (
 	COMMAND bash -c "ln -s -f ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR}/compile_commands.json"

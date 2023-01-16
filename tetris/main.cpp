@@ -6,6 +6,11 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
+#include "tetris.hpp"
+
 int main() {
-return 0;
+    Tetris app;
+    app.setWindowSize(640, 480);
+
+    return app.exec();
 }
