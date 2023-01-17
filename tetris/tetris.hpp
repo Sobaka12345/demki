@@ -26,12 +26,19 @@ private:
 
     void createGraphicsPipeline();
 
+    static void onKeyPressed(GLFWwindow *window, int key, int scancode, int action, int mods);
+
 private:
     VkPipeline m_vkPipeline;
     VkPipelineLayout m_vkPipelineLayout;
 
-    UpdateTimer m_timer;
-    UpdateTimer m_keyPressTimer;
+    bool m_rotate;
+    int32_t m_dx;
+    int32_t m_flushedTotal;
+    UpdateTimer m_gameTimer;
+    UpdateTimer m_moveTimer;
+    UpdateTimer m_rotationTimer;
+
     Renderer m_renderer;
 
     std::shared_ptr<vk::DescriptorSet> m_descriptorSet;

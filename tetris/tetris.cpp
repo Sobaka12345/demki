@@ -81,9 +81,13 @@ static constexpr std::array<uint16_t, 36> s_cubeIndices = {
 };
 
 Tetris::Tetris()
+    : m_dx(0)
+    , m_rotate(false)
+    , m_flushedTotal(0)
 {
-    m_timer.setIntervalMS(500);
-    m_keyPressTimer.setIntervalMS(100);
+    m_gameTimer.setIntervalMS(500);
+    m_moveTimer.setIntervalMS(150);
+    m_rotationTimer.setIntervalMS(200);
 }
 
 Tetris::~Tetris()
@@ -94,6 +98,8 @@ Tetris::~Tetris()
 
 void Tetris::initApplication()
 {
+    glfwSetKeyCallback(m_window, onKeyPressed);
+
     m_descriptorSetLayout = std::make_unique<TetrisDSL>(*m_device);
 
     // Render Pipeline
@@ -151,34 +157,71 @@ void Tetris::initApplication()
     m_field->flushRowsAndSpawnFigure();
 }
 
+void Tetris::onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    Tetris* thisPtr = reinterpret_cast<Tetris*>(glfwGetWindowUserPointer(window));
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
+        thisPtr->m_rotate = true;
+        thisPtr->m_field->tryRotateFigure();
+        thisPtr->m_rotationTimer.reset(thisPtr->m_rotationTimer.interval());
+    }
+    else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+    {
+        thisPtr->m_rotate = false;
+    }
+    else if ((key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT) && action == GLFW_PRESS)
+    {
+        thisPtr->m_dx += (key == GLFW_KEY_RIGHT) - (key == GLFW_KEY_LEFT);
+        thisPtr->m_field->tryMoveFigure(thisPtr->m_dx, 0);
+        thisPtr->m_moveTimer.reset();
+    }
+    else if ((key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT) && action == GLFW_RELEASE)
+    {
+        thisPtr->m_dx += -(key == GLFW_KEY_RIGHT) + (key == GLFW_KEY_LEFT);
+    }
+    else if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+    {
+        thisPtr->m_gameTimer.setSpeedUp(2.0f);
+    }
+    else if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE)
+    {
+        thisPtr->m_gameTimer.setNormalSpeed();
+    }
+    else if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+    {
+        while (thisPtr->m_field->tryMoveFigure(0, 1));
+    }
+}
+
 void Tetris::update(int64_t dt)
 {
-    if(m_keyPressTimer.timePassed(dt))
+    if (m_rotate && m_rotationTimer.timePassed(dt))
     {
-        const int stateLeft = glfwGetKey(m_window, GLFW_KEY_LEFT);
-        const int stateRight = glfwGetKey(m_window, GLFW_KEY_RIGHT);
-        const int stateDown = glfwGetKey(m_window, GLFW_KEY_DOWN);
-        const int stateRotate = glfwGetKey(m_window, GLFW_KEY_SPACE);
-        const int32_t dx = (stateRight == GLFW_PRESS) - (stateLeft == GLFW_PRESS);
-        const int32_t dy = (stateDown == GLFW_PRESS);
-        if (dx || dy)
-        {
-            m_field->tryMoveFigure(dx, dy);
-        }
-        if (stateRotate == GLFW_PRESS)
-        {
-            m_field->tryRotateFigure();
-        }
+        m_field->tryRotateFigure();
     }
-    if (m_timer.timePassed(dt))
+    if (m_dx != 0 && m_moveTimer.timePassed(dt))
+    {
+        m_field->tryMoveFigure(m_dx, 0);
+    }
+
+    if (m_gameTimer.timePassed(dt))
     {
         if (!m_field->tryMoveFigure(0, 1))
         {
             if (m_field->isBlocksOverflow())
             {
-                std::cout << "YOU ARE LOSER" << std::endl;
+                std::cout << "YOU ARE A LOSER! TOTAL FLUSHED: " << m_flushedTotal << std::endl;
+                glfwSetWindowShouldClose(m_window, GL_TRUE);
             }
-            std::cout << "FLUSHED ROWS COUNT: " << m_field->flushRowsAndSpawnFigure() << std::endl;
+            const int32_t flushed = m_field->flushRowsAndSpawnFigure();
+            m_flushedTotal += flushed;
+            std::cout << "FLUSHED ROWS COUNT: " << flushed << " TOTAL: " << m_flushedTotal << std::endl;
+
+            if (flushed && m_flushedTotal % 8 == 0)
+            {
+                m_gameTimer.setInterval(m_gameTimer.interval() * 0.8f);
+            }
         }
     }
 }

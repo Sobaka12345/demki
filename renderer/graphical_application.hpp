@@ -49,11 +49,28 @@ protected:
         UpdateTimer(int32_t interval = TimeResolution::den)
             : m_interval(interval)
             , m_timer(0)
+            , m_speedUpCoeff(1.0f)
         {}
 
         bool timePassed(int64_t dt)
         {
-            return (m_timer += dt) > m_interval ? m_timer = 0, true : false;
+            return (m_timer += dt) > m_interval / m_speedUpCoeff ? m_timer = 0, true : false;
+        }
+
+        template <typename ResolutionType = TimeResolution>
+        int64_t interval() const
+        {
+            return (m_interval / double(TimeResolution::den)) * ResolutionType::den;
+        }
+
+        void setNormalSpeed()
+        {
+            m_speedUpCoeff = 1.0f;
+        }
+
+        void setSpeedUp(float coeff)
+        {
+            m_speedUpCoeff = coeff;
         }
 
         void setIntervalMS(int64_t intervalMS)
@@ -61,15 +78,22 @@ protected:
             setInterval<std::milli>(intervalMS);
         }
 
-        template <typename ResolutionType>
+        template <typename ResolutionType = TimeResolution>
         void setInterval(int64_t interval)
         {
             m_interval = (interval / double(ResolutionType::den)) * TimeResolution::den;
         }
 
+        template <typename ResolutionType = TimeResolution>
+        void reset(int64_t initialDelay = 0)
+        {
+            m_timer = -(initialDelay / double(ResolutionType::den)) * TimeResolution::den;
+        }
+
     private:
         int64_t m_timer;
         int64_t m_interval;
+        float m_speedUpCoeff;
     };
 
 

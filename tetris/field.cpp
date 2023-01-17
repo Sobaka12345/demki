@@ -45,9 +45,9 @@ bool Field::isBlocksOverflow() const
     return false;
 }
 
-int Field::flushRowsAndSpawnFigure()
+int32_t Field::flushRowsAndSpawnFigure()
 {
-    int flushed = 0;
+    int32_t flushed = 0;
     if (m_figure)
     {
         int32_t bottomRow = 0, topRow = s_height;

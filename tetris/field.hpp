@@ -26,7 +26,7 @@ public:
 
 public:
     Field(vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
-    int flushRowsAndSpawnFigure();
+    int32_t flushRowsAndSpawnFigure();
     void tryRotateFigure();
     bool tryMoveFigure(int32_t dx, int32_t dy);
     bool isPositionOccupied(Position pos) const;
