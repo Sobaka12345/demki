@@ -3,5 +3,6 @@
         "iosfwd": "cpp"
     },
     "cmake.buildDirectory": "${workspaceRoot}/build/${buildType}",
-    "cmake.generator": "Unix Makefiles"
+    "cmake.generator": "Unix Makefiles",
+    "python.pythonPath": "${workspaceRoot}/build_env/bin",
 }

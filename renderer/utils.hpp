@@ -3,13 +3,14 @@
 #include <set>
 #include <span>
 #include <vector>
-#include <cassert>
 #include <cstring>
 #include <fstream>
 #include <optional>
 #include <filesystem>
 
 #include <vulkan/vulkan.h>
+
+#include "assert.hpp"
 
 #ifdef _WIN32
 #include <windows.h>    //GetModuleFileNameW
@@ -35,13 +36,14 @@ inline std::filesystem::path getExePath()
 #endif
 }
 
+static std::filesystem::path s_executablePath = getExePath().parent_path();
+
 inline std::vector<char> readFile(const std::string& filename)
 {
-    static std::filesystem::path executablePath = getExePath().parent_path();
-    std::ifstream file(executablePath / filename, std::ios::ate | std::ios::binary);
+    std::ifstream file(s_executablePath / filename, std::ios::ate | std::ios::binary);
 
-    assert(file.is_open() &&
-        ("failed to open file: " + (executablePath / filename).string()).c_str());
+    ASSERT(file.is_open(),
+        ("failed to open file: " + (s_executablePath / filename).string()).c_str());
 
     size_t fileSize = static_cast<size_t>(file.tellg());
     std::vector<char> buffer(fileSize);
@@ -66,7 +68,7 @@ inline uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFil
         }
     }
 
-    assert("failed to find suitable memory type!");
+    ASSERT(false, "failed to find suitable memory type!");
     return VK_ERROR_FORMAT_NOT_SUPPORTED;
 }
 

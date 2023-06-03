@@ -1,5 +1,6 @@
 #include "graphical_application.hpp"
 
+#include "image.hpp"
 #include "vertex.hpp"
 
 #include <limits>
@@ -20,7 +21,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
 
-    std::cout << "Warning: " << pCallbackData->messageIdNumber << ": " << pCallbackData->pMessageIdName << ":" <<  pCallbackData->pMessage << std::endl;
+    std::cout << "Warning: " <<
+        pCallbackData->messageIdNumber << ": " << pCallbackData->pMessageIdName << ":" <<  pCallbackData->pMessage << std::endl;
 
     return VK_FALSE;
 }
@@ -72,17 +74,18 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 }
 
 #ifdef NDEBUG
-    const static bool GraphicalApplication::s_enableValidationLayers = false;
+    const bool GraphicalApplication::s_enableValidationLayers = false;
 #else
     const bool GraphicalApplication::s_enableValidationLayers = true;
 #endif
 
-const std::array<const char*, 5> GraphicalApplication::s_validationLayers = {
+const std::vector<const char*> GraphicalApplication::s_validationLayers = {
     "VK_LAYER_KHRONOS_validation",
     "VK_LAYER_LUNARG_api_dump",
-    "VK_LAYER_INTEL_nullhw",
-    "VK_LAYER_MESA_device_select",
-    "VK_LAYER_LUNARG_monitor"
+    //"VK_LAYER_MESA_overlay",
+    //"VK_LAYER_INTEL_nullhw",
+    //"VK_LAYER_MESA_device_select",
+    //"VK_LAYER_LUNARG_monitor"
 };
 
 GraphicalApplication::GraphicalApplication()
@@ -197,17 +200,13 @@ void GraphicalApplication::createInstance()
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (s_enableValidationLayers)
     {
-        if(!utils::requiredValidationLayerSupported(GraphicalApplication::s_validationLayers))
-        {
-            throw std::runtime_error("required validation layers are absent");
-        }
-        else
-        {
-            populateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.enabledLayerCount = static_cast<uint32_t>(s_validationLayers.size());
-            createInfo.ppEnabledLayerNames = s_validationLayers.data();
-            createInfo.pNext = static_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&debugCreateInfo); // we need this to debug vk(Create|Destroy)Instance
-        }
+        ASSERT(utils::requiredValidationLayerSupported(GraphicalApplication::s_validationLayers),
+            "required validation layers are absent");
+
+        populateDebugMessengerCreateInfo(debugCreateInfo);
+        createInfo.enabledLayerCount = static_cast<uint32_t>(s_validationLayers.size());
+        createInfo.ppEnabledLayerNames = s_validationLayers.data();
+        createInfo.pNext = static_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&debugCreateInfo); // we need this to debug vk(Create|Destroy)Instance
     } else
     {
         createInfo.pNext = nullptr;
@@ -215,19 +214,14 @@ void GraphicalApplication::createInstance()
     }
 
     const auto extensions = getRequiredExtensions();
-    if (!utils::requiredExtensionsSupported(extensions))
-    {
-        throw std::runtime_error("required extensions are absent");
-    }
+    ASSERT(utils::requiredExtensionsSupported(extensions), "required extensions are absent");
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
     createInfo.enabledLayerCount = 0;
-    if (vkCreateInstance(&createInfo, nullptr, &m_vkInstance) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create instance ;c");
-    }
 
+    ASSERT(vkCreateInstance(&createInfo, nullptr, &m_vkInstance) == VK_SUCCESS,
+        "failed to create instance ;c");
 }
 
 void GraphicalApplication::setupDebugMessenger()
@@ -236,10 +230,8 @@ void GraphicalApplication::setupDebugMessenger()
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     populateDebugMessengerCreateInfo(createInfo);
-    if (createDebugUtilsMessengerEXT(m_vkInstance, &createInfo, nullptr, &m_vkDebugMessenger) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to set up debug messenger!");
-    }
+    ASSERT(createDebugUtilsMessengerEXT(m_vkInstance, &createInfo, nullptr, &m_vkDebugMessenger) == VK_SUCCESS,
+        "failed to set up debug messenger!");
 }
 
 VkSurfaceFormatKHR GraphicalApplication::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
@@ -293,8 +285,8 @@ void GraphicalApplication::createLogicalDevice()
 {
     m_device = std::make_unique<Device>(m_vkInstance, m_vkSurface);
 
-    vkGetDeviceQueue(*m_device, m_device->queueFamilies().presentFamily.value(), 0, &m_vkPresentQueue);
-    vkGetDeviceQueue(*m_device, m_device->queueFamilies().graphicsFamily.value(), 0, &m_vkGraphicsQueue);
+    m_vkPresentQueue = m_device->queue(Device::GRAPHICS, 0);
+    m_vkGraphicsQueue = m_device->queue(Device::PRESENT, 0);
 }
 
 void GraphicalApplication::createSwapChain() {
@@ -309,51 +301,35 @@ void GraphicalApplication::createSwapChain() {
         imageCount = swapChainSupportDetails.capabilities.maxImageCount;
     }
 
-    VkSwapchainCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = m_vkSurface;
-    createInfo.minImageCount = imageCount;
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    std::span<const uint32_t> queueFamilyIndices = {};
+    VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    uint32_t queueFamilyIndices[] = {
-        m_device->queueFamilies().graphicsFamily.value(),
-        m_device->queueFamilies().presentFamily.value()
-    };
-
-    if (m_device->queueFamilies().graphicsFamily != m_device->queueFamilies().presentFamily)
+    if (m_device->queueFamilies()[vk::Device::GRAPHICS] !=
+        m_device->queueFamilies()[vk::Device::PRESENT])
     {
-        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    }
-    else
-    {
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.queueFamilyIndexCount = 0; // Optional
-        createInfo.pQueueFamilyIndices = nullptr; // Optional
+        sharingMode = VK_SHARING_MODE_CONCURRENT;
+        queueFamilyIndices = {
+            m_device->queueFamilies().begin(), m_device->queueFamilies().end()
+        };
     }
 
-    createInfo.preTransform = swapChainSupportDetails.capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    const auto createInfo = create::swapChainCreateInfoKHR(
+        m_vkSurface, imageCount,
+        surfaceFormat.format, surfaceFormat.colorSpace, extent, 1,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        sharingMode, queueFamilyIndices,
+        swapChainSupportDetails.capabilities.currentTransform,
+        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, presentMode, VK_TRUE);
 
-    if (vkCreateSwapchainKHR(*m_device, &createInfo, nullptr, &m_vkSwapChain) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create swap chain!");
-    }
+    ASSERT(vkCreateSwapchainKHR(*m_device, &createInfo, nullptr, &m_vkSwapChain) == VK_SUCCESS,
+        "failed to create swap chain!");
 
     vkGetSwapchainImagesKHR(*m_device, m_vkSwapChain, &imageCount, nullptr);
     m_vkSwapChainImages.resize(imageCount);
     vkGetSwapchainImagesKHR(*m_device, m_vkSwapChain, &imageCount, m_vkSwapChainImages.data());
 
     m_vkSwapChainImageFormat = surfaceFormat.format;
-    m_vkSwapChainExtent = extent;
+    m_vkSwapChainExtent = VkExtent3D{extent.width, extent.height, 1};
 }
 
 void GraphicalApplication::recreateSwapChain()
@@ -386,10 +362,8 @@ void GraphicalApplication::cleanupSwapChain()
 
 void GraphicalApplication::createWindowSurface()
 {
-    if (glfwCreateWindowSurface(m_vkInstance, m_window, nullptr, &m_vkSurface) != VK_SUCCESS)
-    {
-       throw std::runtime_error("failed to create window surface!");
-    }
+    ASSERT(glfwCreateWindowSurface(m_vkInstance, m_window, nullptr, &m_vkSurface) == VK_SUCCESS,
+        "failed to create window surface!");
 }
 
 void GraphicalApplication::createImageViews()
@@ -457,17 +431,15 @@ void GraphicalApplication::createRenderPass()
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(*m_device, &renderPassInfo, nullptr, &m_vkRenderPass) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create render pass!");
-    }
+    ASSERT(vkCreateRenderPass(*m_device, &renderPassInfo, nullptr, &m_vkRenderPass) == VK_SUCCESS,
+        "failed to create render pass!");
 }
 
 VkPipeline GraphicalApplication::defaultGraphicsPipeline(VkDevice device,
     VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
     VkShaderModule vertexShader, VkShaderModule fragmentShader)
 {
-    const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
         create::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertexShader),
         create::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader)
     };
@@ -523,10 +495,8 @@ VkPipeline GraphicalApplication::defaultGraphicsPipeline(VkDevice device,
             &colorBlending, &dynamicState, &depthStencil);
 
     VkPipeline result;
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &result) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create graphics pipeline!");
-    }
+    ASSERT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &result) == VK_SUCCESS,
+        "failed to create graphics pipeline!");
 
     return result;
 }
@@ -535,7 +505,16 @@ VkPipeline GraphicalApplication::defaultGraphicsPipeline(VkDevice device,
 void GraphicalApplication::createFramebuffers()
 {
     VkFormat depthFormat = findDepthFormat();
-    VkImage depthImage;
+
+//    Image depthimagef(*m_device,
+//        create::imageCreateInfo(VK_IMAGE_TYPE_2D, m_vkSwapChainExtent, 1, 1,
+//        depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED,
+//        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT));
+//    createImage(m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, depthFormat,
+//        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthMemory);
+//    const auto depthImageView = createImageView(depthImagef, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+VkImage depthImage;
     VkDeviceMemory depthMemory;
     createImage(m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, depthFormat,
         VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthMemory);
@@ -553,10 +532,8 @@ void GraphicalApplication::createFramebuffers()
             m_vkRenderPass, attachments,
             m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, 1);
 
-        if (vkCreateFramebuffer(*m_device, &framebufferInfo, nullptr, &m_vkSwapChainFramebuffers[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
+        ASSERT(vkCreateFramebuffer(*m_device, &framebufferInfo, nullptr, &m_vkSwapChainFramebuffers[i]) == VK_SUCCESS,
+            "failed to create framebuffer!");
     }
 }
 
@@ -565,12 +542,10 @@ void GraphicalApplication::createCommandPool()
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = m_device->queueFamilies().graphicsFamily.value();
+    poolInfo.queueFamilyIndex = m_device->queueFamilies()[Device::GRAPHICS];
 
-    if (vkCreateCommandPool(*m_device, &poolInfo, nullptr, &m_vkCommandPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create command pool!");
-    }
+    ASSERT(vkCreateCommandPool(*m_device, &poolInfo, nullptr, &m_vkCommandPool) == VK_SUCCESS,
+        "failed to create command pool!");
 }
 
 VkFormat GraphicalApplication::findSupportedFormat(const std::vector<VkFormat>& candidates,
@@ -590,7 +565,8 @@ VkFormat GraphicalApplication::findSupportedFormat(const std::vector<VkFormat>& 
         }
     }
 
-    throw std::runtime_error("failed to find supported format!");
+    ASSERT(false, "failed to find supported format!");
+    return VK_FORMAT_UNDEFINED;
 }
 
 VkFormat GraphicalApplication::findDepthFormat()
@@ -612,10 +588,8 @@ VkImageView GraphicalApplication::createImageView(VkImage image, VkFormat format
         create::imageSubresourceRange(aspectFlags, 0, 1, 0, 1));
 
     VkImageView imageView;
-    if (vkCreateImageView(*m_device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create texture image view!");
-    }
+    ASSERT(vkCreateImageView(*m_device, &viewInfo, nullptr, &imageView) == VK_SUCCESS,
+        "failed to create texture image view!");
 
     return imageView;
 }
@@ -628,10 +602,8 @@ void GraphicalApplication::createImage(uint32_t width, uint32_t height,
         1, 1, format, tiling, VK_IMAGE_LAYOUT_UNDEFINED,
         usage, VK_SAMPLE_COUNT_1_BIT, VK_SHARING_MODE_EXCLUSIVE);
 
-    if (vkCreateImage(*m_device, &imageInfo, nullptr, &image) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create image!");
-    }
+    ASSERT(vkCreateImage(*m_device, &imageInfo, nullptr, &image) == VK_SUCCESS,
+        "failed to create image!");
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(*m_device, image, &memRequirements);
@@ -639,10 +611,8 @@ void GraphicalApplication::createImage(uint32_t width, uint32_t height,
     const auto allocInfo = create::memoryAllocateInfo(memRequirements.size,
         utils::findMemoryType(m_device->physicalDevice(), memRequirements.memoryTypeBits, properties));
 
-    if (vkAllocateMemory(*m_device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
+    ASSERT(vkAllocateMemory(*m_device, &allocInfo, nullptr, &imageMemory) == VK_SUCCESS,
+        "failed to allocate image memory!");
 
     vkBindImageMemory(*m_device, image, imageMemory, 0);
 }
@@ -656,10 +626,8 @@ void GraphicalApplication::createCommandBuffers()
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = m_vkCommandBuffers.size();
 
-    if (vkAllocateCommandBuffers(*m_device, &allocInfo, m_vkCommandBuffers.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate command buffers!");
-    }
+    ASSERT(vkAllocateCommandBuffers(*m_device, &allocInfo, m_vkCommandBuffers.data()) == VK_SUCCESS,
+        "failed to allocate command buffers!");
 }
 
 void GraphicalApplication::createSyncObjects()
@@ -676,12 +644,12 @@ void GraphicalApplication::createSyncObjects()
 
     for(size_t i = 0; i < m_maxFramesInFlight; ++i)
     {
-        if (vkCreateFence(*m_device, &fenceInfo, nullptr, &m_vkInFlightFences[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(*m_device, &semaphoreInfo, nullptr, &m_vkImageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(*m_device, &semaphoreInfo, nullptr, &m_vkRenderFinishedSemaphores[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create semaphores!");
-        }
+        ASSERT(vkCreateFence(*m_device, &fenceInfo, nullptr, &m_vkInFlightFences[i]) == VK_SUCCESS,
+            "failed to create fence");
+        ASSERT(vkCreateSemaphore(*m_device, &semaphoreInfo, nullptr, &m_vkImageAvailableSemaphores[i]) == VK_SUCCESS,
+            "failed to create semaphore");
+        ASSERT(vkCreateSemaphore(*m_device, &semaphoreInfo, nullptr, &m_vkRenderFinishedSemaphores[i]) == VK_SUCCESS,
+            "failed to create semaphore");
     }
 }
 
@@ -691,14 +659,13 @@ void GraphicalApplication::drawFrame()
     uint32_t imageIndex;
 
     VkResult result = vkAcquireNextImageKHR(*m_device, m_vkSwapChain, UINT64_MAX, m_vkImageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+    ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "failed to acquire swap chain image!");
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         recreateSwapChain();
         return;
-    }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-    {
-        throw std::runtime_error("failed to acquire swap chain image!");
     }
 
     vkResetFences(*m_device, 1, &m_vkInFlightFences[m_currentFrame]);
@@ -719,10 +686,8 @@ void GraphicalApplication::drawFrame()
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(m_vkGraphicsQueue, 1, &submitInfo, m_vkInFlightFences[m_currentFrame]) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
+    ASSERT(vkQueueSubmit(m_vkGraphicsQueue, 1, &submitInfo, m_vkInFlightFences[m_currentFrame]) == VK_SUCCESS,
+        "failed to submit draw command buffer!");
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -736,14 +701,12 @@ void GraphicalApplication::drawFrame()
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr; // Optional
     result = vkQueuePresentKHR(m_vkPresentQueue, &presentInfo);
+    ASSERT(result == VK_SUCCESS, "failed to present swap chain image!");
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized || m_windowIconified)
     {
         m_framebufferResized = false;
         recreateSwapChain();
-    }
-    else if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to present swap chain image!");
     }
 
     m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "image.hpp"
 #include "device.hpp"
 #include "buffer.hpp"
 #include "creators.hpp"
@@ -32,7 +33,7 @@ class GraphicalApplication
 public:
     using TimeResolution = std::nano;
     const static bool s_enableValidationLayers;
-    const static std::array<const char*, 5> s_validationLayers;
+    const static std::vector<const char*> s_validationLayers;
 
 public:
     int exec();
@@ -181,7 +182,7 @@ protected:
     VkQueue m_vkGraphicsQueue;
     std::unique_ptr<vk::Device> m_device;
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
-    VkExtent2D m_vkSwapChainExtent;
+    VkExtent3D m_vkSwapChainExtent;
     VkCommandPool m_vkCommandPool;
     VkRenderPass m_vkRenderPass;
     std::vector<VkFramebuffer> m_vkSwapChainFramebuffers;
@@ -193,9 +194,7 @@ private:
 
     std::vector<VkCommandBuffer> m_vkCommandBuffers;
 
-    VkImage m_vkDepthImage;
-    VkDeviceMemory m_vkDepthImageMemory;
-    VkImageView m_vkDepthImageView;
+    std::unique_ptr<vk::Image> m_depthImage;
 
     VkSwapchainKHR m_vkSwapChain;
     VkFormat m_vkSwapChainImageFormat;

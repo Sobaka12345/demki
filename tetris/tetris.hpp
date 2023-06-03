@@ -20,10 +20,11 @@ public:
     ~Tetris() override;
 
 private:
-    virtual void initApplication() override;
+    virtual void initApplication() override;    
     virtual void update(int64_t dt) override;
     virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
 
+    void initTextures();
     void createGraphicsPipeline();
 
     static void onKeyPressed(GLFWwindow *window, int key, int scancode, int action, int mods);

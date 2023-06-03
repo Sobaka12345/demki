@@ -4,6 +4,8 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 string(REPLACE " " "_" PROJECT_NAME ${PROJECT_NAME})
 project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
+set(${PROJECT_NAME}_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
 add_executable(${PROJECT_NAME} main.cpp
     tetris.hpp
     tetris.cpp

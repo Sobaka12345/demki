@@ -209,10 +209,10 @@ Position IFigure::rotationAnchor() const
 TFigure::TFigure(const Field *field, const vk::DescriptorSet *descriptorSet, vk::IUBOProvider *uboProvider)
     : Figure(field, descriptorSet, uboProvider)
 {
-    m_blocks[0]->setPosition({Field::s_middleX, 0});
+    m_blocks[0]->setPosition({Field::s_middleX    , 0});
     m_blocks[1]->setPosition({Field::s_middleX - 1, 1});
-    m_blocks[2]->setPosition({Field::s_middleX, 1});
-    m_blocks[3]->setPosition({Field::s_middleX, 2});
+    m_blocks[2]->setPosition({Field::s_middleX    , 1});
+    m_blocks[3]->setPosition({Field::s_middleX    , 2});
 }
 
 Position TFigure::rotationAnchor() const

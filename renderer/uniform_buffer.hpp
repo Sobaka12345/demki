@@ -23,7 +23,7 @@ struct UBOViewProjection
 struct UBOHandler
 {
     uint32_t offset;
-    std::weak_ptr<Buffer::Memory> memory;
+    std::weak_ptr<Memory> memory;
 };
 
 struct IUBOProvider
@@ -36,9 +36,9 @@ class UniformBuffer: public Buffer, public IUBOProvider
 {
 public:
     UniformBuffer(const Device& device, uint32_t objectsCount)
-        : Buffer(device,
+        : Buffer(device, create::bufferCreateInfo(
             (m_dynamicAlignment = dynamicAlignment(device)) * objectsCount,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT))
         , m_objectsCount(objectsCount)
     {
         m_uboHandlers.resize(objectsCount);

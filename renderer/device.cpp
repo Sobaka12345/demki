@@ -14,13 +14,55 @@ const std::array<const char* const, 1> Device::s_deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
+Device::QueueFamilies::QueueFamilies()
+{
+    constexpr uint32_t invalidIndex = std::numeric_limits<uint32_t>::max();
+    m_queueFamilyIndices.fill(invalidIndex);
+}
+
+Device::QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+{
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
+
+    constexpr uint32_t invalidIndex = std::numeric_limits<uint32_t>::max();
+    m_queueFamilyIndices.fill(invalidIndex);
+
+    for (int i = 0; i < queueFamilyProperties.size(); ++i)
+    {
+        if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            m_queueFamilyIndices[QueueFamilyType::GRAPHICS] = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+        if (presentSupport)
+        {
+            m_queueFamilyIndices[QueueFamilyType::PRESENT] = i;
+        }
+    }
+}
+
+bool Device::QueueFamilies::isComplete() const
+{
+    return std::find(m_queueFamilyIndices.begin(), m_queueFamilyIndices.end(), s_invalidIndex) == m_queueFamilyIndices.end();
+}
+
+uint32_t Device::QueueFamilies::queueFamilyIndex(QueueFamilyType type) const
+{
+    return m_queueFamilyIndices[type];
+}
+
 Device::Device()
     : m_instance(VK_NULL_HANDLE)
     , m_device(VK_NULL_HANDLE)
     , m_physicalDevice(VK_NULL_HANDLE)
     , m_surface(VK_NULL_HANDLE)
 {
-
 }
 
 Device::Device(Device &&other)
@@ -53,10 +95,7 @@ void Device::pickPhysicalDevice()
     uint32_t physicalDeviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, nullptr);
 
-    if (!physicalDeviceCount)
-    {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
-    }
+    ASSERT(physicalDeviceCount, "failed to find GPUs with Vulkan support!");
 
     std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
     vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, physicalDevices.data());
@@ -64,21 +103,23 @@ void Device::pickPhysicalDevice()
             std::bind(std::mem_fn(&Device::isDeviceSuitable), this, std::placeholders::_1));
         iter == physicalDevices.end())
     {
-        throw std::runtime_error("failed to find a suitable GPU!");
+        ASSERT(false, "failed to find a suitable GPU!");
     }
     else
     {
         m_physicalDevice = *iter;
+        vkGetPhysicalDeviceFeatures(m_physicalDevice, &m_physicalDeviceFeatures);
+        vkGetPhysicalDeviceProperties(m_physicalDevice, &m_physicalDeviceProperties);
     }
 }
 
 void Device::createLogicalDevice()
 {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    for (auto& queueFamily : m_queueFamilies.uniqueQueueFamilies())
+    for (uint32_t queueFamilyIndex : m_queueFamilies)
     {
         queueCreateInfos.push_back(create::deviceQueueCreateInfo(
-            queueFamily, std::array<float, 1>{1.0f}));
+            queueFamilyIndex, std::array<float, 1>{1.0f}));
     }
 
     VkDeviceCreateInfo createInfo =
@@ -87,32 +128,25 @@ void Device::createLogicalDevice()
                 GraphicalApplication::s_validationLayers) :
             create::deviceCreateInfo(queueCreateInfos, s_deviceExtensions);
 
-    if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create logical device!");
-    }
+    ASSERT(vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) == VK_SUCCESS,
+        "failed to create logical device!");
 }
 
 bool Device::isDeviceSuitable(VkPhysicalDevice device)
 {
-    vkGetPhysicalDeviceFeatures(device, &m_physicalDeviceFeatures);
-    vkGetPhysicalDeviceProperties(device, &m_physicalDeviceProperties);
-
-    const bool extensionsSupported = checkDeviceExtensionSupport(device);
-    bool swapChainAdequate = false;
-    if (extensionsSupported)
+    if (!checkDeviceExtensionSupport(device))
     {
-        const auto swapChainSupportDetails = utils::swapChainSupportDetails(device, m_surface);
-        swapChainAdequate =
-            !swapChainSupportDetails.formats.empty() &&
-            !swapChainSupportDetails.presentModes.empty();
-
-        m_queueFamilies = queueFamilies(device, m_surface);
+        return false;
     }
 
-    return extensionsSupported
-           && swapChainAdequate
-           && m_queueFamilies.isComplete();
+    const auto swapChainSupportDetails = utils::swapChainSupportDetails(device, m_surface);
+    const bool swapChainAdequate =
+        !swapChainSupportDetails.formats.empty() &&
+        !swapChainSupportDetails.presentModes.empty();
+
+    m_queueFamilies = QueueFamilies(device, m_surface);
+
+    return swapChainAdequate && m_queueFamilies.isComplete();
 }
 
 bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device)
@@ -133,35 +167,11 @@ bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device)
     return requiredExtensions.empty();
 }
 
-Device::QueueFamilies Device::queueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+VkQueue Device::queue(QueueFamilyType type, uint32_t idx) const
 {
-    QueueFamilies result;
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    for (int i = 0; i < queueFamilies.size(); ++i)
-    {
-        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            result.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-        if (presentSupport)
-        {
-            result.presentFamily = i;
-        }
-
-        if (result.isComplete())
-        {
-            return result;
-        }
-    }
-
-    return result;
+    VkQueue queue;
+    vkGetDeviceQueue(m_device, m_queueFamilies.queueFamilyIndex(type), idx, &queue);
+    return queue;
 }
 
 }

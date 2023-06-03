@@ -6,6 +6,9 @@
 #include "../renderer/vertex.hpp"
 #include "../renderer/creators.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <iostream>
 
 using namespace vk;
@@ -96,6 +99,31 @@ Tetris::~Tetris()
     vkDestroyPipelineLayout(*m_device, m_vkPipelineLayout, nullptr);
 }
 
+void Tetris::initTextures()
+{
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load("textures/roshi.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+    ASSERT(pixels, "failed to load texture image!");
+
+    //createAndWriteGPUBuffer()
+
+    const auto imageCreateInfo = create::imageCreateInfo(
+        VK_IMAGE_TYPE_2D,
+        VkExtent3D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
+        1, 1,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_SHARING_MODE_EXCLUSIVE
+    );
+
+    stbi_image_free(pixels);
+}
+
 void Tetris::initApplication()
 {
     glfwSetKeyCallback(m_window, onKeyPressed);
@@ -110,6 +138,8 @@ void Tetris::initApplication()
         createAndWriteGPUBuffer<VertexBufferT, Vertex3DColored>(s_cubeVertices),
         createAndWriteGPUBuffer<IndexBufferT, uint16_t>(s_cubeIndices)
     );
+
+    initTextures();
 
     m_modelBuffer = std::make_unique<UniformBuffer<UBOModel>>(*m_device, Field::s_objectsCount);
     m_modelBuffer
@@ -234,17 +264,16 @@ void Tetris::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIn
     beginInfo.flags = 0;
     beginInfo.pInheritanceInfo = nullptr;
 
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
+    ASSERT(vkBeginCommandBuffer(commandBuffer, &beginInfo) == VK_SUCCESS,
+        "failed to begin recording command buffer!");
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = m_vkRenderPass;
     renderPassInfo.framebuffer = m_vkSwapChainFramebuffers[imageIndex];
     renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = m_vkSwapChainExtent;
+    renderPassInfo.renderArea.extent.height = m_vkSwapChainExtent.height;
+    renderPassInfo.renderArea.extent.width = m_vkSwapChainExtent.width;
 
     std::array<VkClearValue, 2> clearValues{};
     clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -265,16 +294,14 @@ void Tetris::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIn
 
     VkRect2D scissor{};
     scissor.offset = {0, 0};
-    scissor.extent = m_vkSwapChainExtent;
+    scissor.extent.width = m_vkSwapChainExtent.width;
+    scissor.extent.height = m_vkSwapChainExtent.height;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     m_renderer.draw(commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to record command buffer!");
-    }
+    ASSERT(vkEndCommandBuffer(commandBuffer) == VK_SUCCESS, "failed to record command buffer!");
 }
 
 void Tetris::createGraphicsPipeline()
@@ -284,15 +311,15 @@ void Tetris::createGraphicsPipeline()
     const auto vertShaderModule = create::shaderModule(*m_device, vertShaderCode);
     const auto fragShaderModule = create::shaderModule(*m_device, fragShaderCode);
 
+    const std::array<VkDescriptorSetLayout, 1> descriptorSetsLayouts{*m_descriptorSetLayout};
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = create::pipelineLayoutCreateInfo(
-        std::array<VkDescriptorSetLayout, 1>{*m_descriptorSetLayout},
-        std::array<VkPushConstantRange, 0>{}
+        descriptorSetsLayouts,
+        {}
     );
 
-    if (vkCreatePipelineLayout(*m_device, &pipelineLayoutInfo, nullptr, &m_vkPipelineLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
+    ASSERT(vkCreatePipelineLayout(*m_device, &pipelineLayoutInfo, nullptr, &m_vkPipelineLayout) == VK_SUCCESS,
+        "failed to create pipeline layout!");
 
     m_vkPipeline = defaultGraphicsPipeline(*m_device, m_vkRenderPass,
         m_vkPipelineLayout, vertShaderModule, fragShaderModule);

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "creators.hpp"
 #include "device.hpp"
+#include "memory.hpp"
 
 #include <vulkan/vulkan.h>
 #include <list>
@@ -10,68 +12,31 @@
 
 namespace vk {
 
-class Buffer
+class Buffer : public SIMemoryAccessor<Buffer>
 {
 public:
-    struct Memory
-    {
-        struct Mapped
-        {
-            Mapped(const Memory& memory, VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
-            ~Mapped();
-            void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
-            void sync(VkDeviceSize size, ptrdiff_t offset = 0);
-            void writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
-
-            const Memory& memory;
-            void* data;
-            VkDeviceSize offset;
-        };
-
-        Memory(const Buffer& buffer, VkMemoryAllocateInfo size);
-        ~Memory();
-
-        std::shared_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
-        void unmap();
-
-        const Buffer& buffer;
-        VkDeviceSize size;
-        VkDeviceMemory deviceMemory;
-        std::shared_ptr<Mapped> mapped;
-        uint32_t memoryType;
-    };
-
-public:
     Buffer(Buffer&& other);
-    Buffer(const Buffer& other) = delete;
-    Buffer(const Device& device, VkDeviceSize size, VkBufferUsageFlags usage,
-        VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
+    Buffer(const Device& device, VkBufferCreateInfo bufferInfo);
     ~Buffer();
-
-    VkBuffer buffer() const { return m_buffer; }
-    VkDevice device() const { return m_device; }
-    VkDeviceSize size() const { return m_size; }
-    std::shared_ptr<Memory> memory() const { return m_memory; }
 
     bool bindMemory(uint32_t bindingOffset);
     std::shared_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties);
-    std::shared_ptr<Memory> allocateAndBindMemory(VkMemoryPropertyFlags properties, uint32_t bindingOffset = 0);
 
     void copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue queue, VkBufferCopy copyRegion);
 
-protected:
+    VkBuffer buffer() const { return m_buffer; }
+    VkDeviceSize size() const { return m_size; }
+
+private:
     VkBuffer m_buffer;
     VkDeviceSize m_size;
-    const Device& m_device;
-    // TO DO: Implement multiple memory allocations
-    std::shared_ptr<Memory> m_memory;
 };
 
 class StagingBuffer: public Buffer
 {
 public:
     StagingBuffer(const Device& device, VkDeviceSize size)
-        : Buffer(device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE)
+        : Buffer(device, create::bufferCreateInfo(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE))
     {}
 };
 
@@ -79,9 +44,10 @@ class VertexBuffer: public Buffer
 {
 public:
     VertexBuffer(const Device& device, size_t vertexCount, size_t vertexSize)
-        : Buffer(device, static_cast<VkDeviceSize>(vertexCount * vertexSize),
+        : Buffer(device, create::bufferCreateInfo(
+            static_cast<VkDeviceSize>(vertexCount * vertexSize),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_SHARING_MODE_EXCLUSIVE)
+            VK_SHARING_MODE_EXCLUSIVE))
         , m_vertexCount(static_cast<uint32_t>(vertexCount))
     {}
 
@@ -104,9 +70,10 @@ class IndexBuffer: public Buffer
 {
 public:
     IndexBuffer(const Device& device, size_t indexCount, size_t indexSize)
-        : Buffer(device, static_cast<VkDeviceSize>(indexCount * indexSize),
+        : Buffer(device, create::bufferCreateInfo(
+            static_cast<VkDeviceSize>(indexCount * indexSize),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_SHARING_MODE_EXCLUSIVE)
+            VK_SHARING_MODE_EXCLUSIVE))
         , m_indexCount(static_cast<uint32_t>(indexCount))
     {}
 

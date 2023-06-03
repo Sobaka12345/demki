@@ -136,16 +136,6 @@ void Field::draw(VkCommandBuffer commandBuffer) const
     }
 }
 
-//void Field::rotateRows(std::array::reverse_iterator lhs, std::array::reverse_iterator newBegin, std::array::reverse_iterator rhs)
-//{
-
-//}
-
-//void Field::swapRows(size_t lRow, size_t rRow)
-//{
-//    std::rotate()
-//}
-
 void Field::setModel(std::weak_ptr<Model> model)
 {
     for (auto& blockLine : m_blocks)

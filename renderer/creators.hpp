@@ -2,7 +2,6 @@
 
 #include <span>
 #include <array>
-#include <cassert>
 #include <concepts>
 
 #include <vulkan/vulkan.h>
@@ -67,7 +66,8 @@ inline constexpr VkBufferCopy bufferCopy(VkDeviceSize size, VkDeviceSize srcOffs
     return bufferCopy;
 }
 
-inline constexpr VkBufferCreateInfo bufferCreateInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkSharingMode sharingMode)
+inline constexpr VkBufferCreateInfo bufferCreateInfo(VkDeviceSize size, VkBufferUsageFlags usage,
+    VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE)
 {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -107,14 +107,14 @@ inline void buffer(VkDevice device, VkPhysicalDevice physicalDevice,
     VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
    VkBufferCreateInfo bufferInfo = bufferCreateInfo(size, usage, VK_SHARING_MODE_EXCLUSIVE);
-   assert(vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) == VK_SUCCESS);
+   ASSERT(vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) == VK_SUCCESS);
 
    VkMemoryRequirements memRequirements;
    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
 
    VkMemoryAllocateInfo allocInfo = memoryAllocateInfo(
                memRequirements.size, utils::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties));
-   assert(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) == VK_SUCCESS);
+   ASSERT(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) == VK_SUCCESS);
 
    vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
@@ -131,13 +131,13 @@ inline constexpr VkShaderModuleCreateInfo shaderModuleCreateInfo(uint32_t codeSi
 
 inline VkShaderModule shaderModule(VkDevice device, const std::vector<char> &code)
 {
-    VkShaderModuleCreateInfo createInfo = shaderModuleCreateInfo(static_cast<uint32_t>(code.size()),
+    const VkShaderModuleCreateInfo createInfo = shaderModuleCreateInfo(static_cast<uint32_t>(code.size()),
         reinterpret_cast<const uint32_t*>(code.data()));
 
-    VkShaderModule shaderModule;
-    assert(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) == VK_SUCCESS);
+    VkShaderModule result = VK_NULL_HANDLE;
+    ASSERT(vkCreateShaderModule(device, &createInfo, nullptr, &result) == VK_SUCCESS);
 
-    return shaderModule;
+    return result;
 }
 
 inline constexpr VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo(
@@ -157,7 +157,7 @@ inline constexpr VkPipelineViewportStateCreateInfo pipelineViewportStateCreateIn
 }
 
 inline constexpr VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo(
-    const IsArrayContainer auto& dynamicStates,
+    std::span<const VkDynamicState> dynamicStates,
     VkPipelineDynamicStateCreateFlags flags = 0, const void* pNext = nullptr)
 {
     VkPipelineDynamicStateCreateInfo result{};
@@ -317,8 +317,8 @@ inline constexpr VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilState
 }
 
 inline constexpr VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-    const IsArrayContainer auto&    setLayouts,
-    const IsArrayContainer auto&    pushConstantRanges,
+    std::span<const VkDescriptorSetLayout>    setLayouts,
+    std::span<const VkPushConstantRange>    pushConstantRanges,
     VkPipelineLayoutCreateFlags     flags = 0,
     const void*                     pNext = nullptr)
 {
@@ -467,7 +467,7 @@ inline constexpr VkExtent3D extent3D(uint32_t width, uint32_t height, uint32_t d
 inline constexpr VkImageCreateInfo imageCreateInfo(VkImageType type, VkExtent3D extent,
     uint32_t mipLevels, uint32_t arrayLayers, VkFormat format, VkImageTiling tiling,
     VkImageLayout initialLayout, VkImageUsageFlags usage, VkSampleCountFlagBits samples,
-    VkSharingMode sharingMode)
+    VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE)
 {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -504,7 +504,7 @@ inline constexpr VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(
 
 inline constexpr VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
     VkPipelineLayout layout, VkRenderPass renderPass, VkPipelineCreateFlags flags,
-    const IsArrayContainer auto& stages = {},
+    std::span<const VkPipelineShaderStageCreateInfo> stages = {},
     const VkPipelineVertexInputStateCreateInfo* pVertexInputState = nullptr,
     const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState = nullptr,
     const VkPipelineTessellationStateCreateInfo* pTessellationState = nullptr,
@@ -571,6 +571,46 @@ inline constexpr VkFramebufferCreateInfo frameBufferCreateInfo(
     result.height = height;
     result.layers = layers;
     result.flags = flags;
+    result.pNext = pNext;
+
+    return result;
+}
+
+inline constexpr VkSwapchainCreateInfoKHR swapChainCreateInfoKHR(
+    VkSurfaceKHR                     surface,
+    uint32_t                         minImageCount,
+    VkFormat                         imageFormat,
+    VkColorSpaceKHR                  imageColorSpace,
+    VkExtent2D                       imageExtent,
+    uint32_t                         imageArrayLayers,
+    VkImageUsageFlags                imageUsage,
+    VkSharingMode                    imageSharingMode,
+    std::span<const uint32_t>        queueFamilyIndices,
+    VkSurfaceTransformFlagBitsKHR    preTransform,
+    VkCompositeAlphaFlagBitsKHR      compositeAlpha,
+    VkPresentModeKHR                 presentMode,
+    VkBool32                         clipped,
+    VkSwapchainKHR                   oldSwapchain = VK_NULL_HANDLE,
+    VkSwapchainCreateFlagsKHR        flags = 0,
+    const void*                      pNext = nullptr)
+{
+    VkSwapchainCreateInfoKHR result;
+    result.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    result.surface = surface;
+    result.minImageCount = minImageCount;
+    result.imageFormat = imageFormat;
+    result.imageColorSpace = imageColorSpace;
+    result.imageExtent = imageExtent;
+    result.imageArrayLayers = imageArrayLayers;
+    result.imageUsage = imageUsage;
+    result.imageSharingMode = imageSharingMode;
+    result.queueFamilyIndexCount =  queueFamilyIndices.size();
+    result.pQueueFamilyIndices = queueFamilyIndices.data();
+    result.preTransform = preTransform;
+    result.compositeAlpha = compositeAlpha;
+    result.presentMode = presentMode;
+    result.clipped = clipped;
+    result.oldSwapchain = oldSwapchain;
     result.pNext = pNext;
 
     return result;

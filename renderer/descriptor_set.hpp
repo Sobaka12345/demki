@@ -7,6 +7,7 @@
 
 #include <span>
 #include <vector>
+#include <iostream>
 #include <type_traits>
 
 namespace vk {
@@ -25,10 +26,8 @@ public:
         : m_device(device)
         , m_pipelineLayout(pipelineLayout)
     {
-        if (vkAllocateDescriptorSets(m_device, &allocInfo, &m_set) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to allocate descriptor sets!");
-        }
+        ASSERT(vkAllocateDescriptorSets(m_device, &allocInfo, &m_set) == VK_SUCCESS,
+            "failed to allocate descriptor sets!");
     }
 
     virtual ~DescriptorSet()
@@ -69,10 +68,8 @@ public:
     DescriptorSetLayout(const Device& device, VkDescriptorSetLayoutCreateInfo info)
         : m_device(device)
     {
-        if (vkCreateDescriptorSetLayout(m_device, &info, nullptr, &m_layout) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create descriptor set layout!");
-        }
+        ASSERT(vkCreateDescriptorSetLayout(m_device, &info, nullptr, &m_layout) == VK_SUCCESS,
+            "failed to create descriptor set layout!");
     }
 
     operator VkDescriptorSetLayout() const { return m_layout; }
