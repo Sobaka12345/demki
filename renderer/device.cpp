@@ -116,7 +116,8 @@ void Device::pickPhysicalDevice()
 void Device::createLogicalDevice()
 {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    for (uint32_t queueFamilyIndex : m_queueFamilies)
+    std::set<uint32_t> queueFamiliesSet(m_queueFamilies.begin(), m_queueFamilies.end());
+    for (uint32_t queueFamilyIndex : queueFamiliesSet)
     {
         queueCreateInfos.push_back(create::deviceQueueCreateInfo(
             queueFamilyIndex, std::array<float, 1>{1.0f}));
