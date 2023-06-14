@@ -14,11 +14,15 @@ function(generate_glslc_script)
 
     foreach(SHADER_PATH ${GENERATE_GLSLC_SCRIPT_SHADER_PATHS})
         LIST(APPEND SHADER_LIST -sf ${SHADER_PATH})
+        LIST(JOIN SHADER_LIST " " SHADER_LIST)
     endforeach()
 
     file(MAKE_DIRECTORY ${GENERATE_GLSLC_SCRIPT_PROJECT_DIR})
 
-    execute_process(
-        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/generate_compile_shaders.py -df ${GENERATE_GLSLC_SCRIPT_PROJECT_DIR} ${SHADER_LIST}
-    )
+    cmake_language(EVAL CODE "
+        execute_process(
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/generate_compile_shaders.py -df ${GENERATE_GLSLC_SCRIPT_PROJECT_DIR} ${SHADER_LIST}
+        )
+    ")
+
 endfunction()

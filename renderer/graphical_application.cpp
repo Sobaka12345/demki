@@ -81,7 +81,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 const std::vector<const char*> GraphicalApplication::s_validationLayers = {
     "VK_LAYER_KHRONOS_validation",
-    "VK_LAYER_LUNARG_api_dump",
+    //"VK_LAYER_LUNARG_api_dump",
     //"VK_LAYER_MESA_overlay",
     //"VK_LAYER_INTEL_nullhw",
     //"VK_LAYER_MESA_device_select",

@@ -1,6 +1,18 @@
 declare_project()
 
+set(DUMMY_SHADER_SOURCES
+    ${SHARED_SHADERS_DIR}/shader.frag
+    ${SHARED_SHADERS_DIR}/shader.vert)
+
 add_executable(${PROJECT_NAME}
     main.cpp
     dummy.cpp
     dummy.hpp)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${DUMMY_BINARY_DIR}/${CMAKE_BUILD_TYPE}/"
+    LIBRARY_OUTPUT_DIRECTORY "${DUMMY_BINARY_DIR}/${CMAKE_BUILD_TYPE}/"
+    RUNTIME_OUTPUT_DIRECTORY "${DUMMY_BINARY_DIR}/${CMAKE_BUILD_TYPE}/")
+
+
+generate_glslc_script(PROJECT_DIR ${DUMMY_BINARY_DIR} SHADER_PATHS ${DUMMY_SHADER_SOURCES})

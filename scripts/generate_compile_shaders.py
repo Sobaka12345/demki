@@ -37,6 +37,6 @@ for shader in args.shader_file:
     script += "glslc " + shader[0] + " -o " + compiled_path + "\n"
 
 with open(
-    os.path.join(args.dest_folder, "compile_shaders." + "bat" if os.name == 'nt' else "sh"),
+    os.path.join(args.dest_folder, "compile_shaders." + ("bat" if os.name == 'nt' else "sh")),
         'w', encoding='utf-8') as output:
     output.write(script)
