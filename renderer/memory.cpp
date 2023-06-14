@@ -25,6 +25,7 @@ void Memory::Mapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
 void Memory::Mapped::sync(VkDeviceSize size, ptrdiff_t offset)
 {
     VkMappedMemoryRange memoryRange{};
+    memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     memoryRange.memory = memory.deviceMemory;
     memoryRange.size = size;
     memoryRange.offset = static_cast<VkDeviceSize>(offset);
@@ -37,8 +38,8 @@ void Memory::Mapped::writeAndSync(const void *src, VkDeviceSize size, ptrdiff_t 
     sync(size, offset);
 }
 
-Memory::Memory(const Device& buffer, VkMemoryAllocateInfo allocInfo)
-    : buffer(buffer)
+Memory::Memory(const Device& device, VkMemoryAllocateInfo allocInfo)
+    : buffer(device)
     , size(allocInfo.allocationSize)
     , memoryType(allocInfo.memoryTypeIndex)
 {
@@ -47,10 +48,11 @@ Memory::Memory(const Device& buffer, VkMemoryAllocateInfo allocInfo)
 
 Memory::~Memory()
 {
+    mapped.reset();
     vkFreeMemory(buffer.device(), deviceMemory, nullptr);
 }
 
-std::shared_ptr<Memory::Mapped> Memory::map(VkMemoryMapFlags flags, VkDeviceSize offset)
+std::weak_ptr<Memory::Mapped> Memory::map(VkMemoryMapFlags flags, VkDeviceSize offset)
 {
     DASSERT(!mapped);
     mapped = std::make_shared<Mapped>(*this, flags, offset);

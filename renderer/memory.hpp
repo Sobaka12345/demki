@@ -29,7 +29,7 @@ struct Memory
         Memory(const Device& buffer, VkMemoryAllocateInfo size);
         ~Memory();
 
-        std::shared_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
+        std::weak_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
         void unmap();
 
         const Device& buffer;
@@ -59,19 +59,19 @@ public:
     virtual ~SIMemoryAccessor() {};
 
     VkDevice device() const { return m_device; }
-    std::shared_ptr<Memory> memory() const { return m_memory; }
+    std::weak_ptr<Memory> memory() const { return m_memory; }
 
     bool bindMemory(uint32_t bindingOffset)
     {
         return impl()->bindMemory(bindingOffset);
     }
 
-    std::shared_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties)
+    std::weak_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties)
     {
         return impl()->allocateMemory(properties);
     }
 
-    std::shared_ptr<Memory> allocateAndBindMemory(VkMemoryPropertyFlags properties, uint32_t bindingOffset = 0)
+    std::weak_ptr<Memory> allocateAndBindMemory(VkMemoryPropertyFlags properties, uint32_t bindingOffset = 0)
     {
         allocateMemory(properties);
         ASSERT(bindMemory(bindingOffset));

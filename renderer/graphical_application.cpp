@@ -174,7 +174,7 @@ void GraphicalApplication::initBase()
     createSyncObjects();
     createCommandPool();
 
-    // Swap Chain
+    //// Swap Chain
     createSwapChain();
     createImageViews();
     createRenderPass();
@@ -349,6 +349,10 @@ void GraphicalApplication::recreateSwapChain()
 
 void GraphicalApplication::cleanupSwapChain()
 {
+    vkDestroyImageView(*m_device, m_depthImageView, nullptr);
+    vkDestroyImage(*m_device, m_depthImage, nullptr);
+    vkFreeMemory(*m_device, m_depthMemory, nullptr);
+
     for (auto framebuffer : m_vkSwapChainFramebuffers)
     {
         vkDestroyFramebuffer(*m_device, framebuffer, nullptr);
@@ -514,18 +518,16 @@ void GraphicalApplication::createFramebuffers()
 //        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthMemory);
 //    const auto depthImageView = createImageView(depthImagef, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-VkImage depthImage;
-    VkDeviceMemory depthMemory;
     createImage(m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, depthFormat,
-        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthMemory);
-    const auto depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage, m_depthMemory);
+    m_depthImageView = createImageView(m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     m_vkSwapChainFramebuffers.resize(m_vkSwapChainImageViews.size());
     for (size_t i = 0; i < m_vkSwapChainImageViews.size(); i++)
     {
         const std::array<VkImageView, 2> attachments = {
             m_vkSwapChainImageViews[i],
-            depthImageView
+            m_depthImageView
         };
 
         const VkFramebufferCreateInfo framebufferInfo = create::frameBufferCreateInfo(
@@ -614,7 +616,7 @@ void GraphicalApplication::createImage(uint32_t width, uint32_t height,
     ASSERT(vkAllocateMemory(*m_device, &allocInfo, nullptr, &imageMemory) == VK_SUCCESS,
         "failed to allocate image memory!");
 
-    vkBindImageMemory(*m_device, image, imageMemory, 0);
+    ASSERT(vkBindImageMemory(*m_device, image, imageMemory, 0) == VK_SUCCESS);
 }
 
 void GraphicalApplication::createCommandBuffers()
@@ -701,13 +703,17 @@ void GraphicalApplication::drawFrame()
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr; // Optional
     result = vkQueuePresentKHR(m_vkPresentQueue, &presentInfo);
-    ASSERT(result == VK_SUCCESS, "failed to present swap chain image!");
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized || m_windowIconified)
     {
         m_framebufferResized = false;
         recreateSwapChain();
     }
+    else if (result != VK_SUCCESS)
+    {
+        ASSERT(false, "failed to present swap chain image!");
+    }
+
 
     m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;
 }

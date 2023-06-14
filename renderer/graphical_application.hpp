@@ -162,9 +162,9 @@ protected:
         vk::StagingBuffer stagingBuffer(*m_device, buffer->size());
         stagingBuffer.allocateAndBindMemory(
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-            ->map()
-            ->write(data.data(), buffer->size());
-        stagingBuffer.memory()->unmap();
+            .lock()->map()
+            .lock()->write(data.data(), buffer->size());
+        stagingBuffer.memory().lock()->unmap();
 
         stagingBuffer.copyTo(*buffer, m_vkCommandPool, m_vkGraphicsQueue,
             vk::create::bufferCopy(buffer->size()));
@@ -194,7 +194,9 @@ private:
 
     std::vector<VkCommandBuffer> m_vkCommandBuffers;
 
-    std::unique_ptr<vk::Image> m_depthImage;
+    VkImage m_depthImage;
+    VkImageView m_depthImageView;
+    VkDeviceMemory m_depthMemory;
 
     VkSwapchainKHR m_vkSwapChain;
     VkFormat m_vkSwapChainImageFormat;

@@ -32,6 +32,7 @@ public:
 
     virtual ~DescriptorSet()
     {
+        //vkFreeDescriptorSets()
         // TO DO: FREE DESC SETS
     }
 
@@ -43,7 +44,7 @@ public:
 
     void write(std::span<const Write> writes)
     {
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets(writes.size());
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
         for (auto& write : writes)
         {
             writeDescriptorSets.push_back(

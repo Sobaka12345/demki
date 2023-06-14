@@ -1,10 +1,7 @@
 #pragma once
 
-#include <span>
 #include <array>
 #include <concepts>
-
-#include <vulkan/vulkan.h>
 
 #include "utils.hpp"
 
@@ -36,7 +33,7 @@ inline VkDeviceQueueCreateInfo deviceQueueCreateInfo(
 inline constexpr VkDeviceCreateInfo deviceCreateInfo(
     const std::span<VkDeviceQueueCreateInfo> queueCreateInfos,
     const std::span<const char* const> enabledExtensionNames,
-    const std::span<const char* const> enabledLayerNames = std::span<const char* const, 0>(),
+    const std::span<const char* const> enabledLayerNames = {},
     const VkPhysicalDeviceFeatures*    pEnabledFeatures = nullptr,
     VkDeviceCreateFlags                flags = 0,
     const void*                        pNext = nullptr)
@@ -440,7 +437,8 @@ inline constexpr VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlag
 }
 
 inline constexpr VkImageViewCreateInfo imageViewCreateInfo(VkImage image, VkImageViewType type, VkFormat format,
-    VkImageSubresourceRange subresourceRange, VkComponentMapping components = {}, const void* pNext = nullptr)
+    VkImageSubresourceRange subresourceRange, VkComponentMapping components = {},
+    VkImageViewCreateFlags flags = 0, const void* pNext = nullptr)
 {
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -449,6 +447,7 @@ inline constexpr VkImageViewCreateInfo imageViewCreateInfo(VkImage image, VkImag
     viewInfo.format = format;
     viewInfo.subresourceRange = subresourceRange;
     viewInfo.components = components;
+    viewInfo.flags = flags;
     viewInfo.pNext = pNext;
 
     return viewInfo;
@@ -611,6 +610,7 @@ inline constexpr VkSwapchainCreateInfoKHR swapChainCreateInfoKHR(
     result.presentMode = presentMode;
     result.clipped = clipped;
     result.oldSwapchain = oldSwapchain;
+    result.flags = flags;
     result.pNext = pNext;
 
     return result;

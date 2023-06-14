@@ -101,6 +101,7 @@ Tetris::~Tetris()
 
 void Tetris::initTextures()
 {
+    /*
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load("textures/roshi.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -121,7 +122,7 @@ void Tetris::initTextures()
         VK_SHARING_MODE_EXCLUSIVE
     );
 
-    stbi_image_free(pixels);
+    stbi_image_free(pixels);*/
 }
 
 void Tetris::initApplication()
@@ -144,20 +145,21 @@ void Tetris::initApplication()
     m_modelBuffer = std::make_unique<UniformBuffer<UBOModel>>(*m_device, Field::s_objectsCount);
     m_modelBuffer
         ->allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-        ->map();
+        .lock()->map();
 
     m_viewProjectionBuffer = std::make_unique<UniformBuffer<UBOViewProjection>>(*m_device, 1);
     m_viewProjectionBuffer
         ->allocateAndBindMemory(
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-        ->map();
+        .lock()->map();
 
     m_descriptorPool = std::make_unique<TetrisDP>(*m_device);
     m_descriptorSet = m_descriptorPool->allocateSet(*m_descriptorSetLayout, m_vkPipelineLayout);
-    m_descriptorSet->write(std::array{
+    const std::array writeSets{
         DescriptorSet::Write{m_modelBuffer->descriptorBufferInfo(), TetrisDSL::s_modelBinding},
         DescriptorSet::Write{m_viewProjectionBuffer->descriptorBufferInfo(), TetrisDSL::s_cameraBinding},
-    });
+    };
+    m_descriptorSet->write(writeSets);
 
     // TO DO: MOVE TO CAMERA CLASS
     {

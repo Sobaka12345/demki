@@ -24,7 +24,7 @@ public:
 
     class QueueFamilies
     {
-        static constexpr uint32_t s_invalidIndex = std::numeric_limits<uint32_t>::max();
+        static constexpr uint32_t s_invalidIndex = (std::numeric_limits<uint32_t>::max)();
     public:
         QueueFamilies();
         QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);

@@ -66,8 +66,8 @@ Device::Device()
 }
 
 Device::Device(Device &&other)
-    : m_instance(std::move(other.m_instance))
-    , m_surface(std::move(other.m_surface))
+    : m_instance(other.m_instance)
+    , m_surface(other.m_surface)
     , m_device(std::move(other.m_device))
     , m_physicalDevice(std::move(other.m_physicalDevice))
     , m_physicalDeviceFeatures(std::move(other.m_physicalDeviceFeatures))

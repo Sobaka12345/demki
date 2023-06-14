@@ -16,6 +16,7 @@ class Buffer : public SIMemoryAccessor<Buffer>
 {
 public:
     Buffer(Buffer&& other);
+    Buffer(const Buffer& other) = delete;
     Buffer(const Device& device, VkBufferCreateInfo bufferInfo);
     ~Buffer();
 
@@ -46,13 +47,13 @@ public:
     VertexBuffer(const Device& device, size_t vertexCount, size_t vertexSize)
         : Buffer(device, create::bufferCreateInfo(
             static_cast<VkDeviceSize>(vertexCount * vertexSize),
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_SHARING_MODE_EXCLUSIVE))
         , m_vertexCount(static_cast<uint32_t>(vertexCount))
     {}
 
     uint32_t vertexCount() const { return m_vertexCount; }
-
+    
 private:
     uint32_t m_vertexCount;
 };
@@ -72,7 +73,7 @@ public:
     IndexBuffer(const Device& device, size_t indexCount, size_t indexSize)
         : Buffer(device, create::bufferCreateInfo(
             static_cast<VkDeviceSize>(indexCount * indexSize),
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_SHARING_MODE_EXCLUSIVE))
         , m_indexCount(static_cast<uint32_t>(indexCount))
     {}

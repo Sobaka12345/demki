@@ -68,7 +68,7 @@ int32_t Field::flushRowsAndSpawnFigure()
 
 int Field::flushRows(int32_t topRowBound, int32_t bottomRowBound)
 {
-    topRowBound = std::max(topRowBound, 1);
+    topRowBound = (std::max)(topRowBound, 1);
 
     int32_t flushedCount = 0;
     for (; topRowBound <= bottomRowBound; ++topRowBound)
