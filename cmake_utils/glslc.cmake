@@ -25,4 +25,10 @@ function(generate_glslc_script)
         )
     ")
 
+    if(WIN32)
+        execute_process (COMMAND cmd /C "${GENERATE_GLSLC_SCRIPT_PROJECT_DIR}/compile_shaders.bat")
+    elseif(UNIX)
+        execute_process(COMMAND sh ${GENERATE_GLSLC_SCRIPT_PROJECT_DIR}/compile_shaders.sh)
+    endif()
+
 endfunction()
