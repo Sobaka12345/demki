@@ -2,3 +2,4 @@ build
 install
 build_env
 compile_commands.json
+CMakeUserPresets.json

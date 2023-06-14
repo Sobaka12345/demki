@@ -11,7 +11,5 @@ class DemkiConan(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
-        tc.presets_prefix = "conan-" + str(self.settings.build_type).lower() + "-preset"
-        #tc.variables["MYVAR"] = "MYVAR_VALUE"
-        #tc.preprocessor_definitions["MYDEFINE"] = "MYDEF_VALUE"
+        tc.presets_prefix = "conan-preset"
         tc.generate()

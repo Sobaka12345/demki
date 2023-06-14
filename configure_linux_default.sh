@@ -7,7 +7,7 @@ if ! command -v python3 &> /dev/null; then
     exit
 fi;
 
-if [[ ${build_conf} != "Debug" ]] && [[ ${build_conf} != "Release" ]] && [[ ${build_conf} != "RelWithDebInfo" ]]; then
+if [[ ${build_conf} != "Debug" ]] && [[ ${build_conf} != "Release" ]] && [[ ${build_conf} != "RelWithDebInfo" ]] && [[ ${build_conf} != "MinSizeRel" ]]; then
     build_conf="Debug"
     echo "Using default build type: $build_conf"
 fi;
@@ -19,4 +19,4 @@ pip3 install --upgrade pip
 pip3 install conan
 conan profile detect
 
-conan install . -of build/$build_conf -s build_type=$build_conf --build=missing
+conan install . -of build -s build_type=$build_conf --build=missing

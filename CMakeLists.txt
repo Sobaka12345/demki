@@ -34,11 +34,3 @@ add_subdirectory(dummy)
 target_link_libraries(renderer PUBLIC glfw Vulkan::Vulkan glm::glm stb::stb)
 target_link_libraries(tetris PRIVATE renderer)
 target_link_libraries(dummy PRIVATE renderer)
-
-execute_process (
-    COMMAND bash -c "ln -s ${CMAKE_SOURCE_DIR}/textures ${tetris_BINARY_DIR}/textures"
-)
-
-execute_process (
-    COMMAND bash -c "ln -s -f ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR}/compile_commands.json"
-)
