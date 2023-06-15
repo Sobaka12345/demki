@@ -7,7 +7,7 @@
 
 namespace vk {
 
-class CommandPool
+class CommandPool : public HandleBase<VkCommandPool>
 {
 public:
     CommandPool(const Device& device, VkCommandPoolCreateInfo poolInfo);
@@ -21,7 +21,6 @@ public:
 
 private:
     const Device& m_device;
-    VkCommandPool m_commandPool;
 };
 
 }

@@ -6,34 +6,34 @@
 namespace vk {
 
 Buffer::Buffer(Buffer&& other)
-    : SIMemoryAccessor(std::move(other))
+    : HandleBase(std::move(other))
+    , SIMemoryAccessor(std::move(other))
     , m_size(std::move(other.m_size))
-    , m_buffer(std::move(other.m_buffer))
 {
-    other.m_buffer = VK_NULL_HANDLE;
 }
 
 Buffer::Buffer(const Device& device, VkBufferCreateInfo bufferInfo)
     : SIMemoryAccessor(device, bufferInfo.sharingMode)
     , m_size(bufferInfo.size)
 {
-    ASSERT(vkCreateBuffer(device, &bufferInfo, nullptr, &m_buffer) == VK_SUCCESS);
+    ASSERT(vkCreateBuffer(device, &bufferInfo, nullptr, &m_handle) == VK_SUCCESS);
 }
 
 Buffer::~Buffer()
 {
-    vkDestroyBuffer(m_device, m_buffer, nullptr);
+    vkDestroyBuffer(m_device, m_handle, nullptr);
 }
 
 bool Buffer::bindMemory(uint32_t bindingOffset)
 {
-    return vkBindBufferMemory(m_device, m_buffer, m_memory->deviceMemory, bindingOffset) == VK_SUCCESS;
+    DASSERT(m_memory);
+    return vkBindBufferMemory(m_device, m_handle, *m_memory, bindingOffset) == VK_SUCCESS;
 }
 
 std::shared_ptr<Memory> Buffer::allocateMemory(VkMemoryPropertyFlags properties)
 {
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(m_device, m_buffer, &memRequirements);
+    vkGetBufferMemoryRequirements(m_device, m_handle, &memRequirements);
 
     m_memory = std::make_shared<Memory>(m_device, create::memoryAllocateInfo(
         memRequirements.size,
@@ -56,7 +56,7 @@ void Buffer::copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue que
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     ASSERT(vkBeginCommandBuffer(commandBuffer, &beginInfo) == VK_SUCCESS);
-    vkCmdCopyBuffer(commandBuffer, m_buffer, buffer.m_buffer, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, m_handle, buffer.m_handle, 1, &copyRegion);
     ASSERT(vkEndCommandBuffer(commandBuffer) == VK_SUCCESS);
 
     VkSubmitInfo submitInfo{};

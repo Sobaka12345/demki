@@ -42,7 +42,7 @@ public:
         , m_objectsCount(objectsCount)
     {
         m_uboHandlers.resize(objectsCount);
-        m_descriptorBufferInfo = create::descriptorBufferInfo(buffer(), 0, dynamicAlignment());
+        m_descriptorBufferInfo = create::descriptorBufferInfo(handle(), 0, dynamicAlignment());
     }
 
     virtual std::shared_ptr<UBOHandler> tryGetUBOHandler() override

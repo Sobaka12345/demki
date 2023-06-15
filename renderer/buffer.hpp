@@ -4,7 +4,6 @@
 #include "device.hpp"
 #include "memory.hpp"
 
-#include <vulkan/vulkan.h>
 #include <list>
 #include <span>
 #include <memory>
@@ -12,11 +11,10 @@
 
 namespace vk {
 
-class Buffer : public SIMemoryAccessor<Buffer>
+class Buffer : public HandleBase<VkBuffer>, public SIMemoryAccessor<Buffer>
 {
 public:
     Buffer(Buffer&& other);
-    Buffer(const Buffer& other) = delete;
     Buffer(const Device& device, VkBufferCreateInfo bufferInfo);
     ~Buffer();
 
@@ -25,11 +23,9 @@ public:
 
     void copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue queue, VkBufferCopy copyRegion);
 
-    VkBuffer buffer() const { return m_buffer; }
     VkDeviceSize size() const { return m_size; }
 
 private:
-    VkBuffer m_buffer;
     VkDeviceSize m_size;
 };
 
@@ -53,7 +49,7 @@ public:
     {}
 
     uint32_t vertexCount() const { return m_vertexCount; }
-    
+
 private:
     uint32_t m_vertexCount;
 };

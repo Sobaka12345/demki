@@ -1,5 +1,7 @@
 #pragma once
 
+#include "handle_base.hpp"
+
 #include <set>
 #include <array>
 #include <vector>
@@ -10,7 +12,7 @@
 
 namespace vk {
 
-class Device
+class Device : public HandleBase<VkDevice>
 {
     static const std::array<const char* const, 1> s_deviceExtensions;
 
@@ -47,17 +49,13 @@ public:
 public:
     Device();
     Device(Device&& other);
-    Device(const Device& other) = delete;
     Device(VkInstance instance, VkSurfaceKHR surface);
     ~Device();
-
-    operator VkDevice() const { return m_device; }
 
     QueueFamilies queueFamilies() const { return m_queueFamilies; };
 
     VkQueue queue(QueueFamilyType type, uint32_t idx) const;
 
-    VkDevice device() const { return m_device; }
     VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
     VkPhysicalDeviceProperties physicalDeviceProperties() const { return m_physicalDeviceProperties; }
 
@@ -73,7 +71,6 @@ private:
     const VkSurfaceKHR m_surface;
 
     // TO DO: Support for multiple devices
-    VkDevice m_device;
     QueueFamilies m_queueFamilies;
     VkPhysicalDevice m_physicalDevice;
     VkPhysicalDeviceFeatures m_physicalDeviceFeatures;

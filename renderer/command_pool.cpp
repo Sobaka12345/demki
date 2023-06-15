@@ -9,26 +9,25 @@ namespace vk {
 CommandPool::CommandPool(const Device &device, VkCommandPoolCreateInfo poolInfo)
     : m_device(device)
 {
-    ASSERT(vkCreateCommandPool(device, &poolInfo, nullptr, &m_commandPool) == VK_SUCCESS,
+    ASSERT(vkCreateCommandPool(device, &poolInfo, nullptr, &m_handle) == VK_SUCCESS,
         "failed to create command pool!");
 }
 
 CommandPool::CommandPool(CommandPool &&other)
-    : m_device(std::move(other.m_device))
-    , m_commandPool(std::move(other.m_commandPool))
+    : HandleBase(std::move(other))
+    , m_device(other.m_device)
 {
-    other.m_commandPool = VK_NULL_HANDLE;
 }
 
 CommandPool::~CommandPool()
 {
-    vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+    vkDestroyCommandPool(m_device, m_handle, nullptr);
 }
 
 CommandBuffer CommandPool::allocateBuffer(VkCommandBufferLevel level)
 {
     VkCommandBuffer buffer;
-    const auto allocateInfo = create::commandBufferAllocateInfo(m_commandPool, level, 1);
+    const auto allocateInfo = create::commandBufferAllocateInfo(handle(), level, 1);
     ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, &buffer) == VK_SUCCESS,
         "failed to allocate command buffer!");
     return CommandBuffer{*this, buffer};
@@ -40,7 +39,7 @@ std::vector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count, VkComman
     result.reserve(count);
 
     std::vector<VkCommandBuffer> commandBuffers;
-    const auto allocateInfo = create::commandBufferAllocateInfo(m_commandPool, level, count);
+    const auto allocateInfo = create::commandBufferAllocateInfo(handle(), level, count);
     ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, commandBuffers.data()) == VK_SUCCESS,
         "failed to allocate command buffer!");
 

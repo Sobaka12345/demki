@@ -14,7 +14,6 @@ class DescriptorPool
 {
 public:
     DescriptorPool() = delete;
-    DescriptorPool(const DescriptorPool& other) = delete;
     DescriptorPool(const Device& device,
         uint32_t capacity, std::span<const VkDescriptorPoolSize> poolSizes);
     ~DescriptorPool();

@@ -11,33 +11,33 @@
 
 namespace vk {
 
-struct Memory
+struct Memory : public HandleBase<VkDeviceMemory>
+{
+    struct Mapped
     {
-        struct Mapped
-        {
-            Mapped(const Memory& memory, VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
-            ~Mapped();
-            void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
-            void sync(VkDeviceSize size, ptrdiff_t offset = 0);
-            void writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
+        Mapped(const Memory& memory, VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
+        ~Mapped();
+        void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
+        void sync(VkDeviceSize size, ptrdiff_t offset = 0);
+        void writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
 
-            const Memory& memory;
-            void* data;
-            VkDeviceSize offset;
-        };
-
-        Memory(const Device& buffer, VkMemoryAllocateInfo size);
-        ~Memory();
-
-        std::weak_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
-        void unmap();
-
-        const Device& buffer;
-        VkDeviceSize size;
-        VkDeviceMemory deviceMemory;
-        std::shared_ptr<Mapped> mapped;
-        uint32_t memoryType;
+        const Memory& memory;
+        void* data;
+        VkDeviceSize offset;
     };
+
+    Memory(const Device& device, VkMemoryAllocateInfo size);
+    Memory(Memory&& other);
+    ~Memory();
+
+    std::weak_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
+    void unmap();
+
+    const Device& device;
+    VkDeviceSize size;
+    std::shared_ptr<Mapped> mapped;
+    uint32_t memoryType;
+};
 
 template <typename Impl>
 class SIMemoryAccessor

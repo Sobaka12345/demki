@@ -20,7 +20,7 @@ struct ImageBuilder
     VkImageLayout            initialLayout;
 };
 
-class Image : public SIMemoryAccessor<Image>
+class Image : public SIMemoryAccessor<Image>, public HandleBase<VkImage>
 {
 public:
     Image(Image&& other);
@@ -31,11 +31,6 @@ public:
     std::shared_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties);
 
     void copyTo(const Image& Image, VkCommandPool commandPool, VkQueue queue, VkImageCopy copyRegion);
-
-    VkImage image() const { return m_image; }
-
-private:
-    VkImage m_image;
 };
 
 }

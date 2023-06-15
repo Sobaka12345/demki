@@ -26,10 +26,10 @@ public:
 
     void bindModel(VkCommandBuffer commandBuffer)
     {
-        VkBuffer vertexBuffers[] = {m_vertexBuffer->buffer()};
+        VkBuffer vertexBuffers[] = {m_vertexBuffer->handle()};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->buffer(), 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->handle(), 0, VK_INDEX_TYPE_UINT16);
     }
 
 private:

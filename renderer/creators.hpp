@@ -86,6 +86,22 @@ inline constexpr VkMemoryAllocateInfo memoryAllocateInfo(VkDeviceSize size, uint
     return allocInfo;
 }
 
+inline constexpr VkMappedMemoryRange mappedMemoryRange(
+    VkDeviceMemory     memory,
+    VkDeviceSize       offset,
+    VkDeviceSize       size,
+    const void*        pNext = nullptr)
+{
+    VkMappedMemoryRange result{};
+    result.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    result.memory = memory;
+    result.size = size;
+    result.offset = offset;
+    result.pNext = pNext;
+
+    return result;
+}
+
  inline constexpr VkCommandBufferAllocateInfo commandBufferAllocateInfo(VkCommandPool commandPool,
     VkCommandBufferLevel level, uint32_t commandBufferCount, const void* pNext = nullptr)
  {
