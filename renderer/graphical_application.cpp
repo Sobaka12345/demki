@@ -111,7 +111,7 @@ GraphicalApplication::~GraphicalApplication()
         vkDestroySemaphore(*m_device, m_vkRenderFinishedSemaphores[i], nullptr);
     }
 
-    vkDestroyCommandPool(*m_device, m_vkCommandPool, nullptr);
+    m_commandPool.reset();
     m_device.reset();
     if (s_enableValidationLayers)
     {
@@ -138,7 +138,7 @@ int GraphicalApplication::mainLoop()
         drawFrame();
     }
 
-    vkDeviceWaitIdle(*m_device);
+    m_device->waitIdle();
     return 0;
 }
 
@@ -173,7 +173,12 @@ void GraphicalApplication::initBase()
     createWindowSurface();
     createLogicalDevice();
     createSyncObjects();
-    createCommandPool();
+
+    m_commandPool = std::make_unique<CommandPool>(*m_device,
+        create::commandPoolCreateInfo(
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+            m_device->queueFamilies()[Device::GRAPHICS])
+    );
 
     //// Swap Chain
     createSwapChain();
@@ -181,7 +186,7 @@ void GraphicalApplication::initBase()
     createRenderPass();
     createFramebuffers();
 
-    createCommandBuffers();
+    m_commandBuffers = m_commandPool->allocateBuffers(m_maxFramesInFlight);
 }
 
 void GraphicalApplication::createInstance()
@@ -326,8 +331,8 @@ void GraphicalApplication::createSwapChain() {
         "failed to create swap chain!");
 
     vkGetSwapchainImagesKHR(*m_device, m_vkSwapChain, &imageCount, nullptr);
-    m_vkSwapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(*m_device, m_vkSwapChain, &imageCount, m_vkSwapChainImages.data());
+    m_swapChainImages.resize(imageCount, *m_device);
+    vkGetSwapchainImagesKHR(*m_device, m_vkSwapChain, &imageCount, m_swapChainImages.handleData());
 
     m_vkSwapChainImageFormat = surfaceFormat.format;
     m_vkSwapChainExtent = VkExtent3D{extent.width, extent.height, 1};
@@ -339,7 +344,7 @@ void GraphicalApplication::recreateSwapChain()
     {
         glfwWaitEvents();
     }
-    vkDeviceWaitIdle(*m_device);
+    m_device->waitIdle();
 
     cleanupSwapChain();
 
@@ -350,18 +355,12 @@ void GraphicalApplication::recreateSwapChain()
 
 void GraphicalApplication::cleanupSwapChain()
 {
-    vkDestroyImageView(*m_device, m_depthImageView, nullptr);
-    vkDestroyImage(*m_device, m_depthImage, nullptr);
-    vkFreeMemory(*m_device, m_depthMemory, nullptr);
+    m_depthImageView.reset();
+    m_depthImage.reset();
 
-    for (auto framebuffer : m_vkSwapChainFramebuffers)
-    {
-        vkDestroyFramebuffer(*m_device, framebuffer, nullptr);
-    }
-    for (auto imageView : m_vkSwapChainImageViews)
-    {
-        vkDestroyImageView(*m_device, imageView, nullptr);
-    }
+    m_swapChainFramebuffers.clear();
+    m_swapChainImageViews.clear();
+    m_swapChainImages.clear();
     vkDestroySwapchainKHR(*m_device, m_vkSwapChain, nullptr);
 }
 
@@ -373,12 +372,10 @@ void GraphicalApplication::createWindowSurface()
 
 void GraphicalApplication::createImageViews()
 {
-    m_vkSwapChainImageViews.resize(m_vkSwapChainImages.size());
-
-    for (size_t i = 0; i < m_vkSwapChainImages.size(); ++i)
+    for (size_t i = 0; i < m_swapChainImages.size(); ++i)
     {
-        m_vkSwapChainImageViews[i] = createImageView(m_vkSwapChainImages[i],
-            m_vkSwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+        m_swapChainImageViews.emplace_back(*m_device, defaultImageViewCreateInfo(m_swapChainImages[i],
+            m_vkSwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT));
     }
 }
 
@@ -506,49 +503,32 @@ VkPipeline GraphicalApplication::defaultGraphicsPipeline(VkDevice device,
     return result;
 }
 
-
 void GraphicalApplication::createFramebuffers()
 {
     VkFormat depthFormat = findDepthFormat();
 
-//    Image depthimagef(*m_device,
-//        create::imageCreateInfo(VK_IMAGE_TYPE_2D, m_vkSwapChainExtent, 1, 1,
-//        depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED,
-//        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SAMPLE_COUNT_1_BIT));
-//    createImage(m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, depthFormat,
-//        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthMemory);
-//    const auto depthImageView = createImageView(depthImagef, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    m_depthImage = std::make_unique<Image>(*m_device,
+        create::imageCreateInfo(VK_IMAGE_TYPE_2D, m_vkSwapChainExtent, 1, 1,
+            depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_SAMPLE_COUNT_1_BIT));
+    m_depthImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    createImage(m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, depthFormat,
-        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage, m_depthMemory);
-    m_depthImageView = createImageView(m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    m_depthImageView = std::make_unique<ImageView>(*m_device,
+        defaultImageViewCreateInfo(*m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT));
 
-    m_vkSwapChainFramebuffers.resize(m_vkSwapChainImageViews.size());
-    for (size_t i = 0; i < m_vkSwapChainImageViews.size(); i++)
+    for (size_t i = 0; i < m_swapChainImageViews.size(); i++)
     {
         const std::array<VkImageView, 2> attachments = {
-            m_vkSwapChainImageViews[i],
-            m_depthImageView
+            m_swapChainImageViews[i],
+            *m_depthImageView
         };
 
         const VkFramebufferCreateInfo framebufferInfo = create::frameBufferCreateInfo(
             m_vkRenderPass, attachments,
             m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, 1);
 
-        ASSERT(vkCreateFramebuffer(*m_device, &framebufferInfo, nullptr, &m_vkSwapChainFramebuffers[i]) == VK_SUCCESS,
-            "failed to create framebuffer!");
+        m_swapChainFramebuffers.emplace_back(*m_device, framebufferInfo);
     }
-}
-
-void GraphicalApplication::createCommandPool()
-{
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = m_device->queueFamilies()[Device::GRAPHICS];
-
-    ASSERT(vkCreateCommandPool(*m_device, &poolInfo, nullptr, &m_vkCommandPool) == VK_SUCCESS,
-        "failed to create command pool!");
 }
 
 VkFormat GraphicalApplication::findSupportedFormat(const std::vector<VkFormat>& candidates,
@@ -586,51 +566,9 @@ bool GraphicalApplication::hasStencilComponent(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-VkImageView GraphicalApplication::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
-    const auto viewInfo = create::imageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format,
+VkImageViewCreateInfo GraphicalApplication::defaultImageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+    return create::imageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format,
         create::imageSubresourceRange(aspectFlags, 0, 1, 0, 1));
-
-    VkImageView imageView;
-    ASSERT(vkCreateImageView(*m_device, &viewInfo, nullptr, &imageView) == VK_SUCCESS,
-        "failed to create texture image view!");
-
-    return imageView;
-}
-
-void GraphicalApplication::createImage(uint32_t width, uint32_t height,
-    VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-    VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
-    VkImageCreateInfo imageInfo =
-        create::imageCreateInfo(VK_IMAGE_TYPE_2D, create::extent3D(width, height, 1),
-        1, 1, format, tiling, VK_IMAGE_LAYOUT_UNDEFINED,
-        usage, VK_SAMPLE_COUNT_1_BIT, VK_SHARING_MODE_EXCLUSIVE);
-
-    ASSERT(vkCreateImage(*m_device, &imageInfo, nullptr, &image) == VK_SUCCESS,
-        "failed to create image!");
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(*m_device, image, &memRequirements);
-
-    const auto allocInfo = create::memoryAllocateInfo(memRequirements.size,
-        utils::findMemoryType(m_device->physicalDevice(), memRequirements.memoryTypeBits, properties));
-
-    ASSERT(vkAllocateMemory(*m_device, &allocInfo, nullptr, &imageMemory) == VK_SUCCESS,
-        "failed to allocate image memory!");
-
-    ASSERT(vkBindImageMemory(*m_device, image, imageMemory, 0) == VK_SUCCESS);
-}
-
-void GraphicalApplication::createCommandBuffers()
-{
-    m_vkCommandBuffers.resize(m_maxFramesInFlight);
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = m_vkCommandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = m_vkCommandBuffers.size();
-
-    ASSERT(vkAllocateCommandBuffers(*m_device, &allocInfo, m_vkCommandBuffers.data()) == VK_SUCCESS,
-        "failed to allocate command buffers!");
 }
 
 void GraphicalApplication::createSyncObjects()
@@ -672,8 +610,8 @@ void GraphicalApplication::drawFrame()
     }
 
     vkResetFences(*m_device, 1, &m_vkInFlightFences[m_currentFrame]);
-    vkResetCommandBuffer(m_vkCommandBuffers[m_currentFrame], 0);
-    recordCommandBuffer(m_vkCommandBuffers[m_currentFrame], imageIndex);
+    vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
+    recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -684,7 +622,7 @@ void GraphicalApplication::drawFrame()
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_vkCommandBuffers[m_currentFrame];
+    submitInfo.pCommandBuffers = m_commandBuffers[m_currentFrame].handlePtr();
     VkSemaphore signalSemaphores[] = {m_vkRenderFinishedSemaphores[m_currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;

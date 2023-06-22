@@ -117,7 +117,7 @@ void Field::tryRotateFigure()
     }
 }
 
-void Field::draw(VkCommandBuffer commandBuffer) const
+void Field::draw(const vk::CommandBuffer& commandBuffer) const
 {
     if (m_figure)
     {

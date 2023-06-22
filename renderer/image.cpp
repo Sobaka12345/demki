@@ -2,20 +2,28 @@
 
 namespace vk {
 
-Image::Image(Image&& other)
-    : HandleBase(std::move(other))
+Image::Image(Image&& other) noexcept
+    : Handle(std::move(other))
     , SIMemoryAccessor(std::move(other))
 {}
 
-Image::Image(const Device& device, VkImageCreateInfo imageInfo)
-    : SIMemoryAccessor(device, imageInfo.sharingMode)
+
+Image::Image(const Device& device, VkHandleType* handlePtr)
+    : Handle(handlePtr)
+    , SIMemoryAccessor(device)
+{}
+
+Image::Image(const Device& device, VkImageCreateInfo imageInfo, VkHandleType* handlePtr)
+    : Handle(handlePtr)
+    , SIMemoryAccessor(device)
 {
-    ASSERT(vkCreateImage(device, &imageInfo, nullptr, &m_handle) == VK_SUCCESS);
+    ASSERT(create(vkCreateImage, device, &imageInfo, nullptr) == VK_SUCCESS,
+        "failed to create image!");
 }
 
 Image::~Image()
 {
-    vkDestroyImage(m_device, handle(), nullptr);
+    destroy(vkDestroyImage, m_device, handle(), nullptr);
 }
 
 bool Image::bindMemory(uint32_t bindingOffset)

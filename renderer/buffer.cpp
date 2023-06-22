@@ -5,35 +5,41 @@
 
 namespace vk {
 
-Buffer::Buffer(Buffer&& other)
-    : HandleBase(std::move(other))
+Buffer::Buffer(Buffer&& other) noexcept
+    : Handle(std::move(other))
     , SIMemoryAccessor(std::move(other))
     , m_size(std::move(other.m_size))
 {
 }
 
-Buffer::Buffer(const Device& device, VkBufferCreateInfo bufferInfo)
-    : SIMemoryAccessor(device, bufferInfo.sharingMode)
+Buffer::Buffer(const Device& device, VkHandleType* handlePtr) noexcept
+    : Handle(handlePtr)
+    , SIMemoryAccessor(device)
+{}
+
+Buffer::Buffer(const Device& device, VkBufferCreateInfo bufferInfo, VkHandleType* handlePtr)
+    : Handle(handlePtr)
+    , SIMemoryAccessor(device)
     , m_size(bufferInfo.size)
 {
-    ASSERT(vkCreateBuffer(device, &bufferInfo, nullptr, &m_handle) == VK_SUCCESS);
+    ASSERT(create(vkCreateBuffer, device, &bufferInfo, nullptr) == VK_SUCCESS);
 }
 
 Buffer::~Buffer()
 {
-    vkDestroyBuffer(m_device, m_handle, nullptr);
+    destroy(vkDestroyBuffer, m_device, handle(), nullptr);
 }
 
 bool Buffer::bindMemory(uint32_t bindingOffset)
 {
     DASSERT(m_memory);
-    return vkBindBufferMemory(m_device, m_handle, *m_memory, bindingOffset) == VK_SUCCESS;
+    return vkBindBufferMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
 }
 
 std::shared_ptr<Memory> Buffer::allocateMemory(VkMemoryPropertyFlags properties)
 {
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(m_device, m_handle, &memRequirements);
+    vkGetBufferMemoryRequirements(m_device, handle(), &memRequirements);
 
     m_memory = std::make_shared<Memory>(m_device, create::memoryAllocateInfo(
         memRequirements.size,
@@ -56,7 +62,7 @@ void Buffer::copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue que
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     ASSERT(vkBeginCommandBuffer(commandBuffer, &beginInfo) == VK_SUCCESS);
-    vkCmdCopyBuffer(commandBuffer, m_handle, buffer.m_handle, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, handle(), buffer.handle(), 1, &copyRegion);
     ASSERT(vkEndCommandBuffer(commandBuffer) == VK_SUCCESS);
 
     VkSubmitInfo submitInfo{};

@@ -14,11 +14,15 @@ add_library(${PROJECT_NAME} STATIC
     descriptor_pool.cpp
     device.hpp
     device.cpp
+    framebuffer.cpp
+    framebuffer.hpp
     graphical_application.hpp
     graphical_application.cpp
-    handle_base.hpp
+    handle.hpp
     image.hpp
     image.cpp
+    image_view.hpp
+    image_view.cpp
     memory.hpp
     memory.cpp
     model.cpp

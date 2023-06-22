@@ -16,6 +16,6 @@ void Dummy::update(int64_t dt)
 {
 }
 
-void Dummy::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void Dummy::recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
 }

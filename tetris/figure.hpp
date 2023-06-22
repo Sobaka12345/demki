@@ -13,7 +13,7 @@ class Block : public Renderable
 public:
     Block(std::unique_ptr<vk::UBOValue<vk::UBOModel>> position3D);
 
-    virtual void draw(VkCommandBuffer commandBuffer) const override;
+    virtual void draw(const vk::CommandBuffer& commandBuffer) const override;
     bool canMove(int32_t dx, int32_t dy);
     bool canSetPosition(Position position);
     void move(int32_t dx, int32_t dy);
@@ -43,7 +43,7 @@ public:
     virtual bool tryMove(int32_t dx, int32_t dy);
     virtual bool tryRotate();
     virtual Position rotationAnchor() const = 0;
-    virtual void draw(VkCommandBuffer commandBuffer) const override;
+    virtual void draw(const vk::CommandBuffer& commandBuffer) const override;
     virtual void setModel(std::weak_ptr<Model> model) override;
 
 protected:

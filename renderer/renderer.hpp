@@ -25,7 +25,7 @@ public:
 public:
     Renderer();
 
-    virtual void draw(VkCommandBuffer commandBuffer);
+    virtual void draw(const vk::CommandBuffer& commandBuffer);
 
     RenderableHandler pushObject(RenderablePtr object);
     void removeObject(RenderableHandler iter);

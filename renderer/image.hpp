@@ -4,33 +4,17 @@
 
 namespace vk {
 
-struct ImageBuilder
-{
-    VkImageType              imageType = VK_IMAGE_TYPE_2D;
-    VkFormat                 format ;
-    VkExtent3D               extent;
-    uint32_t                 mipLevels;
-    uint32_t                 arrayLayers;
-    VkSampleCountFlagBits    samples;
-    VkImageTiling            tiling;
-    VkImageUsageFlags        usage;
-    VkSharingMode            sharingMode;
-    uint32_t                 queueFamilyIndexCount;
-    const uint32_t*          pQueueFamilyIndices;
-    VkImageLayout            initialLayout;
-};
-
-class Image : public SIMemoryAccessor<Image>, public HandleBase<VkImage>
+class Image : public SIMemoryAccessor<Image>, public Handle<VkImage>
 {
 public:
-    Image(Image&& other);
-    Image(const Device& device, VkImageCreateInfo imageInfo);
+    Image(Image&& other) noexcept;
+    Image(const Image& other) = delete;
+    Image(const Device& device, VkHandleType* handle);
+    Image(const Device& device, VkImageCreateInfo imageInfo, VkHandleType* handlePtr = nullptr);
     ~Image();
 
     bool bindMemory(uint32_t bindingOffset);
     std::shared_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties);
-
-    void copyTo(const Image& Image, VkCommandPool commandPool, VkQueue queue, VkImageCopy copyRegion);
 };
 
 }

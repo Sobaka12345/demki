@@ -101,14 +101,14 @@ Tetris::~Tetris()
 
 void Tetris::initTextures()
 {
-    /*
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("textures/roshi.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    auto imagePath = (utils::fs::s_executablePath / "textures" / "roshi.jpg").string();
+    stbi_uc* pixels = stbi_load(imagePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     ASSERT(pixels, "failed to load texture image!");
 
-    //createAndWriteGPUBuffer()
+    //m_roshiImage = createAndWriteGPUBuffer()
 
     const auto imageCreateInfo = create::imageCreateInfo(
         VK_IMAGE_TYPE_2D,
@@ -122,7 +122,7 @@ void Tetris::initTextures()
         VK_SHARING_MODE_EXCLUSIVE
     );
 
-    stbi_image_free(pixels);*/
+    stbi_image_free(pixels);
 }
 
 void Tetris::initApplication()
@@ -259,7 +259,7 @@ void Tetris::update(int64_t dt)
 }
 
 // TO DO: POSSIBLY MOVE COMMAND BUFFER TO Renderer CLASS?
-void Tetris::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void Tetris::recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -272,7 +272,7 @@ void Tetris::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIn
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = m_vkRenderPass;
-    renderPassInfo.framebuffer = m_vkSwapChainFramebuffers[imageIndex];
+    renderPassInfo.framebuffer = m_swapChainFramebuffers[imageIndex];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent.height = m_vkSwapChainExtent.height;
     renderPassInfo.renderArea.extent.width = m_vkSwapChainExtent.width;

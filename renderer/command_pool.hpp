@@ -7,16 +7,16 @@
 
 namespace vk {
 
-class CommandPool : public HandleBase<VkCommandPool>
+class CommandPool : public Handle<VkCommandPool>
 {
 public:
-    CommandPool(const Device& device, VkCommandPoolCreateInfo poolInfo);
-    CommandPool(CommandPool&& other);
+    CommandPool(const Device& device, VkCommandPoolCreateInfo poolInfo, VkHandleType* handlePtr = nullptr);
+    CommandPool(CommandPool&& other) noexcept;
     CommandPool(const CommandPool& other) = delete;
     ~CommandPool();
 
     CommandBuffer allocateBuffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-    std::vector<CommandBuffer> allocateBuffers(uint32_t count,
+    HandleVector<CommandBuffer> allocateBuffers(uint32_t count,
         VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 private:

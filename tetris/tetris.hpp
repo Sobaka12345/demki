@@ -22,7 +22,7 @@ public:
 private:
     virtual void initApplication() override;    
     virtual void update(int64_t dt) override;
-    virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
+    virtual void recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_t imageIndex) override;
 
     void initTextures();
     void createGraphicsPipeline();
@@ -47,6 +47,7 @@ private:
     std::unique_ptr<vk::DescriptorSetLayout> m_descriptorSetLayout;
 
     std::shared_ptr<Model> m_cube;
+    std::unique_ptr<vk::Image> m_roshiImage;
     std::unique_ptr<vk::UBOValue<vk::UBOViewProjection>> m_camera;
     std::unique_ptr<vk::UniformBuffer<vk::UBOModel>> m_modelBuffer;
     std::unique_ptr<vk::UniformBuffer<vk::UBOViewProjection>> m_viewProjectionBuffer;

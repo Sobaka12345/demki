@@ -11,11 +11,12 @@
 
 namespace vk {
 
-class Buffer : public HandleBase<VkBuffer>, public SIMemoryAccessor<Buffer>
+class Buffer : public Handle<VkBuffer>, public SIMemoryAccessor<Buffer>
 {
 public:
-    Buffer(Buffer&& other);
-    Buffer(const Device& device, VkBufferCreateInfo bufferInfo);
+    Buffer(Buffer&& other) noexcept;
+    Buffer(const Device& device, VkHandleType* bufferInfo) noexcept;
+    Buffer(const Device& device, VkBufferCreateInfo bufferInfo, VkHandleType* handlePtr = nullptr);
     ~Buffer();
 
     bool bindMemory(uint32_t bindingOffset);

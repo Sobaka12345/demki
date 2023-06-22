@@ -1,24 +1,23 @@
 #pragma once
+#include "handle.hpp"
 
 #include <vulkan/vulkan.h>
 
 namespace vk {
 
-class CommandPool;
+class Device;
 
-class CommandBuffer
+class CommandBuffer : public Handle<VkCommandBuffer>
 {
-    friend class CommandPool;
-    CommandBuffer(const CommandPool& pool, VkCommandBuffer buffer);
-    //CommandBuffer(const CommandPool& pool, VkCommandBufferAllocateInfo buffer);
 
 public:
-    CommandBuffer(CommandBuffer&& other);
     CommandBuffer(const CommandBuffer& other) = delete;
+    CommandBuffer(CommandBuffer&& other) noexcept;
+    CommandBuffer(const Device& device, VkHandleType* handlePtr = nullptr);
+    ~CommandBuffer();
 
 private:
-    const CommandPool& m_pool;
-    VkCommandBuffer m_commandBuffer;
+    const Device& m_device;
 };
 
 }

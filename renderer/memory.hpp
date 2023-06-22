@@ -11,7 +11,7 @@
 
 namespace vk {
 
-struct Memory : public HandleBase<VkDeviceMemory>
+struct Memory : public Handle<VkDeviceMemory>
 {
     struct Mapped
     {
@@ -26,7 +26,7 @@ struct Memory : public HandleBase<VkDeviceMemory>
         VkDeviceSize offset;
     };
 
-    Memory(const Device& device, VkMemoryAllocateInfo size);
+    Memory(const Device& device, VkMemoryAllocateInfo size, VkHandleType* handlePtr = nullptr);
     Memory(Memory&& other);
     ~Memory();
 
@@ -44,15 +44,14 @@ class SIMemoryAccessor
 {
 
 public:
-    SIMemoryAccessor(SIMemoryAccessor&& other)
+    SIMemoryAccessor(SIMemoryAccessor&& other) noexcept
         : m_device(std::move(other.m_device))
         , m_memory(std::move(other.m_memory))
     {}
 
     SIMemoryAccessor(const SIMemoryAccessor& other) = delete;
 
-    SIMemoryAccessor(const Device& device,
-        VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE)
+    SIMemoryAccessor(const Device& device)
         : m_device(device)
     {}
 

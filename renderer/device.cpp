@@ -58,14 +58,15 @@ uint32_t Device::QueueFamilies::queueFamilyIndex(QueueFamilyType type) const
 }
 
 Device::Device()
-    : m_instance(VK_NULL_HANDLE)
+    : Handle(nullptr)
+    , m_instance(VK_NULL_HANDLE)
     , m_physicalDevice(VK_NULL_HANDLE)
     , m_surface(VK_NULL_HANDLE)
 {
 }
 
 Device::Device(Device &&other)
-    : HandleBase(std::move(other))
+    : Handle(std::move(other))
     , m_instance(other.m_instance)
     , m_surface(other.m_surface)
     , m_physicalDevice(std::move(other.m_physicalDevice))
@@ -75,8 +76,9 @@ Device::Device(Device &&other)
 {
 }
 
-Device::Device(VkInstance instance, VkSurfaceKHR surface)
-    : m_instance(instance)
+Device::Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePtr)
+    : Handle(handlePtr)
+    , m_instance(instance)
     , m_surface(surface)
 {
     pickPhysicalDevice();
@@ -85,7 +87,12 @@ Device::Device(VkInstance instance, VkSurfaceKHR surface)
 
 Device::~Device()
 {
-    vkDestroyDevice(m_handle, nullptr);
+    destroy(vkDestroyDevice, handle(), nullptr);
+}
+
+void Device::waitIdle() const
+{
+    vkDeviceWaitIdle(handle());
 }
 
 void Device::pickPhysicalDevice()
@@ -128,7 +135,7 @@ void Device::createLogicalDevice()
                 GraphicalApplication::s_validationLayers) :
             create::deviceCreateInfo(queueCreateInfos, s_deviceExtensions);
 
-    ASSERT(vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_handle) == VK_SUCCESS,
+    ASSERT(create(vkCreateDevice, m_physicalDevice, &createInfo, nullptr) == VK_SUCCESS,
         "failed to create logical device!");
 }
 
@@ -170,7 +177,7 @@ bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device)
 VkQueue Device::queue(QueueFamilyType type, uint32_t idx) const
 {
     VkQueue queue;
-    vkGetDeviceQueue(m_handle, m_queueFamilies.queueFamilyIndex(type), idx, &queue);
+    vkGetDeviceQueue(handle(), m_queueFamilies.queueFamilyIndex(type), idx, &queue);
     return queue;
 }
 

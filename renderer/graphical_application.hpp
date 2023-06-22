@@ -1,9 +1,12 @@
 #pragma once
 
-#include "image.hpp"
-#include "device.hpp"
 #include "buffer.hpp"
+#include "command_pool.hpp"
 #include "creators.hpp"
+#include "device.hpp"
+#include "framebuffer.hpp"
+#include "image.hpp"
+#include "image_view.hpp"
 
 #include <set>
 #include <string>
@@ -123,12 +126,11 @@ private:
     void createImageViews();
     void createRenderPass();
     void createFramebuffers();
-    void createCommandPool();
     void createCommandBuffers();
     void createSyncObjects();
 
     virtual void update(int64_t dt) = 0;
-    virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) = 0;
+    virtual void recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_t imageIndex) = 0;
     void drawFrame();
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
@@ -136,9 +138,8 @@ private:
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
 
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-        VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+    VkImageViewCreateInfo defaultImageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
@@ -166,7 +167,7 @@ protected:
             .lock()->write(data.data(), buffer->size());
         stagingBuffer.memory().lock()->unmap();
 
-        stagingBuffer.copyTo(*buffer, m_vkCommandPool, m_vkGraphicsQueue,
+        stagingBuffer.copyTo(*buffer, *m_commandPool, m_vkGraphicsQueue,
             vk::create::bufferCopy(buffer->size()));
 
         return buffer;
@@ -183,23 +184,22 @@ protected:
     std::unique_ptr<vk::Device> m_device;
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
     VkExtent3D m_vkSwapChainExtent;
-    VkCommandPool m_vkCommandPool;
     VkRenderPass m_vkRenderPass;
-    std::vector<VkFramebuffer> m_vkSwapChainFramebuffers;
+    std::unique_ptr<vk::CommandPool> m_commandPool;
+    std::vector<vk::Framebuffer> m_swapChainFramebuffers;
 
 private:
     std::vector<VkSemaphore> m_vkImageAvailableSemaphores;
     std::vector<VkSemaphore> m_vkRenderFinishedSemaphores;
     std::vector<VkFence> m_vkInFlightFences;
 
-    std::vector<VkCommandBuffer> m_vkCommandBuffers;
+    vk::HandleVector<vk::CommandBuffer> m_commandBuffers;
 
-    VkImage m_depthImage;
-    VkImageView m_depthImageView;
-    VkDeviceMemory m_depthMemory;
+    std::unique_ptr<vk::Image> m_depthImage;
+    std::unique_ptr<vk::ImageView> m_depthImageView;
 
     VkSwapchainKHR m_vkSwapChain;
     VkFormat m_vkSwapChainImageFormat;
-    std::vector<VkImage> m_vkSwapChainImages;
-    std::vector<VkImageView> m_vkSwapChainImageViews;
+    vk::HandleVector<vk::Image> m_swapChainImages;
+    vk::HandleVector<vk::ImageView> m_swapChainImageViews;
 };

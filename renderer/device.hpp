@@ -1,6 +1,6 @@
 #pragma once
 
-#include "handle_base.hpp"
+#include "handle.hpp"
 
 #include <set>
 #include <array>
@@ -12,7 +12,7 @@
 
 namespace vk {
 
-class Device : public HandleBase<VkDevice>
+class Device : public Handle<VkDevice>
 {
     static const std::array<const char* const, 1> s_deviceExtensions;
 
@@ -49,8 +49,10 @@ public:
 public:
     Device();
     Device(Device&& other);
-    Device(VkInstance instance, VkSurfaceKHR surface);
+    Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePtr = nullptr);
     ~Device();
+
+    void waitIdle() const;
 
     QueueFamilies queueFamilies() const { return m_queueFamilies; };
 

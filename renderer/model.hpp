@@ -1,6 +1,7 @@
 #pragma once
 
 #include "buffer.hpp"
+#include "command_buffer.hpp"
 
 #include <span>
 #include <memory>
@@ -19,12 +20,12 @@ public:
         return shared_from_this();
     }
 
-    virtual void draw(VkCommandBuffer commandBuffer)
+    virtual void draw(const vk::CommandBuffer& commandBuffer)
     {
         vkCmdDrawIndexed(commandBuffer, m_indexBuffer->indexCount(), 1, 0, 0, 0);
     }
 
-    void bindModel(VkCommandBuffer commandBuffer)
+    void bind(const vk::CommandBuffer& commandBuffer)
     {
         VkBuffer vertexBuffers[] = {m_vertexBuffer->handle()};
         VkDeviceSize offsets[] = {0};

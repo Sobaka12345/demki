@@ -11,6 +11,6 @@ public:
 private:
     virtual void initApplication() override;
     virtual void update(int64_t dt) override;
-    virtual void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) override;
+    virtual void recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_t imageIndex) override;
 
 };

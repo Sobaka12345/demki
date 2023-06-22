@@ -34,16 +34,17 @@ void Memory::Mapped::writeAndSync(const void *src, VkDeviceSize size, ptrdiff_t 
     sync(size, offset);
 }
 
-Memory::Memory(const Device& device, VkMemoryAllocateInfo allocInfo)
-    : device(device)
+Memory::Memory(const Device& device, VkMemoryAllocateInfo allocInfo, VkHandleType* handlePtr)
+    : Handle(handlePtr)
+    , device(device)
     , size(allocInfo.allocationSize)
     , memoryType(allocInfo.memoryTypeIndex)
 {
-    ASSERT(vkAllocateMemory(device, &allocInfo, nullptr, &m_handle) == VK_SUCCESS);
+    ASSERT(create(vkAllocateMemory, device, &allocInfo, nullptr) == VK_SUCCESS);
 }
 
 Memory::Memory(Memory&& other)
-    : HandleBase(std::move(other))
+    : Handle(std::move(other))
     , device(other.device)
     , size(std::move(other.size))
     , mapped(std::move(other.mapped))
@@ -53,7 +54,7 @@ Memory::Memory(Memory&& other)
 Memory::~Memory()
 {
     mapped.reset();
-    vkFreeMemory(device, m_handle, nullptr);
+    destroy(vkFreeMemory, device, handle(), nullptr);
 }
 
 std::weak_ptr<Memory::Mapped> Memory::map(VkMemoryMapFlags flags, VkDeviceSize offset)

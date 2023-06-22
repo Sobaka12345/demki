@@ -34,7 +34,7 @@ public:
     bool isBlocksOverflow() const;
 
     virtual void setModel(std::weak_ptr<Model> model) override;
-    virtual void draw(VkCommandBuffer commandBuffer) const override;
+    virtual void draw(const vk::CommandBuffer& commandBuffer) const override;
 
 private:
     int flushRows(int32_t topRowBound, int32_t bottomRowBound);

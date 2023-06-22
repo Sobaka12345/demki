@@ -1,13 +1,14 @@
 #pragma once
 
 #include "model.hpp"
+#include "command_buffer.hpp"
 
 class Renderable
 {
 public:
     Renderable();
     virtual ~Renderable();
-    virtual void draw(VkCommandBuffer commandBuffer) const;
+    virtual void draw(const vk::CommandBuffer& commandBuffer) const;
 
     std::weak_ptr<Model> model() const;
     virtual void setModel(std::weak_ptr<Model> model);

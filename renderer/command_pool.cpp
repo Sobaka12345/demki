@@ -6,44 +6,44 @@
 
 namespace vk {
 
-CommandPool::CommandPool(const Device &device, VkCommandPoolCreateInfo poolInfo)
-    : m_device(device)
+CommandPool::CommandPool(const Device &device, VkCommandPoolCreateInfo poolInfo, VkHandleType* handlePtr)
+    : Handle(handlePtr)
+    , m_device(device)
 {
-    ASSERT(vkCreateCommandPool(device, &poolInfo, nullptr, &m_handle) == VK_SUCCESS,
+    ASSERT(create(vkCreateCommandPool, device, &poolInfo, nullptr) == VK_SUCCESS,
         "failed to create command pool!");
 }
 
-CommandPool::CommandPool(CommandPool &&other)
-    : HandleBase(std::move(other))
+CommandPool::CommandPool(CommandPool &&other) noexcept
+    : Handle(std::move(other))
     , m_device(other.m_device)
 {
 }
 
 CommandPool::~CommandPool()
 {
-    vkDestroyCommandPool(m_device, m_handle, nullptr);
+    destroy(vkDestroyCommandPool, m_device, handle(), nullptr);
 }
 
 CommandBuffer CommandPool::allocateBuffer(VkCommandBufferLevel level)
 {
-    VkCommandBuffer buffer;
     const auto allocateInfo = create::commandBufferAllocateInfo(handle(), level, 1);
-    ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, &buffer) == VK_SUCCESS,
+    VkCommandBuffer* buffer = new VkCommandBuffer;
+    ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, buffer) == VK_SUCCESS,
         "failed to allocate command buffer!");
-    return CommandBuffer{*this, buffer};
+    CommandBuffer result{ m_device, buffer };
+    result.setOwner(true);
+    return result;
 }
 
-std::vector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count, VkCommandBufferLevel level)
+HandleVector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count, VkCommandBufferLevel level)
 {
-    std::vector<CommandBuffer> result;
-    result.reserve(count);
+    HandleVector<CommandBuffer> result;
+    result.resize(count, m_device);
 
-    std::vector<VkCommandBuffer> commandBuffers;
     const auto allocateInfo = create::commandBufferAllocateInfo(handle(), level, count);
-    ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, commandBuffers.data()) == VK_SUCCESS,
+    ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, result.handleData()) == VK_SUCCESS,
         "failed to allocate command buffer!");
-
-    for (VkCommandBuffer cb : commandBuffers) result.emplace_back(CommandBuffer{*this, cb});
 
     return result;
 }

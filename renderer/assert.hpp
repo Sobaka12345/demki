@@ -26,7 +26,7 @@ inline void realAssert(
             (message.empty() ? "\n" : "\n\tMESSAGE: " + message + "\n"));
 }
 
-#define _ASSERT_2(assertType, x, y) realAssert(assertType, __FILE__, __LINE__, __FUNCTION_NAME__, #x, x, y)
+#define _ASSERT_2(assertType, x, y) realAssert(assertType, __FILE__, __LINE__, __FUNCTION_NAME__, #x, bool(x), y)
 #define _ASSERT_1(assertType, x) _ASSERT_2(assertType, x, "")
 
 #define FUNC_CHOOSER(_f1, _f2, _f3, _f4, ...) _f4

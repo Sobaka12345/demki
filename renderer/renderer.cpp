@@ -5,14 +5,14 @@ Renderer::Renderer()
 
 }
 
-void Renderer::draw(VkCommandBuffer commandBuffer)
+void Renderer::draw(const vk::CommandBuffer& commandBuffer)
 {
     for (auto modelQueueIter = m_renderQueues.begin(); modelQueueIter != m_renderQueues.end();)
     {
         if (!modelQueueIter->first.expired())
         {
             const auto modelPtr = modelQueueIter->first.lock();
-            modelPtr->bindModel(commandBuffer);
+            modelPtr->bind(commandBuffer);
 
             for (auto iter = modelQueueIter->second.begin(); iter != modelQueueIter->second.end();)
             {

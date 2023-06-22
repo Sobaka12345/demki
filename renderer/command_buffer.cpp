@@ -2,18 +2,19 @@
 
 
 namespace vk {
-
-CommandBuffer::CommandBuffer(const CommandPool& pool, VkCommandBuffer commandBuffer)
-    : m_pool(pool)
-    , m_commandBuffer(commandBuffer)
+CommandBuffer::CommandBuffer(const Device& device, VkHandleType* handlePtr)
+    : Handle(handlePtr)
+    , m_device(device)
 {
-
 }
 
-CommandBuffer::CommandBuffer(CommandBuffer &&other)
-    : m_pool(other.m_pool)
+CommandBuffer::~CommandBuffer()
 {
-
 }
+
+CommandBuffer::CommandBuffer(CommandBuffer &&other) noexcept
+    : Handle(std::move(other))
+    , m_device(other.m_device)
+{}
 
 }

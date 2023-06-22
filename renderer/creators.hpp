@@ -55,35 +55,35 @@ inline constexpr VkDeviceCreateInfo deviceCreateInfo(
 
 inline constexpr VkBufferCopy bufferCopy(VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0)
 {
-    VkBufferCopy bufferCopy{};
-    bufferCopy.size = size;
-    bufferCopy.srcOffset = srcOffset;
-    bufferCopy.dstOffset = dstOffset;
+    VkBufferCopy result{};
+    result.size = size;
+    result.srcOffset = srcOffset;
+    result.dstOffset = dstOffset;
 
-    return bufferCopy;
+    return result;
 }
 
 inline constexpr VkBufferCreateInfo bufferCreateInfo(VkDeviceSize size, VkBufferUsageFlags usage,
     VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE)
 {
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    bufferInfo.sharingMode = sharingMode;
+    VkBufferCreateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    result.size = size;
+    result.usage = usage;
+    result.sharingMode = sharingMode;
 
-    return bufferInfo;
+    return result;
 }
 
 inline constexpr VkMemoryAllocateInfo memoryAllocateInfo(VkDeviceSize size, uint32_t memoryTypeIndex, const void* pNext = nullptr)
 {
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = size;
-    allocInfo.memoryTypeIndex = memoryTypeIndex;
-    allocInfo.pNext = pNext;
+    VkMemoryAllocateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    result.allocationSize = size;
+    result.memoryTypeIndex = memoryTypeIndex;
+    result.pNext = pNext;
 
-    return allocInfo;
+    return result;
 }
 
 inline constexpr VkMappedMemoryRange mappedMemoryRange(
@@ -102,44 +102,42 @@ inline constexpr VkMappedMemoryRange mappedMemoryRange(
     return result;
 }
 
+inline constexpr VkCommandPoolCreateInfo commandPoolCreateInfo(
+    uint32_t                    queueFamilyIndex,
+    VkCommandPoolCreateFlags    flags,
+    const void*                 pNext = nullptr
+)
+{
+    VkCommandPoolCreateInfo result;
+    result.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    result.queueFamilyIndex = queueFamilyIndex;
+    result.flags = flags;
+    result.pNext = pNext;
+
+    return result;
+}
+
  inline constexpr VkCommandBufferAllocateInfo commandBufferAllocateInfo(VkCommandPool commandPool,
     VkCommandBufferLevel level, uint32_t commandBufferCount, const void* pNext = nullptr)
  {
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = level;
-    allocInfo.commandPool = commandPool;
-    allocInfo.commandBufferCount = commandBufferCount;
-    allocInfo.pNext = pNext;
+    VkCommandBufferAllocateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    result.level = level;
+    result.commandPool = commandPool;
+    result.commandBufferCount = commandBufferCount;
+    result.pNext = pNext;
 
-    return allocInfo;
+    return result;
  }
-
-inline void buffer(VkDevice device, VkPhysicalDevice physicalDevice,
-    VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-    VkBuffer& buffer, VkDeviceMemory& bufferMemory)
-{
-   VkBufferCreateInfo bufferInfo = bufferCreateInfo(size, usage, VK_SHARING_MODE_EXCLUSIVE);
-   ASSERT(vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) == VK_SUCCESS);
-
-   VkMemoryRequirements memRequirements;
-   vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
-
-   VkMemoryAllocateInfo allocInfo = memoryAllocateInfo(
-               memRequirements.size, utils::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties));
-   ASSERT(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) == VK_SUCCESS);
-
-   vkBindBufferMemory(device, buffer, bufferMemory, 0);
-}
 
 inline constexpr VkShaderModuleCreateInfo shaderModuleCreateInfo(uint32_t codeSize, const uint32_t* codeData)
 {
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = codeSize;
-    createInfo.pCode = codeData;
+    VkShaderModuleCreateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    result.codeSize = codeSize;
+    result.pCode = codeData;
 
-    return createInfo;
+    return result;
 }
 
 inline VkShaderModule shaderModule(VkDevice device, const std::vector<char> &code)
@@ -366,48 +364,48 @@ inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(
 
 inline constexpr VkDescriptorPoolSize descriptorPoolSize(VkDescriptorType type, uint32_t descriptorCount)
 {
-    VkDescriptorPoolSize descriptorPoolSize{};
-    descriptorPoolSize.type = type;
-    descriptorPoolSize.descriptorCount = descriptorCount;
+    VkDescriptorPoolSize result{};
+    result.type = type;
+    result.descriptorCount = descriptorCount;
 
-    return descriptorPoolSize;
+    return result;
 }
 
 inline constexpr VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(
     VkDescriptorPool descriptorPool, const VkDescriptorSetLayout* pSetLayouts, uint32_t descriptorSetCount)
 {
-    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocateInfo.descriptorPool = descriptorPool;
-    descriptorSetAllocateInfo.pSetLayouts = pSetLayouts;
-    descriptorSetAllocateInfo.descriptorSetCount = descriptorSetCount;
+    VkDescriptorSetAllocateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    result.descriptorPool = descriptorPool;
+    result.pSetLayouts = pSetLayouts;
+    result.descriptorSetCount = descriptorSetCount;
 
-    return descriptorSetAllocateInfo;
+    return result;
 }
 
 inline constexpr VkDescriptorBufferInfo descriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
 {
-    VkDescriptorBufferInfo bufferInfoDyn{};
-    bufferInfoDyn.buffer = buffer;
-    bufferInfoDyn.offset = offset;
-    bufferInfoDyn.range = range;
+    VkDescriptorBufferInfo result{};
+    result.buffer = buffer;
+    result.offset = offset;
+    result.range = range;
 
-    return bufferInfoDyn;
+    return result;
 }
 
 inline constexpr VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t dstBinding,
     VkDescriptorType descriptorType, uint32_t descriptorCount, const VkDescriptorBufferInfo* bufferInfo, uint32_t dstArrayElement = 0)
 {
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = descriptorSet;
-    descriptorWrite.dstBinding = dstBinding;
-    descriptorWrite.descriptorType = descriptorType;
-    descriptorWrite.descriptorCount = descriptorCount;
-    descriptorWrite.pBufferInfo = bufferInfo;
-    descriptorWrite.dstArrayElement = dstArrayElement;
+    VkWriteDescriptorSet result{};
+    result.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    result.dstSet = descriptorSet;
+    result.dstBinding = dstBinding;
+    result.descriptorType = descriptorType;
+    result.descriptorCount = descriptorCount;
+    result.pBufferInfo = bufferInfo;
+    result.dstArrayElement = dstArrayElement;
 
-    return descriptorWrite;
+    return result;
 }
 
 inline constexpr VkDescriptorSetLayoutBinding setLayoutBinding(
@@ -442,62 +440,68 @@ inline constexpr VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(
 inline constexpr VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlags aspectFlags,
     uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount)
 {
-    VkImageSubresourceRange subresourceRange{};
-    subresourceRange.aspectMask = aspectFlags;
-    subresourceRange.baseMipLevel = 0;
-    subresourceRange.levelCount = 1;
-    subresourceRange.baseArrayLayer = 0;
-    subresourceRange.layerCount = 1;
+    VkImageSubresourceRange result{};
+    result.aspectMask = aspectFlags;
+    result.baseMipLevel = 0;
+    result.levelCount = 1;
+    result.baseArrayLayer = 0;
+    result.layerCount = 1;
 
-    return subresourceRange;
+    return result;
 }
 
 inline constexpr VkImageViewCreateInfo imageViewCreateInfo(VkImage image, VkImageViewType type, VkFormat format,
     VkImageSubresourceRange subresourceRange, VkComponentMapping components = {},
     VkImageViewCreateFlags flags = 0, const void* pNext = nullptr)
 {
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image;
-    viewInfo.viewType = type;
-    viewInfo.format = format;
-    viewInfo.subresourceRange = subresourceRange;
-    viewInfo.components = components;
-    viewInfo.flags = flags;
-    viewInfo.pNext = pNext;
+    VkImageViewCreateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    result.image = image;
+    result.viewType = type;
+    result.format = format;
+    result.subresourceRange = subresourceRange;
+    result.components = components;
+    result.flags = flags;
+    result.pNext = pNext;
 
-    return viewInfo;
+    return result;
 }
 
 inline constexpr VkExtent3D extent3D(uint32_t width, uint32_t height, uint32_t depth)
 {
-    VkExtent3D extent{};
-    extent.width = width;
-    extent.height = height;
-    extent.depth = depth;
+    VkExtent3D result{};
+    result.width = width;
+    result.height = height;
+    result.depth = depth;
 
-    return extent;
+    return result;
 }
 
 inline constexpr VkImageCreateInfo imageCreateInfo(VkImageType type, VkExtent3D extent,
     uint32_t mipLevels, uint32_t arrayLayers, VkFormat format, VkImageTiling tiling,
     VkImageLayout initialLayout, VkImageUsageFlags usage, VkSampleCountFlagBits samples,
-    VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE)
+    VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    std::span<const uint32_t> queueFamilyIndices = {},
+    VkImageCreateFlags flags = 0, const void* pNext = nullptr)
 {
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent = extent;
-    imageInfo.mipLevels = mipLevels;
-    imageInfo.arrayLayers = arrayLayers;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = initialLayout;
-    imageInfo.usage = usage;
-    imageInfo.samples = samples;
-    imageInfo.sharingMode = sharingMode;
+    VkImageCreateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    result.imageType = VK_IMAGE_TYPE_2D;
+    result.extent = extent;
+    result.mipLevels = mipLevels;
+    result.arrayLayers = arrayLayers;
+    result.format = format;
+    result.tiling = tiling;
+    result.initialLayout = initialLayout;
+    result.usage = usage;
+    result.samples = samples;
+    result.sharingMode = sharingMode;
+    result.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
+    result.pQueueFamilyIndices = queueFamilyIndices.data();
+    result.flags = flags;
+    result.pNext = pNext;
 
-    return imageInfo;
+    return result;
 }
 
 inline constexpr VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(
@@ -532,25 +536,25 @@ inline constexpr VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
     VkPipeline basePipelineHandle = VK_NULL_HANDLE, int32_t basePipelineIndex = -1,
     uint32_t subpass = 0, const void* pNext = nullptr)
 {
-    VkGraphicsPipelineCreateInfo pipelineInfo{};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = static_cast<uint32_t>(stages.size());
-    pipelineInfo.pStages = stages.data();
-    pipelineInfo.pVertexInputState = pVertexInputState;
-    pipelineInfo.pInputAssemblyState = pInputAssemblyState;
-    pipelineInfo.pViewportState = pViewportState;
-    pipelineInfo.pRasterizationState = pRasterizationState;
-    pipelineInfo.pMultisampleState = pMultisampleState;
-    pipelineInfo.pDepthStencilState = pDepthStencilState;
-    pipelineInfo.pColorBlendState = pColorBlendState;
-    pipelineInfo.pDynamicState = pDynamicState;
-    pipelineInfo.layout = layout;
-    pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = subpass;
-    pipelineInfo.basePipelineHandle = basePipelineHandle;
-    pipelineInfo.basePipelineIndex = basePipelineIndex;
+    VkGraphicsPipelineCreateInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    result.stageCount = static_cast<uint32_t>(stages.size());
+    result.pStages = stages.data();
+    result.pVertexInputState = pVertexInputState;
+    result.pInputAssemblyState = pInputAssemblyState;
+    result.pViewportState = pViewportState;
+    result.pRasterizationState = pRasterizationState;
+    result.pMultisampleState = pMultisampleState;
+    result.pDepthStencilState = pDepthStencilState;
+    result.pColorBlendState = pColorBlendState;
+    result.pDynamicState = pDynamicState;
+    result.layout = layout;
+    result.renderPass = renderPass;
+    result.subpass = subpass;
+    result.basePipelineHandle = basePipelineHandle;
+    result.basePipelineIndex = basePipelineIndex;
 
-    return pipelineInfo;
+    return result;
 }
 
 inline constexpr VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(

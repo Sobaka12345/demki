@@ -7,7 +7,7 @@ Block::Block(std::unique_ptr<vk::UBOValue<vk::UBOModel>> position3D)
 {
 }
 
-void Block::draw(VkCommandBuffer commandBuffer) const
+void Block::draw(const vk::CommandBuffer& commandBuffer) const
 {
     m_position3D->bind(commandBuffer);
     Renderable::draw(commandBuffer);
@@ -100,7 +100,7 @@ bool Figure::tryRotate()
     return true;
 }
 
-void Figure::draw(VkCommandBuffer commandBuffer) const
+void Figure::draw(const vk::CommandBuffer& commandBuffer) const
 {
     for (auto& block : m_blocks)
     {
