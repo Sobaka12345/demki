@@ -27,13 +27,7 @@ CommandPool::~CommandPool()
 
 CommandBuffer CommandPool::allocateBuffer(VkCommandBufferLevel level)
 {
-    const auto allocateInfo = create::commandBufferAllocateInfo(handle(), level, 1);
-    VkCommandBuffer* buffer = new VkCommandBuffer;
-    ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, buffer) == VK_SUCCESS,
-        "failed to allocate command buffer!");
-    CommandBuffer result{ m_device, buffer };
-    result.setOwner(true);
-    return result;
+    return { m_device, *this, level };
 }
 
 HandleVector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count, VkCommandBufferLevel level)

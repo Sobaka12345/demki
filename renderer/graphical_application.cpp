@@ -176,8 +176,8 @@ void GraphicalApplication::initBase()
 
     m_commandPool = std::make_unique<CommandPool>(*m_device,
         create::commandPoolCreateInfo(
-            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            m_device->queueFamilies()[Device::GRAPHICS])
+            m_device->queueFamilies()[Device::GRAPHICS],
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
     );
 
     //// Swap Chain
