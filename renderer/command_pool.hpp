@@ -15,9 +15,9 @@ public:
     CommandPool(const CommandPool& other) = delete;
     ~CommandPool();
 
-    CommandBuffer allocateBuffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    CommandBuffer allocateBuffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const;
     HandleVector<CommandBuffer> allocateBuffers(uint32_t count,
-        VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const;
 
 private:
     const Device& m_device;

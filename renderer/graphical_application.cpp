@@ -1,6 +1,7 @@
 #include "graphical_application.hpp"
 
 #include "image.hpp"
+#include "queue.hpp"
 #include "vertex.hpp"
 
 #include <limits>
@@ -111,7 +112,6 @@ GraphicalApplication::~GraphicalApplication()
         vkDestroySemaphore(*m_device, m_vkRenderFinishedSemaphores[i], nullptr);
     }
 
-    m_commandPool.reset();
     m_device.reset();
     if (s_enableValidationLayers)
     {
@@ -171,22 +171,21 @@ void GraphicalApplication::initBase()
     createInstance();
     setupDebugMessenger();
     createWindowSurface();
-    createLogicalDevice();
+
+    m_device = std::make_unique<Device>(m_vkInstance, m_vkSurface);
+    m_presentQueue = m_device->queue(PRESENT);
+    m_graphicsQueue = m_device->queue(GRAPHICS);
+
     createSyncObjects();
 
-    m_commandPool = std::make_unique<CommandPool>(*m_device,
-        create::commandPoolCreateInfo(
-            m_device->queueFamilies()[Device::GRAPHICS],
-            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
-    );
-
-    //// Swap Chain
+    // Swap Chain
     createSwapChain();
     createImageViews();
     createRenderPass();
     createFramebuffers();
 
-    m_commandBuffers = m_commandPool->allocateBuffers(m_maxFramesInFlight);
+    m_commandBuffers = m_device->commandPool(GRAPHICS).lock()
+        ->allocateBuffers(m_maxFramesInFlight);
 }
 
 void GraphicalApplication::createInstance()
@@ -195,7 +194,7 @@ void GraphicalApplication::createInstance()
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = m_appName.c_str();
     appInfo.applicationVersion = VK_MAKE_API_VERSION(1, 0, 0, 0);
-    appInfo.pEngineName = "Testo";
+    appInfo.pEngineName = "DemkiEngine";
     appInfo.engineVersion = VK_MAKE_API_VERSION(1, 0, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_3;
 
@@ -287,14 +286,6 @@ VkExtent2D GraphicalApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR
     }
 }
 
-void GraphicalApplication::createLogicalDevice()
-{
-    m_device = std::make_unique<Device>(m_vkInstance, m_vkSurface);
-
-    m_vkPresentQueue = m_device->queue(Device::GRAPHICS, 0);
-    m_vkGraphicsQueue = m_device->queue(Device::PRESENT, 0);
-}
-
 void GraphicalApplication::createSwapChain() {
     const auto swapChainSupportDetails = utils::swapChainSupportDetails(m_device->physicalDevice(), m_vkSurface);
 
@@ -310,8 +301,8 @@ void GraphicalApplication::createSwapChain() {
     std::span<const uint32_t> queueFamilyIndices = {};
     VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (m_device->queueFamilies()[vk::Device::GRAPHICS] !=
-        m_device->queueFamilies()[vk::Device::PRESENT])
+    if (m_device->queueFamilies()[GRAPHICS] !=
+        m_device->queueFamilies()[PRESENT])
     {
         sharingMode = VK_SHARING_MODE_CONCURRENT;
         queueFamilyIndices = {
@@ -457,8 +448,8 @@ VkPipeline GraphicalApplication::defaultGraphicsPipeline(VkDevice device,
     VkPipelineViewportStateCreateInfo viewportState =
         create::pipelineViewportStateCreateInfo(std::array{VkViewport{}}, std::array{VkRect2D{}});
 
-    static constexpr auto bindingDescriptions = Vertex3DColored::getBindingDescription();
-    static constexpr auto attributeDescriptions = Vertex3DColored::getAttributeDescriptions();
+    static constexpr auto bindingDescriptions = Vertex3DColoredTextured::getBindingDescription();
+    static constexpr auto attributeDescriptions = Vertex3DColoredTextured::getAttributeDescriptions();
 
     constexpr VkPipelineVertexInputStateCreateInfo vertexInputInfo =
         create::pipelineVertexInputStateCreateInfo(bindingDescriptions, attributeDescriptions);
@@ -566,9 +557,12 @@ bool GraphicalApplication::hasStencilComponent(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-VkImageViewCreateInfo GraphicalApplication::defaultImageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
-    return create::imageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format,
-        create::imageSubresourceRange(aspectFlags, 0, 1, 0, 1));
+ImageViewCreateInfo GraphicalApplication::defaultImageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+    return ImageViewCreateInfo()
+        .image(image)
+        .viewType(VK_IMAGE_VIEW_TYPE_2D)
+        .format(format)
+        .subresourceRange(create::imageSubresourceRange(aspectFlags, 0, 1, 0, 1));
 }
 
 void GraphicalApplication::createSyncObjects()
@@ -610,7 +604,7 @@ void GraphicalApplication::drawFrame()
     }
 
     vkResetFences(*m_device, 1, &m_vkInFlightFences[m_currentFrame]);
-    vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
+    m_commandBuffers[m_currentFrame].reset();
     recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
 
     VkSubmitInfo submitInfo{};
@@ -627,7 +621,7 @@ void GraphicalApplication::drawFrame()
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    ASSERT(vkQueueSubmit(m_vkGraphicsQueue, 1, &submitInfo, m_vkInFlightFences[m_currentFrame]) == VK_SUCCESS,
+    ASSERT(m_graphicsQueue.lock()->submit(1, &submitInfo, m_vkInFlightFences[m_currentFrame]) == VK_SUCCESS,
         "failed to submit draw command buffer!");
 
     VkPresentInfoKHR presentInfo{};
@@ -641,7 +635,7 @@ void GraphicalApplication::drawFrame()
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr; // Optional
-    result = vkQueuePresentKHR(m_vkPresentQueue, &presentInfo);
+    result = m_presentQueue.lock()->presentKHR(&presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized || m_windowIconified)
     {
@@ -652,7 +646,6 @@ void GraphicalApplication::drawFrame()
     {
         ASSERT(false, "failed to present swap chain image!");
     }
-
 
     m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;
 }

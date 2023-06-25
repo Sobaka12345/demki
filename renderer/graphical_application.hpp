@@ -1,6 +1,7 @@
 #pragma once
 
 #include "buffer.hpp"
+#include "command.hpp"
 #include "command_pool.hpp"
 #include "creators.hpp"
 #include "device.hpp"
@@ -102,6 +103,7 @@ protected:
 
 
 protected:
+    static vk::ImageViewCreateInfo defaultImageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     static VkPipeline defaultGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
         VkPipelineLayout pipelineLayout, VkShaderModule vertexShader, VkShaderModule fragmentShader);
 
@@ -118,7 +120,6 @@ private:
     // Vulkan
     void createInstance();
     void setupDebugMessenger();
-    void createLogicalDevice();
     void createSwapChain();
     void recreateSwapChain();
     void cleanupSwapChain();
@@ -126,7 +127,6 @@ private:
     void createImageViews();
     void createRenderPass();
     void createFramebuffers();
-    void createCommandBuffers();
     void createSyncObjects();
 
     virtual void update(int64_t dt) = 0;
@@ -137,8 +137,6 @@ private:
         VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
-
-    VkImageViewCreateInfo defaultImageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
@@ -167,8 +165,7 @@ protected:
             .lock()->write(data.data(), buffer->size());
         stagingBuffer.memory().lock()->unmap();
 
-        stagingBuffer.copyTo(*buffer, *m_commandPool, m_vkGraphicsQueue,
-            vk::create::bufferCopy(buffer->size()));
+        stagingBuffer.copyTo(*buffer, vk::create::bufferCopy(buffer->size()));
 
         return buffer;
     }
@@ -179,13 +176,12 @@ protected:
 
     VkInstance m_vkInstance;
     VkSurfaceKHR m_vkSurface;
-    VkQueue m_vkPresentQueue;
-    VkQueue m_vkGraphicsQueue;
+    std::weak_ptr<vk::Queue> m_presentQueue;
+    std::weak_ptr<vk::Queue> m_graphicsQueue;
     std::unique_ptr<vk::Device> m_device;
     VkDebugUtilsMessengerEXT m_vkDebugMessenger;
     VkExtent3D m_vkSwapChainExtent;
     VkRenderPass m_vkRenderPass;
-    std::unique_ptr<vk::CommandPool> m_commandPool;
     std::vector<vk::Framebuffer> m_swapChainFramebuffers;
 
 private:

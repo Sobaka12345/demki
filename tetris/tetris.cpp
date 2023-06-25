@@ -2,9 +2,12 @@
 
 #include "field.hpp"
 
+#include "../renderer/descriptor_set.hpp"
+#include "../renderer/descriptor_set_layout.hpp"
 #include "../renderer/model.hpp"
 #include "../renderer/vertex.hpp"
 #include "../renderer/creators.hpp"
+#include "../renderer/sampler.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -13,19 +16,33 @@
 
 using namespace vk;
 
+
 class TetrisDSL : public DescriptorSetLayout
 {
-public:
-    constexpr static VkDescriptorSetLayoutBinding s_modelBinding =
-        create::setLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT, 0);
-    constexpr static VkDescriptorSetLayoutBinding s_cameraBinding =
-        create::setLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1);
+public:    
+    static constexpr create::DescriptorSetLayoutBinding s_modelBinding = create::DescriptorSetLayoutBinding{}
+        .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+        .descriptorCount(1)
+        .stageFlags(VK_SHADER_STAGE_VERTEX_BIT)
+        .binding(0);
+    static constexpr create::DescriptorSetLayoutBinding s_cameraBinding = create::DescriptorSetLayoutBinding{}
+        .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+        .descriptorCount(1)
+        .stageFlags(VK_SHADER_STAGE_VERTEX_BIT)
+        .binding(1);
+    static constexpr create::DescriptorSetLayoutBinding s_samplerBinding = create::DescriptorSetLayoutBinding{}
+        .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+        .descriptorCount(1)
+        .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
+        .binding(2);
 
-    constexpr static std::array s_layoutBindings = { s_modelBinding, s_cameraBinding };
+    static constexpr std::array s_layoutBindings = { 
+        s_modelBinding, s_cameraBinding, s_samplerBinding };
 
 public:
     TetrisDSL(const Device& device)
-        : DescriptorSetLayout(device, create::descriptorSetLayoutCreateInfo(s_layoutBindings))
+        : DescriptorSetLayout(device, DescriptorSetLayoutCreateInfo()
+            .pBindings(s_layoutBindings.data()).bindingCount(s_layoutBindings.size()))
     {}
 };
 
@@ -33,10 +50,11 @@ class TetrisDP : public DescriptorPool
 {
 public:
     TetrisDP(const Device& device)
-        : DescriptorPool(device, 2,
-            std::array<VkDescriptorPoolSize, 2> {
-                create::descriptorPoolSize(TetrisDSL::s_modelBinding.descriptorType, 1),
-                create::descriptorPoolSize(TetrisDSL::s_cameraBinding.descriptorType, 1),
+        : DescriptorPool(device, 3,
+            std::array {
+                create::descriptorPoolSize(TetrisDSL::s_modelBinding.descriptorType(), 1),
+                create::descriptorPoolSize(TetrisDSL::s_cameraBinding.descriptorType(), 1),
+                create::descriptorPoolSize(TetrisDSL::s_samplerBinding.descriptorType(), 1),
             }
         )
     {}
@@ -51,15 +69,15 @@ public:
     }
 };
 
-static constexpr std::array<Vertex3DColored, 8> s_cubeVertices = {
-    Vertex3DColored{{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}}, //0
-    Vertex3DColored{{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}}, //1
-    Vertex3DColored{{-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}, //2
-    Vertex3DColored{{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}}, //3
-    Vertex3DColored{{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}, //4
-    Vertex3DColored{{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}, //5
-    Vertex3DColored{{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}, //6
-    Vertex3DColored{{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}  //7
+static constexpr std::array s_cubeVertices = {
+    Vertex3DColoredTextured{{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, //0
+    Vertex3DColoredTextured{{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}}, //1
+    Vertex3DColoredTextured{{-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}}, //2
+    Vertex3DColoredTextured{{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //3
+    Vertex3DColoredTextured{{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //4
+    Vertex3DColoredTextured{{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //5
+    Vertex3DColoredTextured{{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //6
+    Vertex3DColoredTextured{{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}  //7
 };
 
 static constexpr std::array<uint16_t, 36> s_cubeIndices = {
@@ -108,21 +126,60 @@ void Tetris::initTextures()
 
     ASSERT(pixels, "failed to load texture image!");
 
-    //m_roshiImage = createAndWriteGPUBuffer()
+    StagingBuffer stagingBuffer(*m_device, imageSize);
+    stagingBuffer.allocateAndBindMemory(
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+        .lock()->map()
+        .lock()->write(pixels, imageSize);
 
-    const auto imageCreateInfo = create::imageCreateInfo(
-        VK_IMAGE_TYPE_2D,
-        VkExtent3D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
-        1, 1,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        VK_SAMPLE_COUNT_1_BIT,
-        VK_SHARING_MODE_EXCLUSIVE
+    m_roshiImage = std::make_unique<vk::Image>(*m_device, 
+        ImageCreateInfo()
+            .imageType(VK_IMAGE_TYPE_2D)
+            .extent({ static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1 })
+            .mipLevels(1).arrayLayers(1)
+            .format(VK_FORMAT_R8G8B8A8_SRGB)
+            .tiling(VK_IMAGE_TILING_OPTIMAL)
+            .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+            .usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+            .samples(VK_SAMPLE_COUNT_1_BIT)
+            .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
+    );
+    m_roshiImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    m_roshiImage->transitionLayout(
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    
+    const auto copyRegion = create::bufferImageCopy(
+        0, 0, 0,
+        create::imageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1),
+        { 0, 0, 0 },
+        { static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1}
     );
 
+    stagingBuffer.copyToImage(*m_roshiImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegion);
+
+    m_roshiImage->transitionLayout(
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
     stbi_image_free(pixels);
+
+    m_roshiImageView = std::make_unique<ImageView>(*m_device,
+        defaultImageViewCreateInfo(*m_roshiImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT));
+
+    m_roshiImageSampler = std::make_unique<Sampler>(*m_device, 
+        SamplerCreateInfo()
+            .magFilter(VK_FILTER_LINEAR)
+            .minFilter(VK_FILTER_LINEAR)
+            .mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+            .addressModeU(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+            .addressModeV(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+            .addressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+            .anisotropyEnable(VK_FALSE)
+            .maxAnisotropy(m_device->physicalDeviceProperties().limits.maxSamplerAnisotropy)
+            .compareEnable(VK_FALSE)
+            .compareOp(VK_COMPARE_OP_ALWAYS)
+            .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
+            .unnormalizedCoordinates(VK_FALSE));
 }
 
 void Tetris::initApplication()
@@ -136,7 +193,7 @@ void Tetris::initApplication()
 
     // Resources
     m_cube = Model::create(
-        createAndWriteGPUBuffer<VertexBufferT, Vertex3DColored>(s_cubeVertices),
+        createAndWriteGPUBuffer<VertexBufferT, Vertex3DColoredTextured>(s_cubeVertices),
         createAndWriteGPUBuffer<IndexBufferT, uint16_t>(s_cubeIndices)
     );
 
@@ -154,10 +211,18 @@ void Tetris::initApplication()
         .lock()->map();
 
     m_descriptorPool = std::make_unique<TetrisDP>(*m_device);
+    
+    VkDescriptorImageInfo imageInfo{
+        .sampler = *m_roshiImageSampler,
+        .imageView = *m_roshiImageView,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
+    
     m_descriptorSet = m_descriptorPool->allocateSet(*m_descriptorSetLayout, m_vkPipelineLayout);
     const std::array writeSets{
-        DescriptorSet::Write{m_modelBuffer->descriptorBufferInfo(), TetrisDSL::s_modelBinding},
-        DescriptorSet::Write{m_viewProjectionBuffer->descriptorBufferInfo(), TetrisDSL::s_cameraBinding},
+        DescriptorSet::Write{.bufferInfo = m_modelBuffer->descriptorBufferInfo(), .layoutBinding = TetrisDSL::s_modelBinding},
+        DescriptorSet::Write{.bufferInfo = m_viewProjectionBuffer->descriptorBufferInfo(), .layoutBinding = TetrisDSL::s_cameraBinding},
+        DescriptorSet::Write{.imageInfo = imageInfo, .layoutBinding = TetrisDSL::s_samplerBinding},
     };
     m_descriptorSet->write(writeSets);
 
@@ -167,8 +232,8 @@ void Tetris::initApplication()
             m_descriptorSet.get(),
             m_viewProjectionBuffer->tryGetUBOHandler());
 
-        const float fov = 45.0f;
-        const float distance = Field::s_height * 90.0f / fov;
+        constexpr float fov = 45.0f;
+        constexpr float distance = Field::s_height * 90.0f / fov;
         UBOViewProjection viewProjection;
         viewProjection.view = glm::lookAt(
             glm::vec3(1.0f * Field::s_width / 2.0f, 1.0f * Field::s_height / 2.0f, distance),
@@ -258,30 +323,22 @@ void Tetris::update(int64_t dt)
     }
 }
 
-// TO DO: POSSIBLY MOVE COMMAND BUFFER TO Renderer CLASS?
 void Tetris::recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_t imageIndex)
 {
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0;
-    beginInfo.pInheritanceInfo = nullptr;
+    ASSERT(commandBuffer.begin() == VK_SUCCESS, "failed to begin recording command buffer!");
 
-    ASSERT(vkBeginCommandBuffer(commandBuffer, &beginInfo) == VK_SUCCESS,
-        "failed to begin recording command buffer!");
+    const std::array<VkClearValue, 2> clearValues{
+        VkClearValue{ {0.0f, 0.0f, 0.0f, 1.0f} },
+        VkClearValue{ {1.0f, 0} }
+    };
 
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_vkRenderPass;
-    renderPassInfo.framebuffer = m_swapChainFramebuffers[imageIndex];
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent.height = m_vkSwapChainExtent.height;
-    renderPassInfo.renderArea.extent.width = m_vkSwapChainExtent.width;
-
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-    clearValues[1].depthStencil = {1.0f, 0};
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
+    const VkRenderPassBeginInfo renderPassInfo = 
+        create::renderPassBeginInfo(m_vkRenderPass, m_swapChainFramebuffers[imageIndex],
+            VkRect2D{ 
+                VkOffset2D{0, 0}, 
+                VkExtent2D{m_vkSwapChainExtent.width, m_vkSwapChainExtent.height} 
+            },
+            clearValues);
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
@@ -303,7 +360,7 @@ void Tetris::recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_
     m_renderer.draw(commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
-    ASSERT(vkEndCommandBuffer(commandBuffer) == VK_SUCCESS, "failed to record command buffer!");
+    ASSERT(commandBuffer.end()  == VK_SUCCESS, "failed to record command buffer!");
 }
 
 void Tetris::createGraphicsPipeline()

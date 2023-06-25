@@ -4,12 +4,17 @@ add_library(${PROJECT_NAME} STATIC
     assert.hpp
     buffer.hpp
     buffer.cpp
+    command.hpp
+    command.cpp
     command_buffer.hpp
     command_buffer.cpp
     command_pool.hpp
     command_pool.cpp
     creators.hpp
     descriptor_set.hpp
+    descriptor_set.cpp
+    descriptor_set_layout.hpp
+    descriptor_set_layout.cpp
     descriptor_pool.hpp
     descriptor_pool.cpp
     device.hpp
@@ -27,10 +32,14 @@ add_library(${PROJECT_NAME} STATIC
     memory.cpp
     model.cpp
     model.hpp
+    queue.hpp
+    queue.cpp
     renderer.hpp
     renderer.cpp
     renderable.hpp
     renderable.cpp
+    sampler.hpp
+    sampler.cpp
     ubo_value.hpp
     uniform_buffer.hpp
     utils.hpp

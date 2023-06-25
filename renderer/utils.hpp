@@ -1,5 +1,10 @@
 #pragma once
 
+#include "assert.hpp"
+#include "handle.hpp"
+
+#include <vulkan/vulkan.h>
+
 #include <set>
 #include <span>
 #include <vector>
@@ -8,16 +13,41 @@
 #include <optional>
 #include <filesystem>
 
-#include <vulkan/vulkan.h>
-
-#include "assert.hpp"
-
 #ifdef _WIN32
 #include <windows.h>    //GetModuleFileNameW
 #else
 #include <limits.h>
 #include <unistd.h>     //readlink
 #endif
+
+#define BEGIN_DECLARE_VKSTRUCT_IMPL(structName, vkStructName, sTypeVal)         \
+struct structName : public VkStruct<vkStructName, sTypeVal>                     \
+{                                                                               \
+private:                                                                        \
+    using Base = vkStructName;                                                  \
+public:                                                                         \
+    constexpr structName() noexcept                                             \
+        : VkStruct<vkStructName, sTypeVal>(vkStructName{})                      \
+    {}                                                                          \
+                                                                                \
+    constexpr structName(vkStructName sValue) noexcept                          \
+        : VkStruct<vkStructName, sTypeVal>(std::move(sValue))                   \
+    {                                                                           \
+        static_assert(sizeof(structName) == sizeof(vkStructName));              \
+    }
+
+#define END_DECLARE_VKSTRUCT()                                                  \
+};
+
+#define BEGIN_DECLARE_VKSTRUCT(structName, sTypeVal)                            \
+    BEGIN_DECLARE_VKSTRUCT_IMPL(structName, Vk##structName, sTypeVal)
+
+#define BEGIN_DECLARE_UNTYPED_VKSTRUCT(structName)                              \
+    BEGIN_DECLARE_VKSTRUCT(structName, VK_STRUCTURE_TYPE_MAX_ENUM)
+
+#define VKSTRUCT_PROPERTY(type, name)                                           \
+        constexpr type name() const { return Base::name; }                      \
+        constexpr auto& name(type value) { Base::name = value; return *this; }
 
 namespace vk { namespace utils {
 

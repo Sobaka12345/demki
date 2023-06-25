@@ -13,7 +13,7 @@ ImageView::ImageView(const Device& device, VkHandleType* handlePtr) noexcept
     , m_device(device)
 {}
 
-ImageView::ImageView(const Device& device, VkImageViewCreateInfo createInfo, VkHandleType* handlePtr)
+ImageView::ImageView(const Device& device, ImageViewCreateInfo createInfo, VkHandleType* handlePtr)
     : Handle(handlePtr)
     , m_device(device)
 {

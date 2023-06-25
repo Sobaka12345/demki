@@ -13,6 +13,31 @@ concept IsArrayContainer = requires (const T& o) {
     o.size();
 };
 
+
+
+
+inline constexpr VkSubmitInfo submitInfo(
+    std::span<const VkCommandBuffer> commandBuffers,
+    std::span<const VkSemaphore> waitSemaphores = {},
+    const VkPipelineStageFlags* pWaitDstStageMask = nullptr,
+    std::span<const VkSemaphore> signalSemaphores = {},
+    const void*                 pNext = nullptr)
+{
+    VkSubmitInfo result;
+
+    result.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    result.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+    result.pCommandBuffers = commandBuffers.data();
+    result.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
+    result.pWaitSemaphores = waitSemaphores.data();
+    result.pWaitDstStageMask = pWaitDstStageMask;
+    result.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
+    result.pSignalSemaphores = signalSemaphores.data();
+    result.pNext = pNext;
+
+    return result;
+}
+
 inline VkDeviceQueueCreateInfo deviceQueueCreateInfo(
     uint32_t                    queueFamilyIndex,
     const std::span<const float>      queuePriorities,
@@ -59,6 +84,40 @@ inline constexpr VkBufferCopy bufferCopy(VkDeviceSize size, VkDeviceSize srcOffs
     result.size = size;
     result.srcOffset = srcOffset;
     result.dstOffset = dstOffset;
+
+    return result;
+}
+
+inline constexpr VkImageSubresourceLayers imageSubresourceLayers(
+    VkImageAspectFlags    aspectMask,
+    uint32_t              mipLevel,
+    uint32_t              baseArrayLayer,
+    uint32_t              layerCount)
+{
+    VkImageSubresourceLayers result;
+    result.aspectMask = aspectMask;
+    result.mipLevel = mipLevel;
+    result.baseArrayLayer = baseArrayLayer;
+    result.layerCount = layerCount;
+
+    return result;
+}
+
+inline constexpr VkBufferImageCopy bufferImageCopy(
+    VkDeviceSize                bufferOffset,
+    uint32_t                    bufferRowLength,
+    uint32_t                    bufferImageHeight,
+    VkImageSubresourceLayers    imageSubresource,
+    VkOffset3D                  imageOffset,
+    VkExtent3D                  imageExtent)
+{
+    VkBufferImageCopy result{};
+    result.bufferOffset = bufferOffset;
+    result.bufferRowLength = bufferRowLength;
+    result.bufferImageHeight = bufferImageHeight;
+    result.imageSubresource = imageSubresource;
+    result.imageOffset = imageOffset;
+    result.imageExtent = imageExtent;
 
     return result;
 }
@@ -129,6 +188,39 @@ inline constexpr VkCommandPoolCreateInfo commandPoolCreateInfo(
 
     return result;
  }
+
+ inline constexpr VkCommandBufferBeginInfo commandBufferBeginInfo(
+    const VkCommandBufferInheritanceInfo* pInheritanceInfo, 
+    VkCommandBufferUsageFlags             flags = 0,
+    const void*                           pNext = nullptr)
+ {
+     VkCommandBufferBeginInfo result;
+     result.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+     result.pInheritanceInfo = pInheritanceInfo;
+     result.flags = flags;
+     result.pNext = pNext;
+
+     return result;
+ }
+
+ inline constexpr VkRenderPassBeginInfo renderPassBeginInfo(
+     VkRenderPass           renderPass,
+     VkFramebuffer          framebuffer,
+     VkRect2D               renderArea,
+     std::span<const VkClearValue> clearValues = {},
+     const void* pNext = nullptr)
+ {
+     VkRenderPassBeginInfo result{};
+     result.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+     result.renderPass = renderPass;
+     result.framebuffer = framebuffer;
+     result.clearValueCount = static_cast<uint32_t>(clearValues.size());
+     result.pClearValues = clearValues.data();
+     result.renderArea = renderArea;
+     result.pNext = pNext;
+
+     return result;
+}
 
 inline constexpr VkShaderModuleCreateInfo shaderModuleCreateInfo(uint32_t codeSize, const uint32_t* codeData)
 {
@@ -393,49 +485,15 @@ inline constexpr VkDescriptorBufferInfo descriptorBufferInfo(VkBuffer buffer, Vk
     return result;
 }
 
-inline constexpr VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t dstBinding,
-    VkDescriptorType descriptorType, uint32_t descriptorCount, const VkDescriptorBufferInfo* bufferInfo, uint32_t dstArrayElement = 0)
-{
-    VkWriteDescriptorSet result{};
-    result.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    result.dstSet = descriptorSet;
-    result.dstBinding = dstBinding;
-    result.descriptorType = descriptorType;
-    result.descriptorCount = descriptorCount;
-    result.pBufferInfo = bufferInfo;
-    result.dstArrayElement = dstArrayElement;
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorSetLayoutBinding)
+VKSTRUCT_PROPERTY(uint32_t          , binding)
+VKSTRUCT_PROPERTY(VkDescriptorType  , descriptorType)
+VKSTRUCT_PROPERTY(uint32_t          , descriptorCount)
+VKSTRUCT_PROPERTY(VkShaderStageFlags, stageFlags)
+VKSTRUCT_PROPERTY(const VkSampler*  , pImmutableSamplers)
+END_DECLARE_VKSTRUCT()
 
-    return result;
-}
 
-inline constexpr VkDescriptorSetLayoutBinding setLayoutBinding(
-    VkDescriptorType descriptorType, VkShaderStageFlags shaderStageFlags,
-    uint32_t binding, uint32_t descriptorCount = 1, VkSampler* pImmutableSamplers = nullptr)
-{
-    VkDescriptorSetLayoutBinding result{};
-    result.binding = binding;
-    result.descriptorCount = descriptorCount;
-    result.descriptorType = descriptorType;
-    result.pImmutableSamplers = pImmutableSamplers;
-    result.stageFlags = shaderStageFlags;
-
-    return result;
-}
-
-inline constexpr VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(
-    const IsArrayContainer auto&           bindings,
-    VkDescriptorSetLayoutCreateFlags       flags = 0,
-    const void*                            pNext = nullptr)
-{
-    VkDescriptorSetLayoutCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    result.bindingCount = static_cast<uint32_t>(bindings.size());
-    result.pBindings = bindings.data();
-    result.flags = flags;
-    result.pNext = pNext;
-
-    return result;
-}
 
 inline constexpr VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlags aspectFlags,
     uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount)
@@ -446,23 +504,6 @@ inline constexpr VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlag
     result.levelCount = 1;
     result.baseArrayLayer = 0;
     result.layerCount = 1;
-
-    return result;
-}
-
-inline constexpr VkImageViewCreateInfo imageViewCreateInfo(VkImage image, VkImageViewType type, VkFormat format,
-    VkImageSubresourceRange subresourceRange, VkComponentMapping components = {},
-    VkImageViewCreateFlags flags = 0, const void* pNext = nullptr)
-{
-    VkImageViewCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    result.image = image;
-    result.viewType = type;
-    result.format = format;
-    result.subresourceRange = subresourceRange;
-    result.components = components;
-    result.flags = flags;
-    result.pNext = pNext;
 
     return result;
 }

@@ -22,15 +22,14 @@ public:
 
     virtual void draw(const vk::CommandBuffer& commandBuffer)
     {
-        vkCmdDrawIndexed(commandBuffer, m_indexBuffer->indexCount(), 1, 0, 0, 0);
+        commandBuffer.drawIndexed(m_indexBuffer->indexCount(), 1, 0, 0, 0);
     }
 
     void bind(const vk::CommandBuffer& commandBuffer)
     {
-        VkBuffer vertexBuffers[] = {m_vertexBuffer->handle()};
         VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->handle(), 0, VK_INDEX_TYPE_UINT16);
+        commandBuffer.bindVertexBuffer(0, 1, m_vertexBuffer->handlePtr(), offsets);
+        commandBuffer.bindIndexBuffer(m_indexBuffer->handle(), 0, VK_INDEX_TYPE_UINT16);
     }
 
 private:

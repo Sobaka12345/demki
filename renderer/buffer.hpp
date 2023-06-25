@@ -11,6 +11,8 @@
 
 namespace vk {
 
+class Image;
+
 class Buffer : public Handle<VkBuffer>, public SIMemoryAccessor<Buffer>
 {
 public:
@@ -22,7 +24,8 @@ public:
     bool bindMemory(uint32_t bindingOffset);
     std::shared_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties);
 
-    void copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue queue, VkBufferCopy copyRegion);
+    void copyTo(const Buffer& dst, VkBufferCopy copyRegion) const;
+    void copyToImage(const Image& dst, VkImageLayout dstLayout, VkBufferImageCopy copyRegion) const;
 
     VkDeviceSize size() const { return m_size; }
 

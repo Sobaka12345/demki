@@ -1,6 +1,7 @@
 #include "buffer.hpp"
-
 #include "creators.hpp"
+#include "image.hpp"
+
 #include <iostream>
 
 namespace vk {
@@ -15,6 +16,7 @@ Buffer::Buffer(Buffer&& other) noexcept
 Buffer::Buffer(const Device& device, VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , SIMemoryAccessor(device)
+    , m_size(0)
 {}
 
 Buffer::Buffer(const Device& device, VkBufferCreateInfo bufferInfo, VkHandleType* handlePtr)
@@ -49,31 +51,16 @@ std::shared_ptr<Memory> Buffer::allocateMemory(VkMemoryPropertyFlags properties)
     return m_memory;
 }
 
-void Buffer::copyTo(const Buffer& buffer, VkCommandPool commandPool, VkQueue queue, VkBufferCopy copyRegion)
+void Buffer::copyTo(const Buffer& dst, VkBufferCopy copyRegion) const
 {
-    const auto allocInfo =
-        create::commandBufferAllocateInfo(commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+    m_device.oneTimeCommand(vk::GRAPHICS)()
+        .copyBuffer(handle(), dst, { &copyRegion, 1 });
+}
 
-    VkCommandBuffer commandBuffer;
-    ASSERT(vkAllocateCommandBuffers(m_device, &allocInfo, &commandBuffer) == VK_SUCCESS);
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    ASSERT(vkBeginCommandBuffer(commandBuffer, &beginInfo) == VK_SUCCESS);
-    vkCmdCopyBuffer(commandBuffer, handle(), buffer.handle(), 1, &copyRegion);
-    ASSERT(vkEndCommandBuffer(commandBuffer) == VK_SUCCESS);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    ASSERT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) == VK_SUCCESS);
-    ASSERT(vkQueueWaitIdle(queue) == VK_SUCCESS);
-
-    vkFreeCommandBuffers(m_device, commandPool, 1, &commandBuffer);
+void Buffer::copyToImage(const Image& dst, VkImageLayout dstLayout, VkBufferImageCopy copyRegion) const
+{
+    m_device.oneTimeCommand(vk::GRAPHICS)()
+        .copyBufferToImage(handle(), dst, dstLayout, { &copyRegion, 1 });
 }
 
 }

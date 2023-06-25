@@ -37,6 +37,19 @@ public:
         other.m_handlePtr = nullptr;
     }
 
+    Handle& operator=(Handle&& other) noexcept
+    {
+        m_handlePtr = other.m_handlePtr;
+        m_owner = other.m_owner;
+        m_externalPtr = other.m_externalPtr;
+
+        other.m_externalPtr = true;
+        other.m_owner = false;
+        other.m_handlePtr = nullptr;
+
+        return *this;
+    }
+
     const HandleType* handlePtr() const { return m_handlePtr;  }
     HandleType handle() const { return m_handlePtr ? *m_handlePtr : VK_NULL_HANDLE; }
     operator HandleType() const { return handle(); }
@@ -49,7 +62,7 @@ public:
 
 protected:
 
-    VkResult create(auto createFunc, auto&&... args)
+    auto create(auto createFunc, auto&&... args)
     {
         setOwner(true);
         return createFunc(std::forward<decltype(args)>(args)..., m_handlePtr);
@@ -174,6 +187,21 @@ private:
 private:
     std::vector<T> m_handles;
     std::vector<typename T::VkHandleType> m_vkHandles;
+};
+
+template <typename T, VkStructureType sTypeArg>
+struct VkStruct : public T
+{
+    constexpr VkStruct(T structValue) noexcept
+        : T{ structValue }
+    {
+        if constexpr (sTypeArg != VK_STRUCTURE_TYPE_MAX_ENUM)
+        {
+            T::sType = sTypeArg;
+        }
+
+        static_assert(sizeof(VkStruct) == sizeof(T));
+    }
 };
 
 }

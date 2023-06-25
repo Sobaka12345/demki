@@ -1,88 +1,58 @@
 #pragma once
 
-#include "device.hpp"
-#include "creators.hpp"
-
-#include <vulkan/vulkan_core.h>
+#include "utils.hpp"
 
 #include <span>
-#include <vector>
-#include <iostream>
-#include <type_traits>
 
 namespace vk {
 
-class DescriptorSet
+BEGIN_DECLARE_VKSTRUCT(DescriptorSetAllocateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO)
+VKSTRUCT_PROPERTY(VkStructureType, sType)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkDescriptorPool, descriptorPool)
+VKSTRUCT_PROPERTY(uint32_t, descriptorSetCount)
+VKSTRUCT_PROPERTY(const VkDescriptorSetLayout*, pSetLayouts)
+END_DECLARE_VKSTRUCT();
+
+BEGIN_DECLARE_VKSTRUCT(WriteDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkDescriptorSet, dstSet)
+VKSTRUCT_PROPERTY(uint32_t, dstBinding)
+VKSTRUCT_PROPERTY(uint32_t, dstArrayElement)
+VKSTRUCT_PROPERTY(uint32_t, descriptorCount)
+VKSTRUCT_PROPERTY(VkDescriptorType, descriptorType)
+VKSTRUCT_PROPERTY(const VkDescriptorImageInfo*, pImageInfo)
+VKSTRUCT_PROPERTY(const VkDescriptorBufferInfo*, pBufferInfo)
+VKSTRUCT_PROPERTY(const VkBufferView*, pTexelBufferView)
+END_DECLARE_VKSTRUCT()
+
+class Device;
+
+class DescriptorSet : public Handle<VkDescriptorSet>
 {
 public:
     struct Write
     {
-        VkDescriptorBufferInfo bufferInfo;
+        std::optional<VkDescriptorImageInfo> imageInfo;
+        std::optional<VkDescriptorBufferInfo> bufferInfo;
         VkDescriptorSetLayoutBinding layoutBinding;
     };
 
+    DescriptorSet(const DescriptorSet& other) = delete;
+    DescriptorSet(DescriptorSet&& other);
+
     DescriptorSet(const Device& device, VkPipelineLayout pipelineLayout,
-        VkDescriptorSetAllocateInfo allocInfo)
-        : m_device(device)
-        , m_pipelineLayout(pipelineLayout)
-    {
-        ASSERT(vkAllocateDescriptorSets(m_device, &allocInfo, &m_set) == VK_SUCCESS,
-            "failed to allocate descriptor sets!");
-    }
+        DescriptorSetAllocateInfo allocInfo, VkHandleType* handlePtr = nullptr);
 
-    virtual ~DescriptorSet()
-    {
-        //vkFreeDescriptorSets()
-        // TO DO: FREE DESC SETS
-    }
+    ~DescriptorSet();
 
-    virtual void bind(VkCommandBuffer commandBuffer, uint32_t offset) const
-    {
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_pipelineLayout, 0, 1, &m_set, 1, &offset);
-    }
+    virtual void bind(VkCommandBuffer commandBuffer, uint32_t offset) const;
 
-    void write(std::span<const Write> writes)
-    {
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-        for (auto& write : writes)
-        {
-            writeDescriptorSets.push_back(
-                create::writeDescriptorSet(m_set, write.layoutBinding.binding,
-                    write.layoutBinding.descriptorType, 1, &write.bufferInfo)
-            );
-        }
-
-        vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writeDescriptorSets.size()),
-            writeDescriptorSets.data(), 0, nullptr);
-    }
+    void write(std::span<const Write> writes);
 
 protected:
     const Device& m_device;
-    VkDescriptorSet m_set;
     VkPipelineLayout m_pipelineLayout;
-};
-
-class DescriptorSetLayout
-{
-public:
-    DescriptorSetLayout(const Device& device, VkDescriptorSetLayoutCreateInfo info)
-        : m_device(device)
-    {
-        ASSERT(vkCreateDescriptorSetLayout(m_device, &info, nullptr, &m_layout) == VK_SUCCESS,
-            "failed to create descriptor set layout!");
-    }
-
-    operator VkDescriptorSetLayout() const { return m_layout; }
-
-    ~DescriptorSetLayout()
-    {
-        vkDestroyDescriptorSetLayout(m_device, m_layout, nullptr);
-    }
-
-private:
-    const Device& m_device;
-    VkDescriptorSetLayout m_layout;
 };
 
 }

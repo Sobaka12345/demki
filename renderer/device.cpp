@@ -1,8 +1,10 @@
 #include "device.hpp"
 
 #include "utils.hpp"
+#include "command_pool.hpp"
 #include "creators.hpp"
 #include "graphical_application.hpp"
+#include "queue.hpp"
 
 #include <vector>
 #include <functional>
@@ -14,13 +16,13 @@ const std::array<const char* const, 1> Device::s_deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-Device::QueueFamilies::QueueFamilies()
+QueueFamilies::QueueFamilies()
 {
     constexpr uint32_t invalidIndex = std::numeric_limits<uint32_t>::max();
     m_queueFamilyIndices.fill(invalidIndex);
 }
 
-Device::QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -47,12 +49,12 @@ Device::QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
     }
 }
 
-bool Device::QueueFamilies::isComplete() const
+bool QueueFamilies::isComplete() const
 {
     return std::find(m_queueFamilyIndices.begin(), m_queueFamilyIndices.end(), s_invalidIndex) == m_queueFamilyIndices.end();
 }
 
-uint32_t Device::QueueFamilies::queueFamilyIndex(QueueFamilyType type) const
+uint32_t QueueFamilies::queueFamilyIndex(QueueFamilyType type) const
 {
     return m_queueFamilyIndices[type];
 }
@@ -87,6 +89,7 @@ Device::Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePt
 
 Device::~Device()
 {
+    m_commandPools.clear();
     destroy(vkDestroyDevice, handle(), nullptr);
 }
 
@@ -174,11 +177,38 @@ bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device)
     return requiredExtensions.empty();
 }
 
-VkQueue Device::queue(QueueFamilyType type, uint32_t idx) const
+std::weak_ptr<Queue> Device::queue(QueueFamilyType type, uint32_t idx) const
 {
-    VkQueue queue;
-    vkGetDeviceQueue(handle(), m_queueFamilies.queueFamilyIndex(type), idx, &queue);
-    return queue;
+    const uint32_t familyIdx = m_queueFamilies.queueFamilyIndex(type);
+    auto it = m_queues.find({ familyIdx, idx });
+    if (it == m_queues.end())
+    {
+        auto [res, _] = m_queues.emplace(std::pair{ std::pair{familyIdx, idx},
+            std::make_shared<Queue>(*this, familyIdx, idx) });
+        return res->second;
+    }
+
+    return it->second;
+}
+
+std::weak_ptr<CommandPool> Device::commandPool(QueueFamilyType type) const
+{
+    const uint32_t familyIdx = m_queueFamilies.queueFamilyIndex(type);
+    auto it = m_commandPools.find(familyIdx);
+    if (it == m_commandPools.end())
+    {
+        auto [res, _] = m_commandPools.emplace(std::pair{ familyIdx, std::make_shared<CommandPool>(*this,
+            create::commandPoolCreateInfo(
+                familyIdx, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)) });
+        return res->second;
+    }
+    
+    return it->second;
+}
+
+OneTimeCommand Device::oneTimeCommand(QueueFamilyType type, uint32_t queueIdx) const
+{
+    return OneTimeCommand{ *this, type, queueIdx };
 }
 
 }

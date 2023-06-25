@@ -25,15 +25,15 @@ CommandPool::~CommandPool()
     destroy(vkDestroyCommandPool, m_device, handle(), nullptr);
 }
 
-CommandBuffer CommandPool::allocateBuffer(VkCommandBufferLevel level)
+CommandBuffer CommandPool::allocateBuffer(VkCommandBufferLevel level) const
 {
     return { m_device, *this, level };
 }
 
-HandleVector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count, VkCommandBufferLevel level)
+HandleVector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count, VkCommandBufferLevel level) const
 {
     HandleVector<CommandBuffer> result;
-    result.resize(count, m_device);
+    result.resize(count, m_device, *this);
 
     const auto allocateInfo = create::commandBufferAllocateInfo(handle(), level, count);
     ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, result.handleData()) == VK_SUCCESS,
