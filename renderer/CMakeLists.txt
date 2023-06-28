@@ -1,49 +1,56 @@
 declare_project()
 
 add_library(${PROJECT_NAME} STATIC
+    vk/buffer.hpp
+    vk/buffer.cpp
+    vk/command.hpp
+    vk/command.cpp
+    vk/command_buffer.hpp
+    vk/command_buffer.cpp
+    vk/command_pool.hpp
+    vk/command_pool.cpp
+    vk/creators.hpp
+    vk/debug_utils_messenger.hpp
+    vk/debug_utils_messenger.cpp
+    vk/descriptor_set.hpp
+    vk/descriptor_set.cpp
+    vk/descriptor_set_layout.hpp
+    vk/descriptor_set_layout.cpp
+    vk/descriptor_pool.hpp
+    vk/descriptor_pool.cpp
+    vk/device.hpp
+    vk/device.cpp
+    vk/framebuffer.cpp
+    vk/framebuffer.hpp
+    vk/graphical_application.hpp
+    vk/graphical_application.cpp
+    vk/graphics_pipeline.hpp
+    vk/graphics_pipeline.cpp
+    vk/handle.hpp
+    vk/image.hpp
+    vk/image.cpp
+    vk/image_view.hpp
+    vk/image_view.cpp
+    vk/memory.hpp
+    vk/memory.cpp
+    vk/queue.hpp
+    vk/queue.cpp
+    vk/resource_manager.hpp
+    vk/resource_manager.cpp
+    vk/sampler.hpp
+    vk/sampler.cpp
+    vk/ubo_value.hpp
+    vk/uniform_buffer.hpp
+    vk/utils.hpp
+    vk/vertex.hpp
     assert.hpp
-    buffer.hpp
-    buffer.cpp
-    command.hpp
-    command.cpp
-    command_buffer.hpp
-    command_buffer.cpp
-    command_pool.hpp
-    command_pool.cpp
-    creators.hpp
-    descriptor_set.hpp
-    descriptor_set.cpp
-    descriptor_set_layout.hpp
-    descriptor_set_layout.cpp
-    descriptor_pool.hpp
-    descriptor_pool.cpp
-    device.hpp
-    device.cpp
-    framebuffer.cpp
-    framebuffer.hpp
-    graphical_application.hpp
-    graphical_application.cpp
-    handle.hpp
-    image.hpp
-    image.cpp
-    image_view.hpp
-    image_view.cpp
-    memory.hpp
-    memory.cpp
     model.cpp
     model.hpp
-    queue.hpp
-    queue.cpp
     renderer.hpp
     renderer.cpp
     renderable.hpp
     renderable.cpp
-    sampler.hpp
-    sampler.cpp
-    ubo_value.hpp
-    uniform_buffer.hpp
-    utils.hpp
-    vertex.hpp
+    update_timer.hpp
     texture.cpp
     texture.hpp
 )

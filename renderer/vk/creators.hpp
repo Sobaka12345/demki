@@ -122,18 +122,6 @@ inline constexpr VkBufferImageCopy bufferImageCopy(
     return result;
 }
 
-inline constexpr VkBufferCreateInfo bufferCreateInfo(VkDeviceSize size, VkBufferUsageFlags usage,
-    VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE)
-{
-    VkBufferCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    result.size = size;
-    result.usage = usage;
-    result.sharingMode = sharingMode;
-
-    return result;
-}
-
 inline constexpr VkMemoryAllocateInfo memoryAllocateInfo(VkDeviceSize size, uint32_t memoryTypeIndex, const void* pNext = nullptr)
 {
     VkMemoryAllocateInfo result{};
@@ -243,129 +231,78 @@ inline VkShaderModule shaderModule(VkDevice device, const std::vector<char> &cod
     return result;
 }
 
-inline constexpr VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo(
-    const IsArrayContainer auto& viewports,
-    const IsArrayContainer auto& scissors,
-    VkPipelineViewportStateCreateFlags flags = 0,
-    const void* pNext = nullptr)
-{
-    VkPipelineViewportStateCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    result.viewportCount = static_cast<uint32_t>(viewports.size());
-    result.pViewports = viewports.data();
-    result.scissorCount = static_cast<uint32_t>(scissors.size());
-    result.pScissors = scissors.data();
+BEGIN_DECLARE_VKSTRUCT(PipelineViewportStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineViewportStateCreateFlags, flags)
+VKSTRUCT_PROPERTY(uint32_t, viewportCount)
+VKSTRUCT_PROPERTY(const VkViewport*, pViewports)
+VKSTRUCT_PROPERTY(uint32_t, scissorCount)
+VKSTRUCT_PROPERTY(const VkRect2D*, pScissors)
+END_DECLARE_VKSTRUCT()
 
-    return result;
-}
 
-inline constexpr VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo(
-    std::span<const VkDynamicState> dynamicStates,
-    VkPipelineDynamicStateCreateFlags flags = 0, const void* pNext = nullptr)
-{
-    VkPipelineDynamicStateCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    result.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-    result.pDynamicStates = dynamicStates.data();
-    result.flags = flags;
-    result.pNext = pNext;
+BEGIN_DECLARE_VKSTRUCT(PipelineDynamicStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineDynamicStateCreateFlags, flags)
+VKSTRUCT_PROPERTY(uint32_t, dynamicStateCount)
+VKSTRUCT_PROPERTY(const VkDynamicState*, pDynamicStates)
+END_DECLARE_VKSTRUCT()
 
-    return result;
-}
+BEGIN_DECLARE_VKSTRUCT(PipelineInputAssemblyStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineInputAssemblyStateCreateFlags, flags)
+VKSTRUCT_PROPERTY(VkPrimitiveTopology, topology)
+VKSTRUCT_PROPERTY(VkBool32, primitiveRestartEnable)
+END_DECLARE_VKSTRUCT()
 
-inline constexpr VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
-    VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable,
-    VkPipelineInputAssemblyStateCreateFlags flags = 0,
-    const void* pNext = nullptr)
-{
-    VkPipelineInputAssemblyStateCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    result.topology = topology;
-    result.primitiveRestartEnable = primitiveRestartEnable;
-    result.flags = flags;
-    result.pNext = pNext;
+BEGIN_DECLARE_VKSTRUCT(PipelineRasterizationStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineRasterizationStateCreateFlags, flags)
+VKSTRUCT_PROPERTY(VkBool32, depthClampEnable)
+VKSTRUCT_PROPERTY(VkBool32, rasterizerDiscardEnable)
+VKSTRUCT_PROPERTY(VkPolygonMode, polygonMode)
+VKSTRUCT_PROPERTY(VkCullModeFlags, cullMode)
+VKSTRUCT_PROPERTY(VkFrontFace, frontFace)
+VKSTRUCT_PROPERTY(VkBool32, depthBiasEnable)
+VKSTRUCT_PROPERTY(float, depthBiasConstantFactor)
+VKSTRUCT_PROPERTY(float, depthBiasClamp)
+VKSTRUCT_PROPERTY(float, depthBiasSlopeFactor)
+VKSTRUCT_PROPERTY(float, lineWidth)
+END_DECLARE_VKSTRUCT()
 
-    return result;
-}
+BEGIN_DECLARE_VKSTRUCT(PipelineMultisampleStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineMultisampleStateCreateFlags, flags)
+VKSTRUCT_PROPERTY(VkSampleCountFlagBits, rasterizationSamples)
+VKSTRUCT_PROPERTY(VkBool32, sampleShadingEnable)
+VKSTRUCT_PROPERTY(float, minSampleShading)
+VKSTRUCT_PROPERTY(const VkSampleMask*, pSampleMask)
+VKSTRUCT_PROPERTY(VkBool32, alphaToCoverageEnable)
+VKSTRUCT_PROPERTY(VkBool32, alphaToOneEnable)
+END_DECLARE_VKSTRUCT()
 
-inline constexpr VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
-    VkBool32                                   depthClampEnable,
-    VkBool32                                   rasterizerDiscardEnable,
-    VkPolygonMode                              polygonMode,
-    VkCullModeFlags                            cullMode,
-    VkFrontFace                                frontFace,
-    VkBool32                                   depthBiasEnable,
-    float                                      lineWidth = 1.0f,
-    float                                      depthBiasConstantFactor = 0.0f,
-    float                                      depthBiasClamp = 0.0f,
-    float                                      depthBiasSlopeFactor = 0.0f,
-    VkPipelineRasterizationStateCreateFlags    flags = 0,
-    const void*                                pNext = nullptr)
-{
-    VkPipelineRasterizationStateCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    result.depthClampEnable = depthClampEnable;
-    result.rasterizerDiscardEnable = rasterizerDiscardEnable;
-    result.polygonMode = polygonMode;
-    result.lineWidth = lineWidth;
-    result.cullMode = cullMode;
-    result.frontFace = frontFace;
-    result.depthBiasEnable = depthBiasEnable;
-    result.depthBiasConstantFactor = depthBiasConstantFactor;
-    result.depthBiasClamp = depthBiasClamp;
-    result.depthBiasSlopeFactor = depthBiasSlopeFactor;
-    result.flags = flags;
-    result.pNext = pNext;
 
-    return result;
-}
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(PipelineColorBlendAttachmentState)
+VKSTRUCT_PROPERTY(VkBool32, blendEnable)
+VKSTRUCT_PROPERTY(VkBlendFactor, srcColorBlendFactor)
+VKSTRUCT_PROPERTY(VkBlendFactor, dstColorBlendFactor)
+VKSTRUCT_PROPERTY(VkBlendOp, colorBlendOp)
+VKSTRUCT_PROPERTY(VkBlendFactor, srcAlphaBlendFactor)
+VKSTRUCT_PROPERTY(VkBlendFactor, dstAlphaBlendFactor)
+VKSTRUCT_PROPERTY(VkBlendOp, alphaBlendOp)
+VKSTRUCT_PROPERTY(VkColorComponentFlags, colorWriteMask)
+END_DECLARE_VKSTRUCT()
 
-inline constexpr VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
-    VkBool32                                 sampleShadingEnable,
-    VkSampleCountFlagBits                    rasterizationSamples,
-    float                                    minSampleShading = 1.0f,
-    const VkSampleMask*                      pSampleMask = nullptr,
-    VkBool32                                 alphaToCoverageEnable = VK_FALSE,
-    VkBool32                                 alphaToOneEnable = VK_FALSE,
-    VkPipelineMultisampleStateCreateFlags    flags = 0,
-    const void*                              pNext = nullptr)
-{
-    VkPipelineMultisampleStateCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    result.sampleShadingEnable = sampleShadingEnable;
-    result.rasterizationSamples = rasterizationSamples;
-    result.minSampleShading = minSampleShading;
-    result.pSampleMask = pSampleMask;
-    result.alphaToCoverageEnable = alphaToCoverageEnable;
-    result.alphaToOneEnable = alphaToOneEnable;
-    result.flags = flags;
-    result.pNext = pNext;
 
-    return result;
-}
-
-inline constexpr VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState(
-    VkColorComponentFlags    colorWriteMask,
-    VkBool32                 blendEnable = VK_FALSE,
-    VkBlendFactor            srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-    VkBlendFactor            dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-    VkBlendOp                colorBlendOp = VK_BLEND_OP_ADD,
-    VkBlendFactor            srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-    VkBlendFactor            dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-    VkBlendOp                alphaBlendOp = VK_BLEND_OP_ADD)
-{
-    VkPipelineColorBlendAttachmentState result{};
-    result.colorWriteMask = colorWriteMask;
-    result.blendEnable = blendEnable;
-    result.srcColorBlendFactor = srcColorBlendFactor;
-    result.dstColorBlendFactor = dstColorBlendFactor;
-    result.colorBlendOp = colorBlendOp;
-    result.srcAlphaBlendFactor = srcAlphaBlendFactor;
-    result.dstAlphaBlendFactor = dstAlphaBlendFactor;
-    result.alphaBlendOp = alphaBlendOp;
-
-    return result;
-}
+BEGIN_DECLARE_VKSTRUCT(PipelineColorBlendStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineColorBlendStateCreateFlags, flags)
+VKSTRUCT_PROPERTY(VkBool32, logicOpEnable)
+VKSTRUCT_PROPERTY(VkLogicOp, logicOp)
+VKSTRUCT_PROPERTY(uint32_t, attachmentCount)
+VKSTRUCT_PROPERTY(const VkPipelineColorBlendAttachmentState*, pAttachments)
+VKSTRUCT_PROPERTY(std::array<float COMMA 4>, blendConstants)
+END_DECLARE_VKSTRUCT()
 
 inline constexpr VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
     const IsArrayContainer auto&                  colorBlendAttachments,
@@ -375,6 +312,7 @@ inline constexpr VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCrea
     VkPipelineColorBlendStateCreateFlags          flags = 0,
     const void*                                   pNext = nullptr)
 {
+
     VkPipelineColorBlendStateCreateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     result.logicOpEnable = logicOpEnable;
@@ -388,6 +326,20 @@ inline constexpr VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCrea
 
     return result;
 }
+
+BEGIN_DECLARE_VKSTRUCT(PipelineDepthStencilStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineDepthStencilStateCreateFlags, flags)
+VKSTRUCT_PROPERTY(VkBool32, depthTestEnable)
+VKSTRUCT_PROPERTY(VkBool32, depthWriteEnable)
+VKSTRUCT_PROPERTY(VkCompareOp, depthCompareOp)
+VKSTRUCT_PROPERTY(VkBool32, depthBoundsTestEnable)
+VKSTRUCT_PROPERTY(VkBool32, stencilTestEnable)
+VKSTRUCT_PROPERTY(VkStencilOpState, front)
+VKSTRUCT_PROPERTY(VkStencilOpState, back)
+VKSTRUCT_PROPERTY(float, minDepthBounds)
+VKSTRUCT_PROPERTY(float, maxDepthBounds)
+END_DECLARE_VKSTRUCT()
 
 inline constexpr VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo(
     VkBool32                                  depthTestEnable,
@@ -545,75 +497,23 @@ inline constexpr VkImageCreateInfo imageCreateInfo(VkImageType type, VkExtent3D 
     return result;
 }
 
-inline constexpr VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(
-    VkShaderStageFlagBits stage, VkShaderModule module, const char* pName = "main",
-    VkPipelineShaderStageCreateFlags flags = 0, const VkSpecializationInfo* pSpecializationInfo = nullptr,
-    const void* pNext = nullptr)
-{
-    VkPipelineShaderStageCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    result.stage = stage;
-    result.pName = pName;
-    result.flags = flags;
-    result.module = module;
-    result.pNext = pNext;
-    result.pSpecializationInfo = pSpecializationInfo;
+BEGIN_DECLARE_VKSTRUCT(PipelineShaderStageCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineShaderStageCreateFlags, flags)
+VKSTRUCT_PROPERTY(VkShaderStageFlagBits, stage)
+VKSTRUCT_PROPERTY(VkShaderModule, module)
+VKSTRUCT_PROPERTY(const char*, pName)
+VKSTRUCT_PROPERTY(const VkSpecializationInfo*, pSpecializationInfo)
+END_DECLARE_VKSTRUCT();
 
-    return result;
-}
-
-inline constexpr VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
-    VkPipelineLayout layout, VkRenderPass renderPass, VkPipelineCreateFlags flags,
-    std::span<const VkPipelineShaderStageCreateInfo> stages = {},
-    const VkPipelineVertexInputStateCreateInfo* pVertexInputState = nullptr,
-    const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState = nullptr,
-    const VkPipelineTessellationStateCreateInfo* pTessellationState = nullptr,
-    const VkPipelineViewportStateCreateInfo* pViewportState = nullptr,
-    const VkPipelineRasterizationStateCreateInfo* pRasterizationState = nullptr,
-    const VkPipelineMultisampleStateCreateInfo* pMultisampleState = nullptr,
-    const VkPipelineColorBlendStateCreateInfo* pColorBlendState = nullptr,
-    const VkPipelineDynamicStateCreateInfo* pDynamicState = nullptr,
-    const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState = nullptr,
-    VkPipeline basePipelineHandle = VK_NULL_HANDLE, int32_t basePipelineIndex = -1,
-    uint32_t subpass = 0, const void* pNext = nullptr)
-{
-    VkGraphicsPipelineCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    result.stageCount = static_cast<uint32_t>(stages.size());
-    result.pStages = stages.data();
-    result.pVertexInputState = pVertexInputState;
-    result.pInputAssemblyState = pInputAssemblyState;
-    result.pViewportState = pViewportState;
-    result.pRasterizationState = pRasterizationState;
-    result.pMultisampleState = pMultisampleState;
-    result.pDepthStencilState = pDepthStencilState;
-    result.pColorBlendState = pColorBlendState;
-    result.pDynamicState = pDynamicState;
-    result.layout = layout;
-    result.renderPass = renderPass;
-    result.subpass = subpass;
-    result.basePipelineHandle = basePipelineHandle;
-    result.basePipelineIndex = basePipelineIndex;
-
-    return result;
-}
-
-inline constexpr VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-    const IsArrayContainer auto& vertexBindingDescriptions,
-    const IsArrayContainer auto& vertexAttributeDescriptions,
-    VkPipelineVertexInputStateCreateFlags flags = 0, const void* pNext = nullptr)
-{
-    VkPipelineVertexInputStateCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    result.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributeDescriptions.size());
-    result.pVertexAttributeDescriptions = vertexAttributeDescriptions.data();
-    result.vertexBindingDescriptionCount = static_cast<uint32_t>(vertexBindingDescriptions.size());
-    result.pVertexBindingDescriptions = vertexBindingDescriptions.data();
-    result.flags = flags;
-    result.pNext = pNext;
-
-    return result;
-}
+BEGIN_DECLARE_VKSTRUCT(PipelineVertexInputStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)
+VKSTRUCT_PROPERTY(const void*, pNext)
+VKSTRUCT_PROPERTY(VkPipelineVertexInputStateCreateFlags, flags)
+VKSTRUCT_PROPERTY(uint32_t, vertexBindingDescriptionCount)
+VKSTRUCT_PROPERTY(const VkVertexInputBindingDescription*, pVertexBindingDescriptions)
+VKSTRUCT_PROPERTY(uint32_t, vertexAttributeDescriptionCount)
+VKSTRUCT_PROPERTY(const VkVertexInputAttributeDescription*, pVertexAttributeDescriptions)
+END_DECLARE_VKSTRUCT();
 
 inline constexpr VkFramebufferCreateInfo frameBufferCreateInfo(
     VkRenderPass renderPass,

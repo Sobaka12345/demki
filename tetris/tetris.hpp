@@ -1,9 +1,9 @@
 #pragma once
 
 #include <renderer.hpp>
-#include <ubo_value.hpp>
-#include <descriptor_pool.hpp>
-#include <graphical_application.hpp>
+#include <vk/ubo_value.hpp>
+#include <vk/descriptor_pool.hpp>
+#include <vk/graphical_application.hpp>
 
 #include <list>
 #include <memory>
@@ -18,9 +18,8 @@ class DescriptorSet;
 class DescriptorSetLayout;
 }
 
-class Tetris: public GraphicalApplication
+class Tetris: public vk::GraphicalApplication
 {
-
 public:
     Tetris();
     ~Tetris() override;
@@ -28,7 +27,8 @@ public:
 private:
     virtual void initApplication() override;    
     virtual void update(int64_t dt) override;
-    virtual void recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_t imageIndex) override;
+    virtual void recordCommandBuffer(const vk::CommandBuffer& commandBuffer, 
+        const vk::Framebuffer& framebuffer) override;
 
     void initTextures();
     void createGraphicsPipeline();
@@ -36,15 +36,15 @@ private:
     static void onKeyPressed(GLFWwindow *window, int key, int scancode, int action, int mods);
 
 private:
-    VkPipeline m_vkPipeline;
+    std::unique_ptr<vk::GraphicsPipeline> m_pipeline;
     VkPipelineLayout m_vkPipelineLayout;
 
     bool m_rotate;
     int32_t m_dx;
     int32_t m_flushedTotal;
-    UpdateTimer m_gameTimer;
-    UpdateTimer m_moveTimer;
-    UpdateTimer m_rotationTimer;
+    UpdateTimer<TimeResolution> m_gameTimer;
+    UpdateTimer<TimeResolution> m_moveTimer;
+    UpdateTimer<TimeResolution> m_rotationTimer;
 
     Renderer m_renderer;
 

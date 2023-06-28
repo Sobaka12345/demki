@@ -1,7 +1,7 @@
 #pragma once
 
 #include "model.hpp"
-#include "command_buffer.hpp"
+#include "vk/command_buffer.hpp"
 
 class Renderable
 {

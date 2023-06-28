@@ -3,8 +3,8 @@
 #include "position.hpp"
 
 #include <renderable.hpp>
-#include <uniform_buffer.hpp>
-#include <descriptor_set.hpp>
+#include <vk/uniform_buffer.hpp>
+#include <vk/descriptor_set.hpp>
 
 #include <cstdint>
 

@@ -2,12 +2,13 @@
 
 #include "field.hpp"
 
-#include "../renderer/descriptor_set.hpp"
-#include "../renderer/descriptor_set_layout.hpp"
-#include "../renderer/model.hpp"
-#include "../renderer/vertex.hpp"
-#include "../renderer/creators.hpp"
-#include "../renderer/sampler.hpp"
+#include <model.hpp>
+
+#include <vk/descriptor_set.hpp>
+#include <vk/descriptor_set_layout.hpp>
+#include <vk/vertex.hpp>
+#include <vk/creators.hpp>
+#include <vk/sampler.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -80,7 +81,7 @@ static constexpr std::array s_cubeVertices = {
     Vertex3DColoredTextured{{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}  //7
 };
 
-static constexpr std::array<uint16_t, 36> s_cubeIndices = {
+static constexpr std::array<uint32_t, 36> s_cubeIndices = {
         // Top
         7, 6, 2,
         2, 3, 7,
@@ -113,7 +114,7 @@ Tetris::Tetris()
 
 Tetris::~Tetris()
 {
-    vkDestroyPipeline(*m_device, m_vkPipeline, nullptr);
+    m_pipeline.reset();
     vkDestroyPipelineLayout(*m_device, m_vkPipelineLayout, nullptr);
 }
 
@@ -126,7 +127,8 @@ void Tetris::initTextures()
 
     ASSERT(pixels, "failed to load texture image!");
 
-    StagingBuffer stagingBuffer(*m_device, imageSize);
+    Buffer stagingBuffer(*m_device, Buffer::staging()
+        .size(imageSize));
     stagingBuffer.allocateAndBindMemory(
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
         .lock()->map()
@@ -164,7 +166,7 @@ void Tetris::initTextures()
     stbi_image_free(pixels);
 
     m_roshiImageView = std::make_unique<ImageView>(*m_device,
-        defaultImageViewCreateInfo(*m_roshiImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT));
+        defaultImageView(*m_roshiImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT));
 
     m_roshiImageSampler = std::make_unique<Sampler>(*m_device, 
         SamplerCreateInfo()
@@ -191,11 +193,7 @@ void Tetris::initApplication()
     // Render Pipeline
     createGraphicsPipeline();
 
-    // Resources
-    m_cube = Model::create(
-        createAndWriteGPUBuffer<VertexBufferT, Vertex3DColoredTextured>(s_cubeVertices),
-        createAndWriteGPUBuffer<IndexBufferT, uint16_t>(s_cubeIndices)
-    );
+    m_cube = resources().loadModel(s_cubeVertices, s_cubeIndices);
 
     initTextures();
 
@@ -323,17 +321,15 @@ void Tetris::update(int64_t dt)
     }
 }
 
-void Tetris::recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_t imageIndex)
+void Tetris::recordCommandBuffer(const vk::CommandBuffer& commandBuffer, const vk::Framebuffer& framebuffer)
 {
-    ASSERT(commandBuffer.begin() == VK_SUCCESS, "failed to begin recording command buffer!");
-
     const std::array<VkClearValue, 2> clearValues{
         VkClearValue{ {0.0f, 0.0f, 0.0f, 1.0f} },
         VkClearValue{ {1.0f, 0} }
     };
 
     const VkRenderPassBeginInfo renderPassInfo = 
-        create::renderPassBeginInfo(m_vkRenderPass, m_swapChainFramebuffers[imageIndex],
+        create::renderPassBeginInfo(m_vkRenderPass, framebuffer,
             VkRect2D{ 
                 VkOffset2D{0, 0}, 
                 VkExtent2D{m_vkSwapChainExtent.width, m_vkSwapChainExtent.height} 
@@ -341,7 +337,8 @@ void Tetris::recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_
             clearValues);
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+    
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -360,15 +357,30 @@ void Tetris::recordCommandBuffer(const vk::CommandBuffer& commandBuffer, uint32_
     m_renderer.draw(commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
-    ASSERT(commandBuffer.end()  == VK_SUCCESS, "failed to record command buffer!");
 }
 
 void Tetris::createGraphicsPipeline()
 {
     const auto vertShaderCode = utils::fs::readFile("./shaders/shader.vert.spv");
     const auto fragShaderCode = utils::fs::readFile("./shaders/shader.frag.spv");
+    
     const auto vertShaderModule = create::shaderModule(*m_device, vertShaderCode);
     const auto fragShaderModule = create::shaderModule(*m_device, fragShaderCode);
+    const std::array shaderStageCreateInfos = {
+        create::PipelineShaderStageCreateInfo()
+            .stage(VK_SHADER_STAGE_VERTEX_BIT).module(vertShaderModule).pName("main"),
+        create::PipelineShaderStageCreateInfo()
+            .stage(VK_SHADER_STAGE_FRAGMENT_BIT).module(fragShaderModule).pName("main")
+    };
+
+    const auto bindingDescriptions = Vertex3DColoredTextured::bindingDescription();
+    const auto attrubuteDescriptions = Vertex3DColoredTextured::attributeDescriptions();
+
+    const auto vertexInput = create::PipelineVertexInputStateCreateInfo()
+        .vertexBindingDescriptionCount(bindingDescriptions.size())
+        .pVertexBindingDescriptions(bindingDescriptions.data())
+        .vertexAttributeDescriptionCount(attrubuteDescriptions.size())
+        .pVertexAttributeDescriptions(attrubuteDescriptions.data());
 
     const std::array<VkDescriptorSetLayout, 1> descriptorSetsLayouts{*m_descriptorSetLayout};
 
@@ -380,8 +392,13 @@ void Tetris::createGraphicsPipeline()
     ASSERT(vkCreatePipelineLayout(*m_device, &pipelineLayoutInfo, nullptr, &m_vkPipelineLayout) == VK_SUCCESS,
         "failed to create pipeline layout!");
 
-    m_vkPipeline = defaultGraphicsPipeline(*m_device, m_vkRenderPass,
-        m_vkPipelineLayout, vertShaderModule, fragShaderModule);
+    m_pipeline = std::make_unique<GraphicsPipeline>(*m_device, VK_NULL_HANDLE, 
+        defaultGraphicsPipeline()
+            .renderPass(m_vkRenderPass)
+            .layout(m_vkPipelineLayout)
+            .stageCount(shaderStageCreateInfos.size()).pStages(shaderStageCreateInfos.data())
+            .pVertexInputState(&vertexInput)
+    );
 
     vkDestroyShaderModule(*m_device, fragShaderModule, nullptr);
     vkDestroyShaderModule(*m_device, vertShaderModule, nullptr);

@@ -5,6 +5,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <array>
 #include <set>
 #include <span>
 #include <vector>
@@ -19,6 +20,16 @@
 #include <limits.h>
 #include <unistd.h>     //readlink
 #endif
+
+namespace std {
+    template<typename Type>
+    struct is_std_array : std::false_type { };
+
+    template<typename Item, std::size_t N>
+    struct is_std_array< std::array<Item, N> > : std::true_type { };
+}
+
+#define COMMA ,
 
 #define BEGIN_DECLARE_VKSTRUCT_IMPL(structName, vkStructName, sTypeVal)         \
 struct structName : public VkStruct<vkStructName, sTypeVal>                     \
@@ -46,8 +57,31 @@ public:                                                                         
     BEGIN_DECLARE_VKSTRUCT(structName, VK_STRUCTURE_TYPE_MAX_ENUM)
 
 #define VKSTRUCT_PROPERTY(type, name)                                           \
-        constexpr type name() const { return Base::name; }                      \
-        constexpr auto& name(type value) { Base::name = value; return *this; }
+private:                                                                        \
+    template <typename T>                                                       \
+    constexpr inline void _set##name(T value)                                   \
+    {                                                                           \
+        if constexpr (std::is_std_array<T>::value)                              \
+            std::copy(value.begin(), value.end(), Base::name);                  \
+        else                                                                    \
+            Base::name = value;                                                 \
+    }                                                                           \
+                                                                                \
+public:                                                                         \
+    template <typename T = type>                                                \
+    constexpr T name() const                                                    \
+    {                                                                           \
+        if constexpr (std::is_std_array<type>::value)                           \
+            return std::to_array(Base::name);                                   \
+        else                                                                    \
+            return Base::name;                                                  \
+    }                                                                           \
+                                                                                \
+    constexpr auto& name(type value)                                            \
+    {                                                                           \
+        _set##name(std::forward<type>(value));                                  \
+        return *this;                                                           \
+    }  
 
 namespace vk { namespace utils {
 

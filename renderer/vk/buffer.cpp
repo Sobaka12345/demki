@@ -6,6 +6,13 @@
 
 namespace vk {
 
+BufferCreateInfo Buffer::staging()
+{
+    return BufferCreateInfo()
+        .usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+        .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+}
+
 Buffer::Buffer(Buffer&& other) noexcept
     : Handle(std::move(other))
     , SIMemoryAccessor(std::move(other))
@@ -19,10 +26,10 @@ Buffer::Buffer(const Device& device, VkHandleType* handlePtr) noexcept
     , m_size(0)
 {}
 
-Buffer::Buffer(const Device& device, VkBufferCreateInfo bufferInfo, VkHandleType* handlePtr)
+Buffer::Buffer(const Device& device, BufferCreateInfo bufferInfo, VkHandleType* handlePtr)
     : Handle(handlePtr)
     , SIMemoryAccessor(device)
-    , m_size(bufferInfo.size)
+    , m_size(bufferInfo.size())
 {
     ASSERT(create(vkCreateBuffer, device, &bufferInfo, nullptr) == VK_SUCCESS);
 }

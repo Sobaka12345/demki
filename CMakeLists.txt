@@ -24,6 +24,7 @@ find_package(stb REQUIRED)
 find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
+find_package(tinyobjloader REQUIRED)
 
 set(SHARED_SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 
@@ -31,6 +32,6 @@ add_subdirectory(renderer)
 add_subdirectory(tetris)
 add_subdirectory(dummy)
 
-target_link_libraries(renderer PUBLIC glfw Vulkan::Vulkan glm::glm stb::stb)
+target_link_libraries(renderer PUBLIC glfw Vulkan::Vulkan glm::glm stb::stb tinyobjloader::tinyobjloader)
 target_link_libraries(tetris PRIVATE renderer)
 target_link_libraries(dummy PRIVATE renderer)

@@ -36,9 +36,10 @@ class UniformBuffer: public Buffer, public IUBOProvider
 {
 public:
     UniformBuffer(const Device& device, uint32_t objectsCount)
-        : Buffer(device, create::bufferCreateInfo(
-            (m_dynamicAlignment = dynamicAlignment(device)) * objectsCount,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT))
+        : Buffer(device, BufferCreateInfo()
+            .size((m_dynamicAlignment = dynamicAlignment(device)) * objectsCount)
+            .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+            .sharingMode(VK_SHARING_MODE_EXCLUSIVE))
         , m_objectsCount(objectsCount)
     {
         m_uboHandlers.resize(objectsCount);

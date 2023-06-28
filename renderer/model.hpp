@@ -1,45 +1,41 @@
 #pragma once
 
-#include "buffer.hpp"
-#include "command_buffer.hpp"
+#include "vk/buffer.hpp"
+#include "vk/command_buffer.hpp"
+#include "vk/resource_manager.hpp"
 
 #include <span>
 #include <memory>
 #include <vector>
 
-class Model : std::enable_shared_from_this<Model>
+class Model : public vk::Resource
 {
 public:
-    static std::shared_ptr<Model> create(vk::VertexBuffer* vertices, vk::IndexBuffer* indices)
+    friend class ResourceManager;
+    struct Descriptor : public vk::Resource::Descriptor
     {
-        return std::shared_ptr<Model>(new Model(vertices, indices));
-    }
+        vk::Buffer::Descriptor vertices;
+        vk::Buffer::Descriptor indices;
+    };
 
-    std::shared_ptr<Model> ptr()
+public:
+    Model(Descriptor descriptor)
+        : m_descriptor(std::move(descriptor))
     {
-        return shared_from_this();
     }
 
     virtual void draw(const vk::CommandBuffer& commandBuffer)
     {
-        commandBuffer.drawIndexed(m_indexBuffer->indexCount(), 1, 0, 0, 0);
+        commandBuffer.drawIndexed(m_descriptor.indices.objectCount(), 1, 0, 0, 0);
     }
 
     void bind(const vk::CommandBuffer& commandBuffer)
     {
-        VkDeviceSize offsets[] = {0};
-        commandBuffer.bindVertexBuffer(0, 1, m_vertexBuffer->handlePtr(), offsets);
-        commandBuffer.bindIndexBuffer(m_indexBuffer->handle(), 0, VK_INDEX_TYPE_UINT16);
+        VkDeviceSize offsets[] = {m_descriptor.vertices.offset};
+        commandBuffer.bindVertexBuffer(0, 1, m_descriptor.vertices.buffer.handlePtr(), offsets);
+        commandBuffer.bindIndexBuffer(m_descriptor.indices.buffer, m_descriptor.indices.offset, VK_INDEX_TYPE_UINT32);
     }
 
 private:
-    Model(vk::VertexBuffer* vertices, vk::IndexBuffer* indices)
-        : m_indexBuffer(indices)
-        , m_vertexBuffer(vertices)
-    {
-    }
-
-private:
-    std::unique_ptr<vk::IndexBuffer> m_indexBuffer;
-    std::unique_ptr<vk::VertexBuffer> m_vertexBuffer;
+    Descriptor m_descriptor;
 };

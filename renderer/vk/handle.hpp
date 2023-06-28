@@ -168,7 +168,14 @@ public:
         m_vkHandles.clear();
     }
 
+    const T& back() const { return m_handles.back(); }
+    const T& front() const { return m_handles.front(); }
     const T& operator[](size_t i) const { return m_handles[i]; }
+
+    T& back() { return m_handles.back(); }
+    T& front() { return m_handles.front(); }
+    T& operator[](size_t i) { return m_handles[i]; }
+
 
     size_t size() const { return m_vkHandles.size(); }
 
