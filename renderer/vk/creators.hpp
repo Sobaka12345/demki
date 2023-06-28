@@ -178,7 +178,7 @@ inline constexpr VkCommandPoolCreateInfo commandPoolCreateInfo(
  }
 
  inline constexpr VkCommandBufferBeginInfo commandBufferBeginInfo(
-    const VkCommandBufferInheritanceInfo* pInheritanceInfo, 
+    const VkCommandBufferInheritanceInfo* pInheritanceInfo,
     VkCommandBufferUsageFlags             flags = 0,
     const void*                           pNext = nullptr)
  {

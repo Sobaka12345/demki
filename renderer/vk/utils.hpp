@@ -71,8 +71,8 @@ public:                                                                         
     template <typename T = type>                                                \
     constexpr T name() const                                                    \
     {                                                                           \
-        if constexpr (std::is_std_array<type>::value)                           \
-            return std::to_array(Base::name);                                   \
+        if constexpr (std::is_std_array<T>::value){                             \
+            return std::to_array<T::value_type>(Base::name);      }             \
         else                                                                    \
             return Base::name;                                                  \
     }                                                                           \
@@ -81,7 +81,7 @@ public:                                                                         
     {                                                                           \
         _set##name(std::forward<type>(value));                                  \
         return *this;                                                           \
-    }  
+    }
 
 namespace vk { namespace utils {
 

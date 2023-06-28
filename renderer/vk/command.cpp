@@ -1,5 +1,3 @@
-#pragma once
-
 #include "command.hpp"
 #include "command_pool.hpp"
 #include "device.hpp"
