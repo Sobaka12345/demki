@@ -219,3 +219,6 @@ Position TFigure::rotationAnchor() const
 {
     return m_blocks[2]->position();
 }
+
+
+

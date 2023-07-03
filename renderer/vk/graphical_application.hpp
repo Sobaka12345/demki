@@ -1,16 +1,15 @@
 #pragma once
 
-#include "buffer.hpp"
 #include "command.hpp"
-#include "command_pool.hpp"
-#include "creators.hpp"
 #include "device.hpp"
 #include "debug_utils_messenger.hpp"
+#include "fence.hpp"
 #include "framebuffer.hpp"
 #include "graphics_pipeline.hpp"
 #include "image.hpp"
 #include "image_view.hpp"
-#include "update_timer.hpp"
+#include "semaphore.hpp"
+
 
 #include <set>
 #include <string>
@@ -19,11 +18,11 @@
 #include <optional>
 
 #if defined(_WIN32) || defined(WIN32)
-    #define VK_USE_PLATFORM_WIN32_KHR
-    #define GLFW_EXPOSE_NATIVE_WIN32
+#	define VK_USE_PLATFORM_WIN32_KHR
+#	define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__unix__)
-    #define VK_USE_PLATFORM_XCB_KHR
-    #define GLFW_EXPOSE_NATIVE_X11
+#	define VK_USE_PLATFORM_XCB_KHR
+#	define GLFW_EXPOSE_NATIVE_X11
 #endif
 
 #define GLM_FORCE_RADIANS
@@ -36,6 +35,7 @@
 
 namespace vk {
 
+class RenderPass;
 class ResourceManager;
 
 class GraphicalApplication : public Handle<VkInstance>
@@ -86,20 +86,24 @@ private:
     void createSyncObjects();
 
     virtual void update(int64_t dt) = 0;
-    virtual void recordCommandBuffer(const CommandBuffer& commandBuffer, const Framebuffer& imageIndex) = 0;
+    virtual void recordCommandBuffer(const CommandBuffer& commandBuffer,
+        const Framebuffer& imageIndex) = 0;
     void drawFrame();
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
-        VkImageTiling tiling, VkFormatFeatureFlags features);
+        VkImageTiling tiling,
+        VkFormatFeatureFlags features);
     VkFormat findDepthFormat();
     bool hasStencilComponent(VkFormat format);
 
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(
+        const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkPresentModeKHR chooseSwapPresentMode(
+        const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 protected:
-    // TO DO: WINDOW CLASS
+    //  TO DO: WINDOW CLASS
     std::string m_appName;
     GLFWwindow* m_window;
     int m_windowWidth;
@@ -110,7 +114,7 @@ protected:
     VkSurfaceKHR m_vkSurface;
     std::unique_ptr<Device> m_device;
     VkExtent3D m_vkSwapChainExtent;
-    VkRenderPass m_vkRenderPass;
+    std::unique_ptr<RenderPass> m_renderPass;
 
 private:
     std::unique_ptr<ResourceManager> m_resourceManager;
@@ -122,9 +126,9 @@ private:
     std::weak_ptr<Queue> m_presentQueue;
     std::weak_ptr<Queue> m_graphicsQueue;
 
-    std::vector<VkSemaphore> m_vkImageAvailableSemaphores;
-    std::vector<VkSemaphore> m_vkRenderFinishedSemaphores;
-    std::vector<VkFence> m_vkInFlightFences;
+    HandleVector<Semaphore> m_imageAvailableSemaphores;
+    HandleVector<Semaphore> m_renderFinishedSemaphores;
+    HandleVector<Fence> m_inFlightFences;
 
     HandleVector<CommandBuffer> m_commandBuffers;
 
@@ -138,4 +142,4 @@ private:
     HandleVector<Framebuffer> m_swapChainFramebuffers;
 };
 
-}
+}    //  namespace vk

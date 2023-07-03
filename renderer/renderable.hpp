@@ -1,17 +1,20 @@
 #pragma once
 
-#include "model.hpp"
-#include "vk/command_buffer.hpp"
+#include "irenderable.hpp"
 
-class Renderable
+class Renderable : public IRenderable
 {
+public:
+    struct Uniforms
+    {};
+
 public:
     Renderable();
     virtual ~Renderable();
-    virtual void draw(const vk::CommandBuffer& commandBuffer) const;
+    virtual void draw(const vk::CommandBuffer& commandBuffer) const override;
 
-    std::weak_ptr<Model> model() const;
-    virtual void setModel(std::weak_ptr<Model> model);
+    virtual std::weak_ptr<Model> model() const override;
+    virtual void setModel(std::weak_ptr<Model> model) override;
 
 private:
     std::weak_ptr<Model> m_model;

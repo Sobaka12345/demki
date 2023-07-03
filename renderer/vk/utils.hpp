@@ -102,12 +102,17 @@ inline std::filesystem::path getExePath()
 
 static std::filesystem::path s_executablePath = getExePath().parent_path();
 
-inline std::vector<char> readFile(const std::string& filename)
+inline std::vector<char> readFile(std::filesystem::path filePath)
 {
-    std::ifstream file(s_executablePath / filename, std::ios::ate | std::ios::binary);
+    if (filePath.is_relative())
+    {
+        filePath = s_executablePath / filePath;
+    }
+
+    std::ifstream file(filePath, std::ios::ate | std::ios::binary);
 
     ASSERT(file.is_open(),
-        ("failed to open file: " + (s_executablePath / filename).string()).c_str());
+        ("failed to open file: " + filePath.string()).c_str());
 
     size_t fileSize = static_cast<size_t>(file.tellg());
     std::vector<char> buffer(fileSize);

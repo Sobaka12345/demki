@@ -1,14 +1,10 @@
 #include "renderable.hpp"
 
-Renderable::Renderable()
-{
+#include "model.hpp"
 
-}
+Renderable::Renderable() {}
 
-Renderable::~Renderable()
-{
-
-}
+Renderable::~Renderable() {}
 
 void Renderable::draw(const vk::CommandBuffer& commandBuffer) const
 {

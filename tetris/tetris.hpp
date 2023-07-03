@@ -1,6 +1,8 @@
 #pragma once
 
 #include <renderer.hpp>
+#include <update_timer.hpp>
+
 #include <vk/ubo_value.hpp>
 #include <vk/descriptor_pool.hpp>
 #include <vk/graphical_application.hpp>
@@ -14,30 +16,31 @@ class Field;
 
 namespace vk {
 class Sampler;
+class PipelineLayout;
 class DescriptorSet;
 class DescriptorSetLayout;
 }
 
-class Tetris: public vk::GraphicalApplication
+class Tetris : public vk::GraphicalApplication
 {
 public:
     Tetris();
     ~Tetris() override;
 
 private:
-    virtual void initApplication() override;    
+    virtual void initApplication() override;
     virtual void update(int64_t dt) override;
-    virtual void recordCommandBuffer(const vk::CommandBuffer& commandBuffer, 
+    virtual void recordCommandBuffer(const vk::CommandBuffer& commandBuffer,
         const vk::Framebuffer& framebuffer) override;
 
     void initTextures();
     void createGraphicsPipeline();
 
-    static void onKeyPressed(GLFWwindow *window, int key, int scancode, int action, int mods);
+    static void onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 private:
     std::unique_ptr<vk::GraphicsPipeline> m_pipeline;
-    VkPipelineLayout m_vkPipelineLayout;
+    std::unique_ptr<vk::PipelineLayout> m_pipelineLayout;
 
     bool m_rotate;
     int32_t m_dx;
@@ -52,7 +55,7 @@ private:
     std::unique_ptr<vk::DescriptorPool> m_descriptorPool;
     std::unique_ptr<vk::DescriptorSetLayout> m_descriptorSetLayout;
 
-    //texture
+    //  texture
     std::unique_ptr<vk::Image> m_roshiImage;
     std::unique_ptr<vk::ImageView> m_roshiImageView;
     std::unique_ptr<vk::Sampler> m_roshiImageSampler;

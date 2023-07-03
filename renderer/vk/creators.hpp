@@ -8,20 +8,17 @@
 namespace vk { namespace create {
 
 template <typename T>
-concept IsArrayContainer = requires (const T& o) {
-    o.data();
-    o.size();
-};
+concept IsArrayContainer =
+    requires(const T& o) {
+        o.data();
+        o.size();
+    };
 
-
-
-
-inline constexpr VkSubmitInfo submitInfo(
-    std::span<const VkCommandBuffer> commandBuffers,
+inline constexpr VkSubmitInfo submitInfo(std::span<const VkCommandBuffer> commandBuffers,
     std::span<const VkSemaphore> waitSemaphores = {},
     const VkPipelineStageFlags* pWaitDstStageMask = nullptr,
     std::span<const VkSemaphore> signalSemaphores = {},
-    const void*                 pNext = nullptr)
+    const void* pNext = nullptr)
 {
     VkSubmitInfo result;
 
@@ -38,11 +35,10 @@ inline constexpr VkSubmitInfo submitInfo(
     return result;
 }
 
-inline VkDeviceQueueCreateInfo deviceQueueCreateInfo(
-    uint32_t                    queueFamilyIndex,
-    const std::span<const float>      queuePriorities,
-    VkDeviceQueueCreateFlags    flags = 0,
-    const void*                 pNext = nullptr)
+inline VkDeviceQueueCreateInfo deviceQueueCreateInfo(uint32_t queueFamilyIndex,
+    const std::span<const float> queuePriorities,
+    VkDeviceQueueCreateFlags flags = 0,
+    const void* pNext = nullptr)
 {
     VkDeviceQueueCreateInfo result;
     result.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -59,9 +55,9 @@ inline constexpr VkDeviceCreateInfo deviceCreateInfo(
     const std::span<VkDeviceQueueCreateInfo> queueCreateInfos,
     const std::span<const char* const> enabledExtensionNames,
     const std::span<const char* const> enabledLayerNames = {},
-    const VkPhysicalDeviceFeatures*    pEnabledFeatures = nullptr,
-    VkDeviceCreateFlags                flags = 0,
-    const void*                        pNext = nullptr)
+    const VkPhysicalDeviceFeatures* pEnabledFeatures = nullptr,
+    VkDeviceCreateFlags flags = 0,
+    const void* pNext = nullptr)
 {
     VkDeviceCreateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -78,7 +74,8 @@ inline constexpr VkDeviceCreateInfo deviceCreateInfo(
     return result;
 }
 
-inline constexpr VkBufferCopy bufferCopy(VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0)
+inline constexpr VkBufferCopy bufferCopy(
+    VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0)
 {
     VkBufferCopy result{};
     result.size = size;
@@ -89,10 +86,7 @@ inline constexpr VkBufferCopy bufferCopy(VkDeviceSize size, VkDeviceSize srcOffs
 }
 
 inline constexpr VkImageSubresourceLayers imageSubresourceLayers(
-    VkImageAspectFlags    aspectMask,
-    uint32_t              mipLevel,
-    uint32_t              baseArrayLayer,
-    uint32_t              layerCount)
+    VkImageAspectFlags aspectMask, uint32_t mipLevel, uint32_t baseArrayLayer, uint32_t layerCount)
 {
     VkImageSubresourceLayers result;
     result.aspectMask = aspectMask;
@@ -103,13 +97,12 @@ inline constexpr VkImageSubresourceLayers imageSubresourceLayers(
     return result;
 }
 
-inline constexpr VkBufferImageCopy bufferImageCopy(
-    VkDeviceSize                bufferOffset,
-    uint32_t                    bufferRowLength,
-    uint32_t                    bufferImageHeight,
-    VkImageSubresourceLayers    imageSubresource,
-    VkOffset3D                  imageOffset,
-    VkExtent3D                  imageExtent)
+inline constexpr VkBufferImageCopy bufferImageCopy(VkDeviceSize bufferOffset,
+    uint32_t bufferRowLength,
+    uint32_t bufferImageHeight,
+    VkImageSubresourceLayers imageSubresource,
+    VkOffset3D imageOffset,
+    VkExtent3D imageExtent)
 {
     VkBufferImageCopy result{};
     result.bufferOffset = bufferOffset;
@@ -122,7 +115,8 @@ inline constexpr VkBufferImageCopy bufferImageCopy(
     return result;
 }
 
-inline constexpr VkMemoryAllocateInfo memoryAllocateInfo(VkDeviceSize size, uint32_t memoryTypeIndex, const void* pNext = nullptr)
+inline constexpr VkMemoryAllocateInfo memoryAllocateInfo(
+    VkDeviceSize size, uint32_t memoryTypeIndex, const void* pNext = nullptr)
 {
     VkMemoryAllocateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -134,10 +128,7 @@ inline constexpr VkMemoryAllocateInfo memoryAllocateInfo(VkDeviceSize size, uint
 }
 
 inline constexpr VkMappedMemoryRange mappedMemoryRange(
-    VkDeviceMemory     memory,
-    VkDeviceSize       offset,
-    VkDeviceSize       size,
-    const void*        pNext = nullptr)
+    VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, const void* pNext = nullptr)
 {
     VkMappedMemoryRange result{};
     result.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -150,10 +141,7 @@ inline constexpr VkMappedMemoryRange mappedMemoryRange(
 }
 
 inline constexpr VkCommandPoolCreateInfo commandPoolCreateInfo(
-    uint32_t                    queueFamilyIndex,
-    VkCommandPoolCreateFlags    flags,
-    const void*                 pNext = nullptr
-)
+    uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags, const void* pNext = nullptr)
 {
     VkCommandPoolCreateInfo result;
     result.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -164,9 +152,11 @@ inline constexpr VkCommandPoolCreateInfo commandPoolCreateInfo(
     return result;
 }
 
- inline constexpr VkCommandBufferAllocateInfo commandBufferAllocateInfo(VkCommandPool commandPool,
-    VkCommandBufferLevel level, uint32_t commandBufferCount, const void* pNext = nullptr)
- {
+inline constexpr VkCommandBufferAllocateInfo commandBufferAllocateInfo(VkCommandPool commandPool,
+    VkCommandBufferLevel level,
+    uint32_t commandBufferCount,
+    const void* pNext = nullptr)
+{
     VkCommandBufferAllocateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     result.level = level;
@@ -175,42 +165,51 @@ inline constexpr VkCommandPoolCreateInfo commandPoolCreateInfo(
     result.pNext = pNext;
 
     return result;
- }
-
- inline constexpr VkCommandBufferBeginInfo commandBufferBeginInfo(
-    const VkCommandBufferInheritanceInfo* pInheritanceInfo,
-    VkCommandBufferUsageFlags             flags = 0,
-    const void*                           pNext = nullptr)
- {
-     VkCommandBufferBeginInfo result;
-     result.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-     result.pInheritanceInfo = pInheritanceInfo;
-     result.flags = flags;
-     result.pNext = pNext;
-
-     return result;
- }
-
- inline constexpr VkRenderPassBeginInfo renderPassBeginInfo(
-     VkRenderPass           renderPass,
-     VkFramebuffer          framebuffer,
-     VkRect2D               renderArea,
-     std::span<const VkClearValue> clearValues = {},
-     const void* pNext = nullptr)
- {
-     VkRenderPassBeginInfo result{};
-     result.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-     result.renderPass = renderPass;
-     result.framebuffer = framebuffer;
-     result.clearValueCount = static_cast<uint32_t>(clearValues.size());
-     result.pClearValues = clearValues.data();
-     result.renderArea = renderArea;
-     result.pNext = pNext;
-
-     return result;
 }
 
-inline constexpr VkShaderModuleCreateInfo shaderModuleCreateInfo(uint32_t codeSize, const uint32_t* codeData)
+inline constexpr VkCommandBufferBeginInfo commandBufferBeginInfo(
+    const VkCommandBufferInheritanceInfo* pInheritanceInfo,
+    VkCommandBufferUsageFlags flags = 0,
+    const void* pNext = nullptr)
+{
+    VkCommandBufferBeginInfo result;
+    result.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    result.pInheritanceInfo = pInheritanceInfo;
+    result.flags = flags;
+    result.pNext = pNext;
+
+    return result;
+}
+
+BEGIN_DECLARE_VKSTRUCT(RenderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkRenderPass, renderPass)
+    VKSTRUCT_PROPERTY(VkFramebuffer, framebuffer)
+    VKSTRUCT_PROPERTY(VkRect2D, renderArea)
+    VKSTRUCT_PROPERTY(uint32_t, clearValueCount)
+    VKSTRUCT_PROPERTY(const VkClearValue*, pClearValues)
+END_DECLARE_VKSTRUCT()
+
+inline constexpr VkRenderPassBeginInfo renderPassBeginInfo(VkRenderPass renderPass,
+    VkFramebuffer framebuffer,
+    VkRect2D renderArea,
+    std::span<const VkClearValue> clearValues = {},
+    const void* pNext = nullptr)
+{
+    VkRenderPassBeginInfo result{};
+    result.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    result.renderPass = renderPass;
+    result.framebuffer = framebuffer;
+    result.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    result.pClearValues = clearValues.data();
+    result.renderArea = renderArea;
+    result.pNext = pNext;
+
+    return result;
+}
+
+inline constexpr VkShaderModuleCreateInfo shaderModuleCreateInfo(uint32_t codeSize,
+    const uint32_t* codeData)
 {
     VkShaderModuleCreateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -220,10 +219,10 @@ inline constexpr VkShaderModuleCreateInfo shaderModuleCreateInfo(uint32_t codeSi
     return result;
 }
 
-inline VkShaderModule shaderModule(VkDevice device, const std::vector<char> &code)
+inline VkShaderModule shaderModule(VkDevice device, const std::vector<char>& code)
 {
-    const VkShaderModuleCreateInfo createInfo = shaderModuleCreateInfo(static_cast<uint32_t>(code.size()),
-        reinterpret_cast<const uint32_t*>(code.data()));
+    const VkShaderModuleCreateInfo createInfo = shaderModuleCreateInfo(
+        static_cast<uint32_t>(code.size()), reinterpret_cast<const uint32_t*>(code.data()));
 
     VkShaderModule result = VK_NULL_HANDLE;
     ASSERT(vkCreateShaderModule(device, &createInfo, nullptr, &result) == VK_SUCCESS);
@@ -231,88 +230,93 @@ inline VkShaderModule shaderModule(VkDevice device, const std::vector<char> &cod
     return result;
 }
 
-BEGIN_DECLARE_VKSTRUCT(PipelineViewportStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineViewportStateCreateFlags, flags)
-VKSTRUCT_PROPERTY(uint32_t, viewportCount)
-VKSTRUCT_PROPERTY(const VkViewport*, pViewports)
-VKSTRUCT_PROPERTY(uint32_t, scissorCount)
-VKSTRUCT_PROPERTY(const VkRect2D*, pScissors)
+BEGIN_DECLARE_VKSTRUCT(PipelineViewportStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineViewportStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(uint32_t, viewportCount)
+    VKSTRUCT_PROPERTY(const VkViewport*, pViewports)
+    VKSTRUCT_PROPERTY(uint32_t, scissorCount)
+    VKSTRUCT_PROPERTY(const VkRect2D*, pScissors)
 END_DECLARE_VKSTRUCT()
 
 
-BEGIN_DECLARE_VKSTRUCT(PipelineDynamicStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineDynamicStateCreateFlags, flags)
-VKSTRUCT_PROPERTY(uint32_t, dynamicStateCount)
-VKSTRUCT_PROPERTY(const VkDynamicState*, pDynamicStates)
+BEGIN_DECLARE_VKSTRUCT(PipelineDynamicStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineDynamicStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(uint32_t, dynamicStateCount)
+    VKSTRUCT_PROPERTY(const VkDynamicState*, pDynamicStates)
 END_DECLARE_VKSTRUCT()
 
-BEGIN_DECLARE_VKSTRUCT(PipelineInputAssemblyStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineInputAssemblyStateCreateFlags, flags)
-VKSTRUCT_PROPERTY(VkPrimitiveTopology, topology)
-VKSTRUCT_PROPERTY(VkBool32, primitiveRestartEnable)
+BEGIN_DECLARE_VKSTRUCT(PipelineInputAssemblyStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineInputAssemblyStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(VkPrimitiveTopology, topology)
+    VKSTRUCT_PROPERTY(VkBool32, primitiveRestartEnable)
 END_DECLARE_VKSTRUCT()
 
-BEGIN_DECLARE_VKSTRUCT(PipelineRasterizationStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineRasterizationStateCreateFlags, flags)
-VKSTRUCT_PROPERTY(VkBool32, depthClampEnable)
-VKSTRUCT_PROPERTY(VkBool32, rasterizerDiscardEnable)
-VKSTRUCT_PROPERTY(VkPolygonMode, polygonMode)
-VKSTRUCT_PROPERTY(VkCullModeFlags, cullMode)
-VKSTRUCT_PROPERTY(VkFrontFace, frontFace)
-VKSTRUCT_PROPERTY(VkBool32, depthBiasEnable)
-VKSTRUCT_PROPERTY(float, depthBiasConstantFactor)
-VKSTRUCT_PROPERTY(float, depthBiasClamp)
-VKSTRUCT_PROPERTY(float, depthBiasSlopeFactor)
-VKSTRUCT_PROPERTY(float, lineWidth)
+BEGIN_DECLARE_VKSTRUCT(PipelineRasterizationStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineRasterizationStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(VkBool32, depthClampEnable)
+    VKSTRUCT_PROPERTY(VkBool32, rasterizerDiscardEnable)
+    VKSTRUCT_PROPERTY(VkPolygonMode, polygonMode)
+    VKSTRUCT_PROPERTY(VkCullModeFlags, cullMode)
+    VKSTRUCT_PROPERTY(VkFrontFace, frontFace)
+    VKSTRUCT_PROPERTY(VkBool32, depthBiasEnable)
+    VKSTRUCT_PROPERTY(float, depthBiasConstantFactor)
+    VKSTRUCT_PROPERTY(float, depthBiasClamp)
+    VKSTRUCT_PROPERTY(float, depthBiasSlopeFactor)
+    VKSTRUCT_PROPERTY(float, lineWidth)
 END_DECLARE_VKSTRUCT()
 
-BEGIN_DECLARE_VKSTRUCT(PipelineMultisampleStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineMultisampleStateCreateFlags, flags)
-VKSTRUCT_PROPERTY(VkSampleCountFlagBits, rasterizationSamples)
-VKSTRUCT_PROPERTY(VkBool32, sampleShadingEnable)
-VKSTRUCT_PROPERTY(float, minSampleShading)
-VKSTRUCT_PROPERTY(const VkSampleMask*, pSampleMask)
-VKSTRUCT_PROPERTY(VkBool32, alphaToCoverageEnable)
-VKSTRUCT_PROPERTY(VkBool32, alphaToOneEnable)
+BEGIN_DECLARE_VKSTRUCT(PipelineMultisampleStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineMultisampleStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(VkSampleCountFlagBits, rasterizationSamples)
+    VKSTRUCT_PROPERTY(VkBool32, sampleShadingEnable)
+    VKSTRUCT_PROPERTY(float, minSampleShading)
+    VKSTRUCT_PROPERTY(const VkSampleMask*, pSampleMask)
+    VKSTRUCT_PROPERTY(VkBool32, alphaToCoverageEnable)
+    VKSTRUCT_PROPERTY(VkBool32, alphaToOneEnable)
 END_DECLARE_VKSTRUCT()
 
 
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(PipelineColorBlendAttachmentState)
-VKSTRUCT_PROPERTY(VkBool32, blendEnable)
-VKSTRUCT_PROPERTY(VkBlendFactor, srcColorBlendFactor)
-VKSTRUCT_PROPERTY(VkBlendFactor, dstColorBlendFactor)
-VKSTRUCT_PROPERTY(VkBlendOp, colorBlendOp)
-VKSTRUCT_PROPERTY(VkBlendFactor, srcAlphaBlendFactor)
-VKSTRUCT_PROPERTY(VkBlendFactor, dstAlphaBlendFactor)
-VKSTRUCT_PROPERTY(VkBlendOp, alphaBlendOp)
-VKSTRUCT_PROPERTY(VkColorComponentFlags, colorWriteMask)
+    VKSTRUCT_PROPERTY(VkBool32, blendEnable)
+    VKSTRUCT_PROPERTY(VkBlendFactor, srcColorBlendFactor)
+    VKSTRUCT_PROPERTY(VkBlendFactor, dstColorBlendFactor)
+    VKSTRUCT_PROPERTY(VkBlendOp, colorBlendOp)
+    VKSTRUCT_PROPERTY(VkBlendFactor, srcAlphaBlendFactor)
+    VKSTRUCT_PROPERTY(VkBlendFactor, dstAlphaBlendFactor)
+    VKSTRUCT_PROPERTY(VkBlendOp, alphaBlendOp)
+    VKSTRUCT_PROPERTY(VkColorComponentFlags, colorWriteMask)
 END_DECLARE_VKSTRUCT()
 
 
-BEGIN_DECLARE_VKSTRUCT(PipelineColorBlendStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineColorBlendStateCreateFlags, flags)
-VKSTRUCT_PROPERTY(VkBool32, logicOpEnable)
-VKSTRUCT_PROPERTY(VkLogicOp, logicOp)
-VKSTRUCT_PROPERTY(uint32_t, attachmentCount)
-VKSTRUCT_PROPERTY(const VkPipelineColorBlendAttachmentState*, pAttachments)
-VKSTRUCT_PROPERTY(std::array<float COMMA 4>, blendConstants)
+BEGIN_DECLARE_VKSTRUCT(PipelineColorBlendStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineColorBlendStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(VkBool32, logicOpEnable)
+    VKSTRUCT_PROPERTY(VkLogicOp, logicOp)
+    VKSTRUCT_PROPERTY(uint32_t, attachmentCount)
+    VKSTRUCT_PROPERTY(const VkPipelineColorBlendAttachmentState*, pAttachments)
+    VKSTRUCT_PROPERTY(std::array<float COMMA 4>, blendConstants)
 END_DECLARE_VKSTRUCT()
 
 inline constexpr VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
-    const IsArrayContainer auto&                  colorBlendAttachments,
-    VkBool32                                      logicOpEnable = VK_FALSE,
-    VkLogicOp                                     logicOp = VK_LOGIC_OP_COPY,
-    const std::array<float, 4>&                   blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f},
-    VkPipelineColorBlendStateCreateFlags          flags = 0,
-    const void*                                   pNext = nullptr)
+    const IsArrayContainer auto& colorBlendAttachments,
+    VkBool32 logicOpEnable = VK_FALSE,
+    VkLogicOp logicOp = VK_LOGIC_OP_COPY,
+    const std::array<float, 4>& blendConstants = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f },
+    VkPipelineColorBlendStateCreateFlags flags = 0,
+    const void* pNext = nullptr)
 {
-
     VkPipelineColorBlendStateCreateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     result.logicOpEnable = logicOpEnable;
@@ -327,32 +331,33 @@ inline constexpr VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCrea
     return result;
 }
 
-BEGIN_DECLARE_VKSTRUCT(PipelineDepthStencilStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineDepthStencilStateCreateFlags, flags)
-VKSTRUCT_PROPERTY(VkBool32, depthTestEnable)
-VKSTRUCT_PROPERTY(VkBool32, depthWriteEnable)
-VKSTRUCT_PROPERTY(VkCompareOp, depthCompareOp)
-VKSTRUCT_PROPERTY(VkBool32, depthBoundsTestEnable)
-VKSTRUCT_PROPERTY(VkBool32, stencilTestEnable)
-VKSTRUCT_PROPERTY(VkStencilOpState, front)
-VKSTRUCT_PROPERTY(VkStencilOpState, back)
-VKSTRUCT_PROPERTY(float, minDepthBounds)
-VKSTRUCT_PROPERTY(float, maxDepthBounds)
+BEGIN_DECLARE_VKSTRUCT(PipelineDepthStencilStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineDepthStencilStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(VkBool32, depthTestEnable)
+    VKSTRUCT_PROPERTY(VkBool32, depthWriteEnable)
+    VKSTRUCT_PROPERTY(VkCompareOp, depthCompareOp)
+    VKSTRUCT_PROPERTY(VkBool32, depthBoundsTestEnable)
+    VKSTRUCT_PROPERTY(VkBool32, stencilTestEnable)
+    VKSTRUCT_PROPERTY(VkStencilOpState, front)
+    VKSTRUCT_PROPERTY(VkStencilOpState, back)
+    VKSTRUCT_PROPERTY(float, minDepthBounds)
+    VKSTRUCT_PROPERTY(float, maxDepthBounds)
 END_DECLARE_VKSTRUCT()
 
 inline constexpr VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo(
-    VkBool32                                  depthTestEnable,
-    VkBool32                                  depthWriteEnable,
-    VkCompareOp                               depthCompareOp,
-    VkBool32                                  depthBoundsTestEnable,
-    VkBool32                                  stencilTestEnable,
-    VkStencilOpState                          front = {},
-    VkStencilOpState                          back = {},
-    float                                     minDepthBounds = 0.0f,
-    float                                     maxDepthBounds = 0.0f,
-    VkPipelineDepthStencilStateCreateFlags    flags = 0,
-    const void*                               pNext = nullptr)
+    VkBool32 depthTestEnable,
+    VkBool32 depthWriteEnable,
+    VkCompareOp depthCompareOp,
+    VkBool32 depthBoundsTestEnable,
+    VkBool32 stencilTestEnable,
+    VkStencilOpState front = {},
+    VkStencilOpState back = {},
+    float minDepthBounds = 0.0f,
+    float maxDepthBounds = 0.0f,
+    VkPipelineDepthStencilStateCreateFlags flags = 0,
+    const void* pNext = nullptr)
 {
     VkPipelineDepthStencilStateCreateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -371,29 +376,10 @@ inline constexpr VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilState
     return result;
 }
 
-inline constexpr VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-    std::span<const VkDescriptorSetLayout>    setLayouts,
-    std::span<const VkPushConstantRange>    pushConstantRanges,
-    VkPipelineLayoutCreateFlags     flags = 0,
-    const void*                     pNext = nullptr)
-{
-    VkPipelineLayoutCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    result.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
-    result.pSetLayouts = setLayouts.data();
-    result.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
-    result.pPushConstantRanges = pushConstantRanges.data();
-    result.flags = flags;
-    result.pNext = pNext;
-
-    return result;
-}
-
-inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(
-    uint32_t                       maxSets,
+inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(uint32_t maxSets,
     std::span<const VkDescriptorPoolSize> poolSizes,
-    VkDescriptorPoolCreateFlags    flags = 0,
-    const void*                    pNext = nullptr)
+    VkDescriptorPoolCreateFlags flags = 0,
+    const void* pNext = nullptr)
 {
     VkDescriptorPoolCreateInfo result;
     result.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -406,7 +392,8 @@ inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(
     return result;
 }
 
-inline constexpr VkDescriptorPoolSize descriptorPoolSize(VkDescriptorType type, uint32_t descriptorCount)
+inline constexpr VkDescriptorPoolSize descriptorPoolSize(VkDescriptorType type,
+    uint32_t descriptorCount)
 {
     VkDescriptorPoolSize result{};
     result.type = type;
@@ -416,7 +403,9 @@ inline constexpr VkDescriptorPoolSize descriptorPoolSize(VkDescriptorType type, 
 }
 
 inline constexpr VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(
-    VkDescriptorPool descriptorPool, const VkDescriptorSetLayout* pSetLayouts, uint32_t descriptorSetCount)
+    VkDescriptorPool descriptorPool,
+    const VkDescriptorSetLayout* pSetLayouts,
+    uint32_t descriptorSetCount)
 {
     VkDescriptorSetAllocateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -427,7 +416,8 @@ inline constexpr VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(
     return result;
 }
 
-inline constexpr VkDescriptorBufferInfo descriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
+inline constexpr VkDescriptorBufferInfo descriptorBufferInfo(
+    VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
 {
     VkDescriptorBufferInfo result{};
     result.buffer = buffer;
@@ -438,17 +428,18 @@ inline constexpr VkDescriptorBufferInfo descriptorBufferInfo(VkBuffer buffer, Vk
 }
 
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorSetLayoutBinding)
-VKSTRUCT_PROPERTY(uint32_t          , binding)
-VKSTRUCT_PROPERTY(VkDescriptorType  , descriptorType)
-VKSTRUCT_PROPERTY(uint32_t          , descriptorCount)
-VKSTRUCT_PROPERTY(VkShaderStageFlags, stageFlags)
-VKSTRUCT_PROPERTY(const VkSampler*  , pImmutableSamplers)
+    VKSTRUCT_PROPERTY(uint32_t, binding)
+    VKSTRUCT_PROPERTY(VkDescriptorType, descriptorType)
+    VKSTRUCT_PROPERTY(uint32_t, descriptorCount)
+    VKSTRUCT_PROPERTY(VkShaderStageFlags, stageFlags)
+    VKSTRUCT_PROPERTY(const VkSampler*, pImmutableSamplers)
 END_DECLARE_VKSTRUCT()
 
-
-
 inline constexpr VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlags aspectFlags,
-    uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount)
+    uint32_t baseMipLevel,
+    uint32_t levelCount,
+    uint32_t baseArrayLayer,
+    uint32_t layerCount)
 {
     VkImageSubresourceRange result{};
     result.aspectMask = aspectFlags;
@@ -470,12 +461,19 @@ inline constexpr VkExtent3D extent3D(uint32_t width, uint32_t height, uint32_t d
     return result;
 }
 
-inline constexpr VkImageCreateInfo imageCreateInfo(VkImageType type, VkExtent3D extent,
-    uint32_t mipLevels, uint32_t arrayLayers, VkFormat format, VkImageTiling tiling,
-    VkImageLayout initialLayout, VkImageUsageFlags usage, VkSampleCountFlagBits samples,
+inline constexpr VkImageCreateInfo imageCreateInfo(VkImageType type,
+    VkExtent3D extent,
+    uint32_t mipLevels,
+    uint32_t arrayLayers,
+    VkFormat format,
+    VkImageTiling tiling,
+    VkImageLayout initialLayout,
+    VkImageUsageFlags usage,
+    VkSampleCountFlagBits samples,
     VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     std::span<const uint32_t> queueFamilyIndices = {},
-    VkImageCreateFlags flags = 0, const void* pNext = nullptr)
+    VkImageCreateFlags flags = 0,
+    const void* pNext = nullptr)
 {
     VkImageCreateInfo result{};
     result.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -497,29 +495,32 @@ inline constexpr VkImageCreateInfo imageCreateInfo(VkImageType type, VkExtent3D 
     return result;
 }
 
-BEGIN_DECLARE_VKSTRUCT(PipelineShaderStageCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineShaderStageCreateFlags, flags)
-VKSTRUCT_PROPERTY(VkShaderStageFlagBits, stage)
-VKSTRUCT_PROPERTY(VkShaderModule, module)
-VKSTRUCT_PROPERTY(const char*, pName)
-VKSTRUCT_PROPERTY(const VkSpecializationInfo*, pSpecializationInfo)
+BEGIN_DECLARE_VKSTRUCT(PipelineShaderStageCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineShaderStageCreateFlags, flags)
+    VKSTRUCT_PROPERTY(VkShaderStageFlagBits, stage)
+    VKSTRUCT_PROPERTY(VkShaderModule, module)
+    VKSTRUCT_PROPERTY(const char*, pName)
+    VKSTRUCT_PROPERTY(const VkSpecializationInfo*, pSpecializationInfo)
 END_DECLARE_VKSTRUCT();
 
-BEGIN_DECLARE_VKSTRUCT(PipelineVertexInputStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)
-VKSTRUCT_PROPERTY(const void*, pNext)
-VKSTRUCT_PROPERTY(VkPipelineVertexInputStateCreateFlags, flags)
-VKSTRUCT_PROPERTY(uint32_t, vertexBindingDescriptionCount)
-VKSTRUCT_PROPERTY(const VkVertexInputBindingDescription*, pVertexBindingDescriptions)
-VKSTRUCT_PROPERTY(uint32_t, vertexAttributeDescriptionCount)
-VKSTRUCT_PROPERTY(const VkVertexInputAttributeDescription*, pVertexAttributeDescriptions)
+BEGIN_DECLARE_VKSTRUCT(PipelineVertexInputStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineVertexInputStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(uint32_t, vertexBindingDescriptionCount)
+    VKSTRUCT_PROPERTY(const VkVertexInputBindingDescription*, pVertexBindingDescriptions)
+    VKSTRUCT_PROPERTY(uint32_t, vertexAttributeDescriptionCount)
+    VKSTRUCT_PROPERTY(const VkVertexInputAttributeDescription*, pVertexAttributeDescriptions)
 END_DECLARE_VKSTRUCT();
 
-inline constexpr VkFramebufferCreateInfo frameBufferCreateInfo(
-    VkRenderPass renderPass,
+inline constexpr VkFramebufferCreateInfo frameBufferCreateInfo(VkRenderPass renderPass,
     const IsArrayContainer auto& attachments,
-    uint32_t width, uint32_t height,
-    uint32_t layers, VkFramebufferCreateFlags flags = 0,
+    uint32_t width,
+    uint32_t height,
+    uint32_t layers,
+    VkFramebufferCreateFlags flags = 0,
     const void* pNext = nullptr)
 {
     VkFramebufferCreateInfo result{};
@@ -536,23 +537,22 @@ inline constexpr VkFramebufferCreateInfo frameBufferCreateInfo(
     return result;
 }
 
-inline constexpr VkSwapchainCreateInfoKHR swapChainCreateInfoKHR(
-    VkSurfaceKHR                     surface,
-    uint32_t                         minImageCount,
-    VkFormat                         imageFormat,
-    VkColorSpaceKHR                  imageColorSpace,
-    VkExtent2D                       imageExtent,
-    uint32_t                         imageArrayLayers,
-    VkImageUsageFlags                imageUsage,
-    VkSharingMode                    imageSharingMode,
-    std::span<const uint32_t>        queueFamilyIndices,
-    VkSurfaceTransformFlagBitsKHR    preTransform,
-    VkCompositeAlphaFlagBitsKHR      compositeAlpha,
-    VkPresentModeKHR                 presentMode,
-    VkBool32                         clipped,
-    VkSwapchainKHR                   oldSwapchain = VK_NULL_HANDLE,
-    VkSwapchainCreateFlagsKHR        flags = 0,
-    const void*                      pNext = nullptr)
+inline constexpr VkSwapchainCreateInfoKHR swapChainCreateInfoKHR(VkSurfaceKHR surface,
+    uint32_t minImageCount,
+    VkFormat imageFormat,
+    VkColorSpaceKHR imageColorSpace,
+    VkExtent2D imageExtent,
+    uint32_t imageArrayLayers,
+    VkImageUsageFlags imageUsage,
+    VkSharingMode imageSharingMode,
+    std::span<const uint32_t> queueFamilyIndices,
+    VkSurfaceTransformFlagBitsKHR preTransform,
+    VkCompositeAlphaFlagBitsKHR compositeAlpha,
+    VkPresentModeKHR presentMode,
+    VkBool32 clipped,
+    VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE,
+    VkSwapchainCreateFlagsKHR flags = 0,
+    const void* pNext = nullptr)
 {
     VkSwapchainCreateInfoKHR result;
     result.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -564,7 +564,7 @@ inline constexpr VkSwapchainCreateInfoKHR swapChainCreateInfoKHR(
     result.imageArrayLayers = imageArrayLayers;
     result.imageUsage = imageUsage;
     result.imageSharingMode = imageSharingMode;
-    result.queueFamilyIndexCount =  queueFamilyIndices.size();
+    result.queueFamilyIndexCount = queueFamilyIndices.size();
     result.pQueueFamilyIndices = queueFamilyIndices.data();
     result.preTransform = preTransform;
     result.compositeAlpha = compositeAlpha;
@@ -577,5 +577,4 @@ inline constexpr VkSwapchainCreateInfoKHR swapChainCreateInfoKHR(
     return result;
 }
 
-}
-}
+}}    //  namespace vk::create

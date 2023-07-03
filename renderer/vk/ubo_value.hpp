@@ -22,7 +22,7 @@ public:
 
     void set(LayoutType value)
     {
-        m_value = value;
+        m_value = std::move(value);
         if (!m_uboHandler->memory.expired())
         {
             m_uboHandler->memory.lock()->mapped->write(&m_value, s_layoutSize, m_uboHandler->offset);

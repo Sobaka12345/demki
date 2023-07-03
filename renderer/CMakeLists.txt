@@ -20,6 +20,8 @@ add_library(${PROJECT_NAME} STATIC
     vk/descriptor_pool.cpp
     vk/device.hpp
     vk/device.cpp
+    vk/fence.hpp
+    vk/fence.cpp
     vk/framebuffer.cpp
     vk/framebuffer.hpp
     vk/graphical_application.hpp
@@ -33,17 +35,26 @@ add_library(${PROJECT_NAME} STATIC
     vk/image_view.cpp
     vk/memory.hpp
     vk/memory.cpp
+    vk/pipeline_layout.hpp
+    vk/pipeline_layout.cpp
     vk/queue.hpp
     vk/queue.cpp
+    vk/render_pass.hpp
+    vk/render_pass.cpp
     vk/resource_manager.hpp
     vk/resource_manager.cpp
     vk/sampler.hpp
     vk/sampler.cpp
+    vk/semaphore.hpp
+    vk/semaphore.cpp
+    vk/shader_module.hpp
+    vk/shader_module.cpp
     vk/ubo_value.hpp
     vk/uniform_buffer.hpp
     vk/utils.hpp
     vk/vertex.hpp
     assert.hpp
+    irenderable.hpp
     model.cpp
     model.hpp
     renderer.hpp
