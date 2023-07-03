@@ -6,7 +6,7 @@ Renderable::Renderable() {}
 
 Renderable::~Renderable() {}
 
-void Renderable::draw(const vk::CommandBuffer& commandBuffer) const
+void Renderable::draw(const vk::handles::CommandBuffer& commandBuffer) const
 {
     if (!m_model.expired())
     {

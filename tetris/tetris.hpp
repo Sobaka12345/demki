@@ -4,8 +4,8 @@
 #include <update_timer.hpp>
 
 #include <vk/ubo_value.hpp>
-#include <vk/descriptor_pool.hpp>
 #include <vk/graphical_application.hpp>
+#include <vk/handles/descriptor_pool.hpp>
 
 #include <list>
 #include <memory>
@@ -14,12 +14,12 @@
 class Model;
 class Field;
 
-namespace vk {
+namespace vk { namespace handles {
 class Sampler;
 class PipelineLayout;
 class DescriptorSet;
 class DescriptorSetLayout;
-}
+}}
 
 class Tetris : public vk::GraphicalApplication
 {
@@ -30,8 +30,8 @@ public:
 private:
     virtual void initApplication() override;
     virtual void update(int64_t dt) override;
-    virtual void recordCommandBuffer(const vk::CommandBuffer& commandBuffer,
-        const vk::Framebuffer& framebuffer) override;
+    virtual void recordCommandBuffer(const vk::handles::CommandBuffer& commandBuffer,
+        const vk::handles::Framebuffer& framebuffer) override;
 
     void initTextures();
     void createGraphicsPipeline();
@@ -39,8 +39,8 @@ private:
     static void onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 private:
-    std::unique_ptr<vk::GraphicsPipeline> m_pipeline;
-    std::unique_ptr<vk::PipelineLayout> m_pipelineLayout;
+    std::unique_ptr<vk::handles::GraphicsPipeline> m_pipeline;
+    std::unique_ptr<vk::handles::PipelineLayout> m_pipelineLayout;
 
     bool m_rotate;
     int32_t m_dx;
@@ -51,14 +51,14 @@ private:
 
     Renderer m_renderer;
 
-    std::shared_ptr<vk::DescriptorSet> m_descriptorSet;
-    std::unique_ptr<vk::DescriptorPool> m_descriptorPool;
-    std::unique_ptr<vk::DescriptorSetLayout> m_descriptorSetLayout;
+    std::shared_ptr<vk::handles::DescriptorSet> m_descriptorSet;
+    std::unique_ptr<vk::handles::DescriptorPool> m_descriptorPool;
+    std::unique_ptr<vk::handles::DescriptorSetLayout> m_descriptorSetLayout;
 
     //  texture
-    std::unique_ptr<vk::Image> m_roshiImage;
-    std::unique_ptr<vk::ImageView> m_roshiImageView;
-    std::unique_ptr<vk::Sampler> m_roshiImageSampler;
+    std::unique_ptr<vk::handles::Image> m_roshiImage;
+    std::unique_ptr<vk::handles::ImageView> m_roshiImageView;
+    std::unique_ptr<vk::handles::Sampler> m_roshiImageSampler;
 
     std::shared_ptr<Model> m_cube;
     std::unique_ptr<vk::UBOValue<vk::UBOViewProjection>> m_camera;

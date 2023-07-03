@@ -1,57 +1,59 @@
 declare_project()
 
 add_library(${PROJECT_NAME} STATIC
-    vk/buffer.hpp
-    vk/buffer.cpp
-    vk/command.hpp
-    vk/command.cpp
-    vk/command_buffer.hpp
-    vk/command_buffer.cpp
-    vk/command_pool.hpp
-    vk/command_pool.cpp
-    vk/creators.hpp
-    vk/debug_utils_messenger.hpp
-    vk/debug_utils_messenger.cpp
-    vk/descriptor_set.hpp
-    vk/descriptor_set.cpp
-    vk/descriptor_set_layout.hpp
-    vk/descriptor_set_layout.cpp
-    vk/descriptor_pool.hpp
-    vk/descriptor_pool.cpp
-    vk/device.hpp
-    vk/device.cpp
-    vk/fence.hpp
-    vk/fence.cpp
-    vk/framebuffer.cpp
-    vk/framebuffer.hpp
+    vk/handles/buffer.hpp
+    vk/handles/buffer.cpp
+    vk/handles/command.hpp
+    vk/handles/command.cpp
+    vk/handles/command_buffer.hpp
+    vk/handles/command_buffer.cpp
+    vk/handles/command_pool.hpp
+    vk/handles/command_pool.cpp
+    vk/handles/creators.hpp
+    vk/handles/debug_utils_messenger.hpp
+    vk/handles/debug_utils_messenger.cpp
+    vk/handles/descriptor_set.hpp
+    vk/handles/descriptor_set.cpp
+    vk/handles/descriptor_set_layout.hpp
+    vk/handles/descriptor_set_layout.cpp
+    vk/handles/descriptor_pool.hpp
+    vk/handles/descriptor_pool.cpp
+    vk/handles/device.hpp
+    vk/handles/device.cpp
+    vk/handles/fence.hpp
+    vk/handles/fence.cpp
+    vk/handles/framebuffer.cpp
+    vk/handles/framebuffer.hpp
+    vk/handles/graphics_pipeline.hpp
+    vk/handles/graphics_pipeline.cpp
+    vk/handles/handle.hpp
+    vk/handles/image.hpp
+    vk/handles/image.cpp
+    vk/handles/image_view.hpp
+    vk/handles/image_view.cpp
+    vk/handles/instance.hpp
+    vk/handles/instance.cpp
+    vk/handles/memory.hpp
+    vk/handles/memory.cpp
+    vk/handles/pipeline_layout.hpp
+    vk/handles/pipeline_layout.cpp
+    vk/handles/queue.hpp
+    vk/handles/queue.cpp
+    vk/handles/render_pass.hpp
+    vk/handles/render_pass.cpp
+    vk/handles/sampler.hpp
+    vk/handles/sampler.cpp
+    vk/handles/semaphore.hpp
+    vk/handles/semaphore.cpp
+    vk/handles/shader_module.hpp
+    vk/handles/shader_module.cpp
+    vk/handles/utils.hpp
     vk/graphical_application.hpp
     vk/graphical_application.cpp
-    vk/graphics_pipeline.hpp
-    vk/graphics_pipeline.cpp
-    vk/handle.hpp
-    vk/image.hpp
-    vk/image.cpp
-    vk/image_view.hpp
-    vk/image_view.cpp
-    vk/memory.hpp
-    vk/memory.cpp
-    vk/pipeline_layout.hpp
-    vk/pipeline_layout.cpp
-    vk/queue.hpp
-    vk/queue.cpp
-    vk/render_pass.hpp
-    vk/render_pass.cpp
     vk/resource_manager.hpp
     vk/resource_manager.cpp
-    vk/sampler.hpp
-    vk/sampler.cpp
-    vk/semaphore.hpp
-    vk/semaphore.cpp
-    vk/shader_module.hpp
-    vk/shader_module.cpp
     vk/ubo_value.hpp
     vk/uniform_buffer.hpp
-    vk/utils.hpp
     vk/vertex.hpp
     assert.hpp
     irenderable.hpp

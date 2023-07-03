@@ -1,11 +1,12 @@
 #include "graphical_application.hpp"
 
-#include "image.hpp"
-#include "queue.hpp"
 #include "resource_manager.hpp"
 
-#include "vk/command_pool.hpp"
-#include "vk/render_pass.hpp"
+#include "handles/command_pool.hpp"
+#include "handles/render_pass.hpp"
+
+#include "handles/image.hpp"
+#include "handles/queue.hpp"
 
 #include <limits>
 #include <fstream>
@@ -16,24 +17,7 @@
 
 namespace vk {
 
-BEGIN_DECLARE_VKSTRUCT(ApplicationInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO)
-    VKSTRUCT_PROPERTY(const void*, pNext)
-    VKSTRUCT_PROPERTY(const char*, pApplicationName)
-    VKSTRUCT_PROPERTY(uint32_t, applicationVersion)
-    VKSTRUCT_PROPERTY(const char*, pEngineName)
-    VKSTRUCT_PROPERTY(uint32_t, engineVersion)
-    VKSTRUCT_PROPERTY(uint32_t, apiVersion)
-END_DECLARE_VKSTRUCT();
-
-BEGIN_DECLARE_VKSTRUCT(InstanceCreateInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
-    VKSTRUCT_PROPERTY(const void*, pNext)
-    VKSTRUCT_PROPERTY(VkInstanceCreateFlags, flags)
-    VKSTRUCT_PROPERTY(const VkApplicationInfo*, pApplicationInfo)
-    VKSTRUCT_PROPERTY(uint32_t, enabledLayerCount)
-    VKSTRUCT_PROPERTY(const char* const*, ppEnabledLayerNames)
-    VKSTRUCT_PROPERTY(uint32_t, enabledExtensionCount)
-    VKSTRUCT_PROPERTY(const char* const*, ppEnabledExtensionNames)
-END_DECLARE_VKSTRUCT();
+using namespace handles;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -48,6 +32,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: severity = "VERBOSE: "; break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: severity = "WARNING: "; break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: severity = "ERROR: "; break;
+        default: severity = "WTF: ";
     }
     std::cout << severity << pCallbackData->messageIdNumber << ": " << pCallbackData->pMessageIdName
               << ":" << pCallbackData->pMessage << std::endl;
@@ -98,8 +83,7 @@ const std::vector<const char*> GraphicalApplication::s_validationLayers = {
 };
 
 GraphicalApplication::GraphicalApplication()
-    : Handle(nullptr)
-    , m_windowWidth(640)
+    : m_windowWidth(640)
     , m_windowHeight(480)
     , m_currentFrame(0)
     , m_maxFramesInFlight(2)
@@ -122,7 +106,6 @@ GraphicalApplication::~GraphicalApplication()
     m_debugMessenger.reset();
 
     vkDestroySurfaceKHR(handle(), m_vkSurface, nullptr);
-    destroy(vkDestroyInstance, handle(), nullptr);
 
     glfwDestroyWindow(m_window);
     glfwTerminate();
@@ -164,7 +147,7 @@ void GraphicalApplication::initWindow()
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Vulkan", nullptr, nullptr);
+    m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, m_appName.c_str(), nullptr, nullptr);
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
     glfwSetWindowIconifyCallback(m_window, windowIconifyCallback);
@@ -172,8 +155,6 @@ void GraphicalApplication::initWindow()
 
 void GraphicalApplication::initBase()
 {
-    createInstance();
-
     if (s_enableValidationLayers)
     {
         m_debugMessenger = std::make_unique<DebugUtilsMessenger>(*this, s_debugMessengerCreateInfo);
@@ -309,7 +290,7 @@ void GraphicalApplication::createSwapChain()
         queueFamilyIndices = { m_device->queueFamilies().begin(), m_device->queueFamilies().end() };
     }
 
-    const auto createInfo = create::swapChainCreateInfoKHR(m_vkSurface,
+    const auto createInfo = swapChainCreateInfoKHR(m_vkSurface,
         imageCount,
         surfaceFormat.format,
         surfaceFormat.colorSpace,
@@ -440,21 +421,21 @@ GraphicsPipelineCreateInfo GraphicalApplication::defaultGraphicsPipeline()
     static constexpr std::array<VkDynamicState, 2> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR };
 
-    static constexpr create::PipelineDynamicStateCreateInfo dynamicState =
-        create::PipelineDynamicStateCreateInfo()
+    static constexpr PipelineDynamicStateCreateInfo dynamicState =
+        PipelineDynamicStateCreateInfo()
             .dynamicStateCount(dynamicStates.size())
             .pDynamicStates(dynamicStates.data());
 
-    static constexpr create::PipelineViewportStateCreateInfo viewportState =
-        create::PipelineViewportStateCreateInfo().viewportCount(1).scissorCount(1);
+    static constexpr PipelineViewportStateCreateInfo viewportState =
+        PipelineViewportStateCreateInfo().viewportCount(1).scissorCount(1);
 
-    static constexpr create::PipelineInputAssemblyStateCreateInfo inputAssembly =
-        create::PipelineInputAssemblyStateCreateInfo()
+    static constexpr PipelineInputAssemblyStateCreateInfo inputAssembly =
+        PipelineInputAssemblyStateCreateInfo()
             .topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .primitiveRestartEnable(VK_FALSE);
 
-    static constexpr create::PipelineRasterizationStateCreateInfo rasterizer =
-        create::PipelineRasterizationStateCreateInfo()
+    static constexpr PipelineRasterizationStateCreateInfo rasterizer =
+        PipelineRasterizationStateCreateInfo()
             .depthClampEnable(VK_FALSE)
             .rasterizerDiscardEnable(VK_FALSE)
             .polygonMode(VK_POLYGON_MODE_FILL)
@@ -466,8 +447,8 @@ GraphicsPipelineCreateInfo GraphicalApplication::defaultGraphicsPipeline()
             .depthBiasConstantFactor(0.0f)
             .depthBiasSlopeFactor(0.0f);
 
-    static constexpr create::PipelineMultisampleStateCreateInfo multisampling =
-        create::PipelineMultisampleStateCreateInfo()
+    static constexpr PipelineMultisampleStateCreateInfo multisampling =
+        PipelineMultisampleStateCreateInfo()
             .sampleShadingEnable(VK_FALSE)
             .rasterizationSamples(VK_SAMPLE_COUNT_1_BIT)
             .minSampleShading(1.0f)
@@ -476,7 +457,7 @@ GraphicsPipelineCreateInfo GraphicalApplication::defaultGraphicsPipeline()
             .alphaToOneEnable(VK_FALSE);
 
     static constexpr VkPipelineDepthStencilStateCreateInfo depthStencil =
-        create::PipelineDepthStencilStateCreateInfo()
+        PipelineDepthStencilStateCreateInfo()
             .depthTestEnable(VK_TRUE)
             .depthWriteEnable(VK_TRUE)
             .depthCompareOp(VK_COMPARE_OP_LESS)
@@ -484,7 +465,7 @@ GraphicsPipelineCreateInfo GraphicalApplication::defaultGraphicsPipeline()
             .stencilTestEnable(VK_FALSE);
 
     static constexpr std::array colorBlendAttachments = {
-        create::PipelineColorBlendAttachmentState()
+        PipelineColorBlendAttachmentState()
             .colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                 VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
             .colorBlendOp(VK_BLEND_OP_ADD)
@@ -495,8 +476,8 @@ GraphicsPipelineCreateInfo GraphicalApplication::defaultGraphicsPipeline()
             .dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO)
     };
 
-    static constexpr create::PipelineColorBlendStateCreateInfo colorBlending =
-        create::PipelineColorBlendStateCreateInfo()
+    static constexpr PipelineColorBlendStateCreateInfo colorBlending =
+        PipelineColorBlendStateCreateInfo()
             .attachmentCount(colorBlendAttachments.size())
             .pAttachments(colorBlendAttachments.data())
             .logicOp(VK_LOGIC_OP_COPY)
@@ -549,7 +530,7 @@ void GraphicalApplication::createFramebuffers()
         const std::array<VkImageView, 2> attachments = { m_swapChainImageViews[i],
             *m_depthImageView };
 
-        const VkFramebufferCreateInfo framebufferInfo = create::frameBufferCreateInfo(*m_renderPass,
+        const VkFramebufferCreateInfo framebufferInfo = frameBufferCreateInfo(*m_renderPass,
             attachments, m_vkSwapChainExtent.width, m_vkSwapChainExtent.height, 1);
 
         m_swapChainFramebuffers.emplace_back(*m_device, framebufferInfo);
@@ -603,7 +584,7 @@ ImageViewCreateInfo GraphicalApplication::defaultImageView(
         .image(image)
         .viewType(VK_IMAGE_VIEW_TYPE_2D)
         .format(format)
-        .subresourceRange(create::imageSubresourceRange(aspectFlags, 0, 1, 0, 1));
+        .subresourceRange(imageSubresourceRange(aspectFlags, 0, 1, 0, 1));
 }
 
 void GraphicalApplication::createSyncObjects()
@@ -692,6 +673,7 @@ void GraphicalApplication::drawFrame()
 int GraphicalApplication::exec()
 {
     initWindow();
+    createInstance();
     initBase();
     m_resourceManager = std::make_unique<ResourceManager>(*m_device);
     initApplication();

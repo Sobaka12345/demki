@@ -1,14 +1,15 @@
 #pragma once
 
-#include "command.hpp"
-#include "device.hpp"
-#include "debug_utils_messenger.hpp"
-#include "fence.hpp"
-#include "framebuffer.hpp"
-#include "graphics_pipeline.hpp"
-#include "image.hpp"
-#include "image_view.hpp"
-#include "semaphore.hpp"
+#include "handles/command.hpp"
+#include "handles/device.hpp"
+#include "handles/debug_utils_messenger.hpp"
+#include "handles/fence.hpp"
+#include "handles/framebuffer.hpp"
+#include "handles/graphics_pipeline.hpp"
+#include "handles/instance.hpp"
+#include "handles/image.hpp"
+#include "handles/image_view.hpp"
+#include "handles/semaphore.hpp"
 
 
 #include <set>
@@ -35,10 +36,13 @@
 
 namespace vk {
 
+namespace handles {
 class RenderPass;
+}
+
 class ResourceManager;
 
-class GraphicalApplication : public Handle<VkInstance>
+class GraphicalApplication : public handles::Instance
 {
 protected:
     using TimeResolution = std::nano;
@@ -61,9 +65,9 @@ public:
 protected:
     ResourceManager& resources();
 
-    static ImageViewCreateInfo defaultImageView(
+    static handles::ImageViewCreateInfo defaultImageView(
         VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-    static GraphicsPipelineCreateInfo defaultGraphicsPipeline();
+    static handles::GraphicsPipelineCreateInfo defaultGraphicsPipeline();
 
 private:
     int mainLoop();
@@ -86,8 +90,8 @@ private:
     void createSyncObjects();
 
     virtual void update(int64_t dt) = 0;
-    virtual void recordCommandBuffer(const CommandBuffer& commandBuffer,
-        const Framebuffer& imageIndex) = 0;
+    virtual void recordCommandBuffer(const handles::CommandBuffer& commandBuffer,
+        const handles::Framebuffer& imageIndex) = 0;
     void drawFrame();
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
@@ -112,34 +116,34 @@ protected:
     bool m_windowIconified;
 
     VkSurfaceKHR m_vkSurface;
-    std::unique_ptr<Device> m_device;
+    std::unique_ptr<handles::Device> m_device;
     VkExtent3D m_vkSwapChainExtent;
-    std::unique_ptr<RenderPass> m_renderPass;
+    std::unique_ptr<handles::RenderPass> m_renderPass;
 
 private:
     std::unique_ptr<ResourceManager> m_resourceManager;
-    std::unique_ptr<DebugUtilsMessenger> m_debugMessenger;
+    std::unique_ptr<handles::DebugUtilsMessenger> m_debugMessenger;
 
     uint8_t m_currentFrame;
     int m_maxFramesInFlight;
 
-    std::weak_ptr<Queue> m_presentQueue;
-    std::weak_ptr<Queue> m_graphicsQueue;
+    std::weak_ptr<handles::Queue> m_presentQueue;
+    std::weak_ptr<handles::Queue> m_graphicsQueue;
 
-    HandleVector<Semaphore> m_imageAvailableSemaphores;
-    HandleVector<Semaphore> m_renderFinishedSemaphores;
-    HandleVector<Fence> m_inFlightFences;
+    handles::HandleVector<handles::Semaphore> m_imageAvailableSemaphores;
+    handles::HandleVector<handles::Semaphore> m_renderFinishedSemaphores;
+    handles::HandleVector<handles::Fence> m_inFlightFences;
 
-    HandleVector<CommandBuffer> m_commandBuffers;
+    handles::HandleVector<handles::CommandBuffer> m_commandBuffers;
 
-    std::unique_ptr<Image> m_depthImage;
-    std::unique_ptr<ImageView> m_depthImageView;
+    std::unique_ptr<handles::Image> m_depthImage;
+    std::unique_ptr<handles::ImageView> m_depthImageView;
 
     VkSwapchainKHR m_vkSwapChain;
     VkFormat m_vkSwapChainImageFormat;
-    HandleVector<Image> m_swapChainImages;
-    HandleVector<ImageView> m_swapChainImageViews;
-    HandleVector<Framebuffer> m_swapChainFramebuffers;
+    handles::HandleVector<handles::Image> m_swapChainImages;
+    handles::HandleVector<handles::ImageView> m_swapChainImageViews;
+    handles::HandleVector<handles::Framebuffer> m_swapChainFramebuffers;
 };
 
 }    //  namespace vk

@@ -11,7 +11,7 @@ public:
 public:
     Renderable();
     virtual ~Renderable();
-    virtual void draw(const vk::CommandBuffer& commandBuffer) const override;
+    virtual void draw(const vk::handles::CommandBuffer& commandBuffer) const override;
 
     virtual std::weak_ptr<Model> model() const override;
     virtual void setModel(std::weak_ptr<Model> model) override;

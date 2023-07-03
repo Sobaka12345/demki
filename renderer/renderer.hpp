@@ -13,6 +13,7 @@ public:
     using RenderableQueue = std::list<RenderablePtr>;
     using RenderableQueueMap =
         std::map<std::weak_ptr<Model>, RenderableQueue, std::owner_less<std::weak_ptr<Model>>>;
+
     struct RenderableHandler
     {
     private:
@@ -25,7 +26,7 @@ public:
 public:
     Renderer();
 
-    virtual void draw(const vk::CommandBuffer& commandBuffer);
+    virtual void draw(const vk::handles::CommandBuffer& commandBuffer);
 
     RenderableHandler pushObject(RenderablePtr object);
     void removeObject(RenderableHandler iter);

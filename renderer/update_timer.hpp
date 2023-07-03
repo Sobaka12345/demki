@@ -21,20 +21,11 @@ public:
         return (m_interval / double(T::den)) * ResolutionType::den;
     }
 
-    void setNormalSpeed()
-    {
-        m_speedUpCoeff = 1.0f;
-    }
+    void setNormalSpeed() { m_speedUpCoeff = 1.0f; }
 
-    void setSpeedUp(float coeff)
-    {
-        m_speedUpCoeff = coeff;
-    }
+    void setSpeedUp(float coeff) { m_speedUpCoeff = coeff; }
 
-    void setIntervalMS(int64_t intervalMS)
-    {
-        setInterval<std::milli>(intervalMS);
-    }
+    void setIntervalMS(int64_t intervalMS) { setInterval<std::milli>(intervalMS); }
 
     template <typename ResolutionType = T>
     void setInterval(int64_t interval)

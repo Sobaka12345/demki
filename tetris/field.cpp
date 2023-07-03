@@ -2,7 +2,7 @@
 
 #include "figure.hpp"
 
-Field::Field(vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider)
+Field::Field(vk::handles::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider)
 {
     m_uboProvider = uboProvider;
     m_descriptorSet = descriptorSet;
@@ -11,14 +11,15 @@ Field::Field(vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider)
     {
         for (int32_t col = 0; col < m_blocks[row].size(); ++col)
         {
-            if (row != 0 && row != m_blocks.size() - 1 &&
-                col != 0 && col != m_blocks[row].size() - 1)
+            if (row != 0 && row != m_blocks.size() - 1 && col != 0 &&
+                col != m_blocks[row].size() - 1)
             {
                 continue;
             }
-            m_blocks[row][col] = std::make_shared<Block>(
-                std::make_unique<vk::UBOValue<vk::UBOModel>>(descriptorSet, uboProvider->tryGetUBOHandler()));
-            m_blocks[row][col]->setPosition({col, row});
+            m_blocks[row][col] =
+                std::make_shared<Block>(std::make_unique<vk::UBOValue<vk::UBOModel>>(descriptorSet,
+                    uboProvider->tryGetUBOHandler()));
+            m_blocks[row][col]->setPosition({ col, row });
         }
     }
 }
@@ -54,8 +55,14 @@ int32_t Field::flushRowsAndSpawnFigure()
         for (const auto& block : m_figure->blocks())
         {
             const auto pos = block->position();
-            if (pos.y > bottomRow) { bottomRow = pos.y; }
-            if (pos.y < topRow) { topRow = pos.y; }
+            if (pos.y > bottomRow)
+            {
+                bottomRow = pos.y;
+            }
+            if (pos.y < topRow)
+            {
+                topRow = pos.y;
+            }
             m_blocks[pos.y][pos.x] = block;
         }
         flushed = flushRows(topRow, bottomRow);
@@ -117,7 +124,7 @@ void Field::tryRotateFigure()
     }
 }
 
-void Field::draw(const vk::CommandBuffer& commandBuffer) const
+void Field::draw(const vk::handles::CommandBuffer& commandBuffer) const
 {
     if (m_figure)
     {

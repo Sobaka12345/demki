@@ -1,7 +1,7 @@
 #pragma once
 
-#include "buffer.hpp"
-#include "creators.hpp"
+#include "handles/buffer.hpp"
+#include "handles/creators.hpp"
 
 #include <glm/mat4x4.hpp>
 
@@ -23,7 +23,7 @@ struct UBOViewProjection
 struct UBOHandler
 {
     uint32_t offset;
-    std::weak_ptr<Memory> memory;
+    std::weak_ptr<handles::Memory> memory;
 };
 
 struct IUBOProvider
@@ -31,19 +31,22 @@ struct IUBOProvider
     virtual std::shared_ptr<UBOHandler> tryGetUBOHandler() = 0;
 };
 
-template<typename Layout>
-class UniformBuffer: public Buffer, public IUBOProvider
+template <typename Layout>
+class UniformBuffer
+    : public handles::Buffer
+    , public IUBOProvider
 {
 public:
-    UniformBuffer(const Device& device, uint32_t objectsCount)
-        : Buffer(device, BufferCreateInfo()
-            .size((m_dynamicAlignment = dynamicAlignment(device)) * objectsCount)
-            .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-            .sharingMode(VK_SHARING_MODE_EXCLUSIVE))
+    UniformBuffer(const handles::Device& device, uint32_t objectsCount)
+        : Buffer(device,
+              handles::BufferCreateInfo()
+                  .size((m_dynamicAlignment = dynamicAlignment(device)) * objectsCount)
+                  .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+                  .sharingMode(VK_SHARING_MODE_EXCLUSIVE))
         , m_objectsCount(objectsCount)
     {
         m_uboHandlers.resize(objectsCount);
-        m_descriptorBufferInfo = create::descriptorBufferInfo(handle(), 0, dynamicAlignment());
+        m_descriptorBufferInfo = handles::descriptorBufferInfo(handle(), 0, dynamicAlignment());
     }
 
     virtual std::shared_ptr<UBOHandler> tryGetUBOHandler() override
@@ -70,11 +73,13 @@ public:
     }
 
     uint32_t objectsCount() const { return m_objectsCount; }
+
     uint32_t dynamicAlignment() const { return m_dynamicAlignment; }
+
     VkDescriptorBufferInfo descriptorBufferInfo() const { return m_descriptorBufferInfo; }
 
 private:
-    uint32_t dynamicAlignment(const Device& device) const
+    uint32_t dynamicAlignment(const handles::Device& device) const
     {
         const uint32_t minAlignment =
             device.physicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
@@ -93,4 +98,4 @@ private:
     VkDescriptorBufferInfo m_descriptorBufferInfo;
 };
 
-}
+}    //  namespace vk

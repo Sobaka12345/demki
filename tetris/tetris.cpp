@@ -4,14 +4,14 @@
 
 #include <model.hpp>
 
-#include <vk/descriptor_set.hpp>
-#include <vk/descriptor_set_layout.hpp>
+#include <vk/handles/descriptor_set.hpp>
+#include <vk/handles/descriptor_set_layout.hpp>
 #include <vk/vertex.hpp>
-#include <vk/creators.hpp>
-#include <vk/pipeline_layout.hpp>
-#include <vk/render_pass.hpp>
-#include <vk/sampler.hpp>
-#include <vk/shader_module.hpp>
+#include <vk/handles/creators.hpp>
+#include <vk/handles/pipeline_layout.hpp>
+#include <vk/handles/render_pass.hpp>
+#include <vk/handles/sampler.hpp>
+#include <vk/handles/shader_module.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -19,26 +19,27 @@
 #include <iostream>
 
 using namespace vk;
+using namespace vk::handles;
 
 class TetrisDSL : public DescriptorSetLayout
 {
 public:
-    static constexpr create::DescriptorSetLayoutBinding s_modelBinding =
-        create::DescriptorSetLayoutBinding{}
+    static constexpr DescriptorSetLayoutBinding s_modelBinding =
+        DescriptorSetLayoutBinding{}
             .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
             .descriptorCount(1)
             .stageFlags(VK_SHADER_STAGE_VERTEX_BIT)
             .binding(0);
 
     static constexpr auto s_cameraBinding =
-        create::DescriptorSetLayoutBinding{}
+        DescriptorSetLayoutBinding{}
             .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
             .descriptorCount(1)
             .stageFlags(VK_SHADER_STAGE_VERTEX_BIT)
             .binding(1);
 
     static constexpr auto s_samplerBinding =
-        create::DescriptorSetLayoutBinding{}
+        DescriptorSetLayoutBinding{}
             .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
             .descriptorCount(1)
             .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -63,9 +64,9 @@ public:
         : DescriptorPool(device,
               3,
               std::array{
-                  create::descriptorPoolSize(TetrisDSL::s_modelBinding.descriptorType(), 1),
-                  create::descriptorPoolSize(TetrisDSL::s_cameraBinding.descriptorType(), 1),
-                  create::descriptorPoolSize(TetrisDSL::s_samplerBinding.descriptorType(), 1),
+                  descriptorPoolSize(TetrisDSL::s_modelBinding.descriptorType(), 1),
+                  descriptorPoolSize(TetrisDSL::s_cameraBinding.descriptorType(), 1),
+                  descriptorPoolSize(TetrisDSL::s_samplerBinding.descriptorType(), 1),
               })
     {}
 };
@@ -123,7 +124,7 @@ void Tetris::initTextures()
         .lock()
         ->write(pixels, imageSize);
 
-    m_roshiImage = std::make_unique<vk::Image>(*m_device,
+    m_roshiImage = std::make_unique<Image>(*m_device,
         ImageCreateInfo()
             .imageType(VK_IMAGE_TYPE_2D)
             .extent({ static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1 })
@@ -139,10 +140,10 @@ void Tetris::initTextures()
 
     m_roshiImage->transitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    const auto copyRegion = create::bufferImageCopy(0,
+    const auto copyRegion = bufferImageCopy(0,
         0,
         0,
-        create::imageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1),
+        imageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1),
         { 0, 0, 0 },
         { static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1 });
 
@@ -310,14 +311,13 @@ void Tetris::update(int64_t dt)
     }
 }
 
-void Tetris::recordCommandBuffer(const vk::CommandBuffer& commandBuffer,
-    const vk::Framebuffer& framebuffer)
+void Tetris::recordCommandBuffer(const CommandBuffer& commandBuffer, const Framebuffer& framebuffer)
 {
     const std::array<VkClearValue, 2> clearValues{ VkClearValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
         VkClearValue{ { 1.0f, 0 } } };
 
     const auto renderPassInfo =
-        create::RenderPassBeginInfo{}
+        RenderPassBeginInfo{}
             .renderPass(*m_renderPass)
             .framebuffer(framebuffer)
             .renderArea(VkRect2D{ VkOffset2D{ 0, 0 },
@@ -354,11 +354,11 @@ void Tetris::createGraphicsPipeline()
     const ShaderModule fragShaderModule(*m_device, "./shaders/shader.frag.spv");
 
     const std::array shaderStageCreateInfos = {
-        create::PipelineShaderStageCreateInfo()
+        PipelineShaderStageCreateInfo()
             .stage(VK_SHADER_STAGE_VERTEX_BIT)
             .module(vertShaderModule)
             .pName("main"),
-        create::PipelineShaderStageCreateInfo()
+        PipelineShaderStageCreateInfo()
             .stage(VK_SHADER_STAGE_FRAGMENT_BIT)
             .module(fragShaderModule)
             .pName("main"),
@@ -368,7 +368,7 @@ void Tetris::createGraphicsPipeline()
     const auto attrubuteDescriptions = Vertex3DColoredTextured::attributeDescriptions();
 
     const auto vertexInput =
-        create::PipelineVertexInputStateCreateInfo()
+        PipelineVertexInputStateCreateInfo()
             .vertexBindingDescriptionCount(bindingDescriptions.size())
             .pVertexBindingDescriptions(bindingDescriptions.data())
             .vertexAttributeDescriptionCount(attrubuteDescriptions.size())

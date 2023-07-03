@@ -4,7 +4,7 @@
 
 #include <renderable.hpp>
 #include <vk/uniform_buffer.hpp>
-#include <vk/descriptor_set.hpp>
+#include <vk/handles/descriptor_set.hpp>
 
 #include <cstdint>
 
@@ -25,7 +25,7 @@ public:
     using FieldType = std::array<RowType, s_height>;
 
 public:
-    Field(vk::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    Field(vk::handles::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
     int32_t flushRowsAndSpawnFigure();
     void tryRotateFigure();
     bool tryMoveFigure(int32_t dx, int32_t dy);
@@ -34,14 +34,14 @@ public:
     bool isBlocksOverflow() const;
 
     virtual void setModel(std::weak_ptr<Model> model) override;
-    virtual void draw(const vk::CommandBuffer& commandBuffer) const override;
+    virtual void draw(const vk::handles::CommandBuffer& commandBuffer) const override;
 
 private:
     int flushRows(int32_t topRowBound, int32_t bottomRowBound);
 
 private:
     vk::IUBOProvider* m_uboProvider;
-    vk::DescriptorSet* m_descriptorSet;
+    vk::handles::DescriptorSet* m_descriptorSet;
     std::shared_ptr<Figure> m_figure;
     FieldType m_blocks;
 };

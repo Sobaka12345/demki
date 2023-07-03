@@ -2,26 +2,31 @@
 
 Renderer::Renderer() {}
 
-void Renderer::draw(const vk::CommandBuffer& commandBuffer)
+void Renderer::draw(const vk::handles::CommandBuffer& commandBuffer)
 {
-    for (auto modelQueueIter = m_renderQueues.begin(); modelQueueIter != m_renderQueues.end();) {
-        if (!modelQueueIter->first.expired()) {
+    for (auto modelQueueIter = m_renderQueues.begin(); modelQueueIter != m_renderQueues.end();)
+    {
+        if (!modelQueueIter->first.expired())
+        {
             const auto modelPtr = modelQueueIter->first.lock();
             modelPtr->bind(commandBuffer);
 
             for (auto iter = modelQueueIter->second.begin(); iter != modelQueueIter->second.end();)
             {
-                if (!iter->expired()) {
+                if (!iter->expired())
+                {
                     iter->lock()->draw(commandBuffer);
                     ++iter;
                 }
-                else {
+                else
+                {
                     iter = modelQueueIter->second.erase(iter);
                 }
             }
             ++modelQueueIter;
         }
-        else {
+        else
+        {
             modelQueueIter = m_renderQueues.erase(modelQueueIter);
         }
     }
@@ -30,7 +35,8 @@ void Renderer::draw(const vk::CommandBuffer& commandBuffer)
 Renderer::RenderableHandler Renderer::pushObject(RenderablePtr object)
 {
     auto mapIter = m_renderQueues.find(object.lock()->model());
-    if (mapIter == m_renderQueues.end()) {
+    if (mapIter == m_renderQueues.end())
+    {
         mapIter =
             m_renderQueues.emplace(std::pair{ object.lock()->model(), RenderableQueue{} }).first;
     }

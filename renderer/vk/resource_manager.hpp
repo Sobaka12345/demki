@@ -1,8 +1,9 @@
 #pragma once
 
-#include "handle.hpp"
 #include "vertex.hpp"
-#include "buffer.hpp"
+
+#include "handles/handle.hpp"
+#include "handles/buffer.hpp"
 
 #include <span>
 #include <filesystem>
@@ -11,7 +12,9 @@ class Model;
 
 namespace vk {
 
+namespace handles {
 class Device;
+}
 
 struct Resource
 {
@@ -38,28 +41,28 @@ struct Resource
 	std::filesystem::path path;
 
 	Resource() {}
-	virtual ~Resource() {};
+
+    virtual ~Resource(){};
 };
 
 class ResourceManager
 {
-	
 public:
-	ResourceManager(const Device& device);
+    ResourceManager(const handles::Device& device);
 
 	std::shared_ptr<Model> loadModel(std::span<const Vertex3DColoredTextured> vertices,
 		std::span<const uint32_t> indices);
-	
-	std::shared_ptr<Model> loadModel(std::filesystem::path path, 
+
+    std::shared_ptr<Model> loadModel(std::filesystem::path path,
 		Resource::Storage targetStorage = Resource::GPU);
 
 private:
-	const Device& m_device;
+    const handles::Device& m_device;
 	VkDeviceSize m_defaultBufferSize;
 
 	std::vector<size_t> m_freeBufferSpace;
-	HandleVector<Buffer> m_modelBuffers;
-	HandleVector<Buffer> m_indBuffers;
+    handles::HandleVector<handles::Buffer> m_modelBuffers;
+    handles::HandleVector<handles::Buffer> m_indBuffers;
 };
 
-}
+}    //  namespace vk

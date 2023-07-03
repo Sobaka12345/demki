@@ -1,6 +1,6 @@
 #pragma once
 
-#include "descriptor_set.hpp"
+#include "handles/descriptor_set.hpp"
 #include "uniform_buffer.hpp"
 
 #include <vulkan/vulkan_core.h>
@@ -15,7 +15,7 @@ class UBOValue
     constexpr static VkDeviceSize s_layoutSize = sizeof(LayoutType);
 
 public:
-    UBOValue(const DescriptorSet* descriptorSet, std::shared_ptr<UBOHandler> handler)
+    UBOValue(const handles::DescriptorSet* descriptorSet, std::shared_ptr<UBOHandler> handler)
         : m_descriptorSet(descriptorSet)
         , m_uboHandler(handler)
     {}
@@ -25,14 +25,12 @@ public:
         m_value = std::move(value);
         if (!m_uboHandler->memory.expired())
         {
-            m_uboHandler->memory.lock()->mapped->write(&m_value, s_layoutSize, m_uboHandler->offset);
+            m_uboHandler->memory.lock()->mapped->write(&m_value, s_layoutSize,
+                m_uboHandler->offset);
         }
     }
 
-    LayoutType get() const
-    {
-        return m_value;
-    }
+    LayoutType get() const { return m_value; }
 
     void sync()
     {
@@ -42,7 +40,7 @@ public:
         }
     }
 
-    // TO DO: REMOVE THIS CRINGE
+    //  TO DO: REMOVE THIS CRINGE
     void bind(VkCommandBuffer commandBuffer)
     {
         m_descriptorSet->bind(commandBuffer, m_uboHandler->offset);
@@ -50,8 +48,8 @@ public:
 
 private:
     LayoutType m_value;
-    const DescriptorSet* m_descriptorSet;
+    const handles::DescriptorSet* m_descriptorSet;
     std::shared_ptr<UBOHandler> m_uboHandler;
 };
 
-}
+}    //  namespace vk
