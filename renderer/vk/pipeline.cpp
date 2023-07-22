@@ -199,6 +199,9 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
             },
             m_createInfo.inputs[i]);
     }
+    
+    // TO DO: remove this cringe
+	constexpr int poolMultiplier = 100;
 
     std::vector<VkDescriptorSetLayout> layouts;
     std::vector<handles::DescriptorPoolSize> poolSizes;
@@ -216,17 +219,24 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
                     .descriptorType(type)
                     .stageFlags(toShaderStageFlags(uniform.stage)));
 
-            //  TO DO: push in set by types
-            poolSizes.push_back(
-                handles::DescriptorPoolSize{}.type(type).descriptorCount(uniform.count));
+            if (auto iter = std::find_if(poolSizes.begin(), poolSizes.end(), [&](auto& x) {
+                return x.type() == type; }); iter != poolSizes.end())
+            {
+				iter->descriptorCount((iter->descriptorCount() + 1) * poolMultiplier);
+			}
+			else
+			{
+                poolSizes.push_back(handles::DescriptorPoolSize{}.type(type).descriptorCount(
+					uniform.count * poolMultiplier));
+            }
         }
 
-        const auto& [iter, _] = m_setLayouts.emplace(set.first,
-            std::pair{ layouts.size(),
-                handles::DescriptorSetLayout(m_context.device(),
-                    handles::DescriptorSetLayoutCreateInfo{}
-                        .bindingCount(setLayoutBindings.size())
-                        .pBindings(setLayoutBindings.data())) });
+         const auto& [iter, _] = m_setLayouts.emplace(set.first,
+             std::pair{ layouts.size(),
+                 handles::DescriptorSetLayout(m_context.device(),
+                     handles::DescriptorSetLayoutCreateInfo{}
+                         .bindingCount(setLayoutBindings.size())
+                         .pBindings(setLayoutBindings.data())) });
         layouts.push_back(iter->second.second);
     }
 
@@ -239,13 +249,17 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
 
     m_pool = std::make_unique<handles::DescriptorPool>(m_context.device(),
         handles::DescriptorPoolCreateInfo{}
-            .maxSets(1000)
+			.maxSets(poolMultiplier)
             .poolSizeCount(poolSizes.size())
             .pPoolSizes(poolSizes.data())
             .flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT));
 }
 
-Pipeline::~Pipeline() {}
+Pipeline::~Pipeline() 
+{
+	m_bindContexts.clear();
+	m_pool.reset();
+}
 
 void Pipeline::bind(::RenderContext& context)
 {
@@ -254,7 +268,7 @@ void Pipeline::bind(::RenderContext& context)
     specContext.pipeline = this;
 }
 
-std::shared_ptr<IPipeline::IBindContext> Pipeline::bindContext(const IUniformContainer& container)
+std::weak_ptr<IPipeline::IBindContext> Pipeline::bindContext(const IUniformContainer& container)
 {
     std::span descriptors = container.uniforms();
     std::set<uint64_t> keySet;
@@ -273,14 +287,14 @@ std::shared_ptr<IPipeline::IBindContext> Pipeline::bindContext(const IUniformCon
     {
         void visit(UniformHandle& handle) override { result = &handle.descriptorBufferInfo; }
 
-        handles::DescriptorBufferInfo* result;
+        handles::DescriptorBufferInfo* result = nullptr;
     } bufferInfoVisitor;
 
     struct ImageInfoVisitor : public UniformHandleVisitor
     {
         void visit(UniformHandle& handle) override { result = &handle.descriptorImageInfo; }
 
-        handles::DescriptorImageInfo* result;
+        handles::DescriptorImageInfo* result = nullptr;
     } imageInfoVisitor;
 
     auto& [layoutId, layout] = m_setLayouts.at(container.id());
@@ -308,8 +322,9 @@ std::shared_ptr<IPipeline::IBindContext> Pipeline::bindContext(const IUniformCon
 
     auto result = std::shared_ptr<BindContext>(new BindContext);
     result->set = m_pool->allocateSet(layout);
-    result->set->write(writes);
+	result->set->write(writes);
     result->setId = layoutId;
+	m_bindContexts.emplace(keySet, result);
 
     return result;
 }

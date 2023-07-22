@@ -43,7 +43,8 @@ Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createI
         handles::RenderPassBeginInfo{}
             .renderPass(*kek.renderPass)
             .framebuffer(*kek.framebuffer)
-            .renderArea(VkRect2D{ VkOffset2D{ 0, 0 }, VkExtent2D{ 640, 480 } })
+			.renderArea(
+				VkRect2D{ VkOffset2D{ 0, 0 }, VkExtent2D{ target.width(), target.height() } })
             .clearValueCount(clearValues.size())
             .pClearValues(clearValues.data());
 

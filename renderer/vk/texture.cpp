@@ -16,8 +16,8 @@ Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo
     : m_context(context)
 {
     int texWidth, texHeight, texChannels;
-    stbi_uc *pixels =
-        stbi_load(createInfo.path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc *pixels = stbi_load(
+		createInfo.path.string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     ASSERT(pixels, "failed to load texture image!");

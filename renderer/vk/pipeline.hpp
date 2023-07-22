@@ -56,7 +56,7 @@ public:
     ~Pipeline();
 
     virtual void bind(::RenderContext& context) override;
-    virtual std::shared_ptr<IBindContext> bindContext(const IUniformContainer& container) override;
+    virtual std::weak_ptr<IBindContext> bindContext(const IUniformContainer& container) override;
 
     const handles::PipelineLayout& layout() const { return *m_pipelineLayout; }
 

@@ -71,7 +71,7 @@ public:
 
 public:
     virtual void bind(RenderContext& context) = 0;
-    virtual std::shared_ptr<IBindContext> bindContext(const IUniformContainer& container) = 0;
+    virtual std::weak_ptr<IBindContext> bindContext(const IUniformContainer& container) = 0;
 
     virtual ~IPipeline() {}
 };

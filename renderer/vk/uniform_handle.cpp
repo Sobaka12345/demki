@@ -6,6 +6,10 @@
 
 namespace vk {
 
+UniformHandle::UniformHandle() {}
+
+UniformHandle::~UniformHandle() {}
+
 void UniformHandle::write(const void* src, uint32_t layoutSize)
 {
     if (!memory.expired())
@@ -34,7 +38,7 @@ uint64_t UniformHandle::resource() const
 
 std::shared_ptr<UniformHandle> UniformHandle::create()
 {
-    return std::shared_ptr<UniformHandle>(new UniformHandle());
+    return std::shared_ptr<UniformHandle>{new UniformHandle};
 }
 
 }    //  namespace vk

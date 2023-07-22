@@ -17,10 +17,11 @@ struct UniformHandle
     , public std::enable_shared_from_this<UniformHandle>
 {
 private:
-    UniformHandle() = default;
+    UniformHandle();
 
 public:
     [[nodiscard]] static std::shared_ptr<UniformHandle> create();
+    ~UniformHandle();
 
     virtual void accept(UniformHandleVisitor& visitor) override { visitor.visit(*this); }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "memory.hpp"
+#include "simemory_accessor.hpp"
 
 namespace vk { namespace handles {
 
@@ -33,7 +33,19 @@ public:
     ~Image();
 
     bool bindMemory(uint32_t bindingOffset);
-    std::shared_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties);
+    std::weak_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties)
+	{
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(m_device, handle(), &memRequirements);
+
+		m_memory = std::make_shared<Memory>(m_device,
+			memoryAllocateInfo(memRequirements.size,
+				utils::findMemoryType(m_device.physicalDevice(), memRequirements.memoryTypeBits,
+					properties)));
+
+		return m_memory;
+	}
+
 
     void transitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 };

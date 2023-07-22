@@ -36,7 +36,7 @@ public:
     virtual std::span<const UniformDescriptor> dynamicUniforms() const override;
 
 private:
-    std::shared_ptr<IPipeline::IBindContext> m_bindContext;
+    std::weak_ptr<IPipeline::IBindContext> m_bindContext;
     UniformValue<ViewProjection> m_viewProjection;
     std::array<UniformDescriptor, s_layout.size()> m_descriptors;
 };

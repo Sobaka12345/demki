@@ -1,7 +1,5 @@
 #include "uniform_provider.hpp"
 
-#include "uniform_handle.hpp"
-
 namespace vk {
 
 uint64_t UniformProvider::s_resourceCounter = 0;

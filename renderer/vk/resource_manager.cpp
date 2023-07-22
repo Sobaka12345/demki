@@ -142,8 +142,7 @@ uint32_t ResourceManager::dynamicAlignment(uint32_t layoutSize) const
 std::shared_ptr<IUniformHandle> ResourceManager::uniformHandle(uint32_t layoutSize)
 {
     const uint32_t alignment = dynamicAlignment(layoutSize);
-    auto begin = m_uniformProviders.equal_range(alignment).first;
-    const auto end = m_uniformProviders.equal_range(alignment).second;
+    auto [ begin, end ]= m_uniformProviders.equal_range(alignment);
 
     if (begin == end)
     {

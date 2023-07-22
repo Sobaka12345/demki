@@ -31,12 +31,12 @@ void Camera::setViewProjection(ViewProjection viewProjection)
 
 void Camera::bind(RenderContext &context)
 {
-    if (!m_bindContext)
+    if (m_bindContext.expired())
     {
         m_bindContext = context.pipeline().bindContext(*this);
     }
 
-    m_bindContext->bind(context, *this);
+    m_bindContext.lock()->bind(context, *this);
 }
 
 std::span<const IUniformContainer::UniformDescriptor> Camera::uniforms() const

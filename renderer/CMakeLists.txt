@@ -42,6 +42,7 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/pipeline_layout.cpp
     vk/handles/physical_device.hpp
     vk/handles/physical_device.cpp
+    vk/handles/simemory_accessor.hpp
     vk/handles/queue.hpp
     vk/handles/queue.cpp
     vk/handles/render_pass.hpp

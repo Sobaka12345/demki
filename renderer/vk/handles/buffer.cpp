@@ -44,19 +44,6 @@ bool Buffer::bindMemory(uint32_t bindingOffset)
     return vkBindBufferMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
 }
 
-std::shared_ptr<Memory> Buffer::allocateMemory(VkMemoryPropertyFlags properties)
-{
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(m_device, handle(), &memRequirements);
-
-    m_memory = std::make_shared<Memory>(m_device,
-        memoryAllocateInfo(memRequirements.size,
-            utils::findMemoryType(m_device.physicalDevice(), memRequirements.memoryTypeBits,
-                properties)));
-
-    return m_memory;
-}
-
 void Buffer::copyTo(const Buffer& dst, VkBufferCopy copyRegion) const
 {
     m_device.oneTimeCommand(GRAPHICS)().copyBuffer(handle(), dst, { &copyRegion, 1 });

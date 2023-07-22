@@ -4,7 +4,10 @@
 
 namespace vk { namespace handles {
 
-RenderPassCreateInfo RenderPass::defaultCreateInfo() {}
+RenderPassCreateInfo RenderPass::defaultCreateInfo()
+{
+	return {};
+}
 
 RenderPass::RenderPass(RenderPass &&other)
     : Handle(std::move(other))

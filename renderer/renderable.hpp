@@ -59,6 +59,6 @@ private:
     std::weak_ptr<ITexture> m_texture;
     UniformValue<glm::mat4> m_position;
 
-    std::shared_ptr<IPipeline::IBindContext> m_bindContext;
+    std::weak_ptr<IPipeline::IBindContext> m_bindContext;
     std::array<UniformDescriptor, s_layout.size()> m_uniformDescriptors;
 };

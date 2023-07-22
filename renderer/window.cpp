@@ -35,6 +35,7 @@ void Window::onKeyPressedCallback(GLFWwindow *window, int key, int scancode, int
 
 Window::Window(int width, int height, std::string name)
     : m_name(name)
+	, m_iconified(false)
 {
     glfwInit();
 

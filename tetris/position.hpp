@@ -29,5 +29,5 @@ struct Position
     }
 
 private:
-    static constexpr int32_t s_invalidPosition = std::numeric_limits<int32_t>::min();
+    static constexpr int32_t s_invalidPosition = (std::numeric_limits<int32_t>::min)();
 };

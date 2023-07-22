@@ -3,11 +3,11 @@
 #include "handles/buffer.hpp"
 #include "handles/creators.hpp"
 
+#include "uniform_handle.hpp"
+
 #include <map>
 
 namespace vk {
-
-class UniformHandle;
 
 class UniformProvider
 {

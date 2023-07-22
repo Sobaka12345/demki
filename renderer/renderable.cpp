@@ -53,12 +53,12 @@ void Renderable::bind(RenderContext& context)
     m_model.lock()->bind(context);
     m_texture.lock()->bind(context);
 
-    if (!m_bindContext)
+    if (m_bindContext.expired())
     {
         m_bindContext = context.pipeline().bindContext(*this);
     }
 
-    m_bindContext->bind(context, *this);
+    m_bindContext.lock()->bind(context, *this);
 }
 
 std::span<const IUniformContainer::UniformDescriptor> Renderable::uniforms() const
