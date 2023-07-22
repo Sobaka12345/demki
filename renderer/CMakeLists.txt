@@ -1,6 +1,9 @@
 declare_project()
 
 add_library(${PROJECT_NAME} STATIC
+    ogl/render_context.hpp
+    ogl/render_context.cpp
+    ogl/uniform_handle.hpp
     vk/handles/buffer.hpp
     vk/handles/buffer.cpp
     vk/handles/command.hpp
@@ -37,6 +40,8 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/memory.cpp
     vk/handles/pipeline_layout.hpp
     vk/handles/pipeline_layout.cpp
+    vk/handles/physical_device.hpp
+    vk/handles/physical_device.cpp
     vk/handles/queue.hpp
     vk/handles/queue.cpp
     vk/handles/render_pass.hpp
@@ -47,25 +52,59 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/semaphore.cpp
     vk/handles/shader_module.hpp
     vk/handles/shader_module.cpp
+    vk/handles/surface.hpp
+    vk/handles/surface.cpp
+    vk/handles/swapchain.hpp
+    vk/handles/swapchain.cpp
     vk/handles/utils.hpp
-    vk/graphical_application.hpp
-    vk/graphical_application.cpp
+    vk/graphics_context.hpp
+    vk/graphics_context.cpp
+    vk/model.hpp
+    vk/model.cpp
+    vk/pipeline.hpp
+    vk/pipeline.cpp
+    vk/renderer.hpp
+    vk/renderer.cpp
+    vk/render_context.hpp
+    vk/render_context.cpp
     vk/resource_manager.hpp
     vk/resource_manager.cpp
-    vk/ubo_value.hpp
-    vk/uniform_buffer.hpp
-    vk/vertex.hpp
+    vk/swapchain.hpp
+    vk/swapchain.cpp
+    vk/texture.hpp
+    vk/texture.cpp
+    vk/uniform_handle.hpp
+    vk/uniform_handle.cpp
+    vk/uniform_provider.hpp
+    vk/uniform_provider.cpp
     assert.hpp
+    camera.hpp
+    camera.cpp
+    graphical_application.hpp
+    graphical_application.cpp
+    igraphics_context.hpp
+    imodel.hpp
+    ipipeline.hpp
     irenderable.hpp
-    model.cpp
-    model.hpp
-    renderer.hpp
-    renderer.cpp
+    irenderer.hpp
+    irender_target.hpp
+    iresource_manager.hpp
+    iswapchain.hpp
+    itexture.hpp
+    iuniform_handle.hpp
     renderable.hpp
     renderable.cpp
+    renderable_pack.hpp
+    renderable_pack.cpp
+    render_context.hpp
+    types.hpp
     update_timer.hpp
-    texture.cpp
-    texture.hpp
+    uniform.hpp
+    uniform.cpp
+    uniform_value.hpp
+    vertex.hpp
+    window.hpp
+    window.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC .)

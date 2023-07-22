@@ -28,14 +28,14 @@ VkResult Queue::waitIdle() const
 	return vkQueueWaitIdle(handle());
 }
 
-VkResult Queue::submit(uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) const
+VkResult Queue::submit(uint32_t submitCount, const SubmitInfo* pSubmits, VkFence fence) const
 {
-	return vkQueueSubmit(handle(), submitCount, pSubmits, fence);
+    return vkQueueSubmit(handle(), submitCount, pSubmits, fence);
 }
 
-VkResult Queue::presentKHR(const VkPresentInfoKHR* pPresentInfo) const
+VkResult Queue::presentKHR(PresentInfoKHR presentInfo) const
 {
-	return vkQueuePresentKHR(handle(), pPresentInfo);
+    return vkQueuePresentKHR(handle(), &presentInfo);
 }
 
 }}    //  namespace vk::handles

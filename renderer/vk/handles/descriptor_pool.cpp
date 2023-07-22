@@ -1,30 +1,47 @@
 #include "descriptor_pool.hpp"
 
 #include "creators.hpp"
+#include "device.hpp"
+#include "descriptor_set.hpp"
+#include "descriptor_set_layout.hpp"
 
 namespace vk { namespace handles {
 
-DescriptorPool::DescriptorPool(
-    const Device& device, uint32_t capacity, std::span<const VkDescriptorPoolSize> poolSizes)
-    : m_device(device)
-{
-    VkDescriptorPoolCreateInfo poolInfo = descriptorPoolCreateInfo(2, poolSizes);
+DescriptorPool::DescriptorPool(DescriptorPool&& other)
+    : Handle(std::move(other))
+    , m_device(other.m_device)
+{}
 
-    ASSERT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool) == VK_SUCCESS,
-        "failed to create descriptor pool!");
+DescriptorPool::DescriptorPool(
+    const Device& device, DescriptorPoolCreateInfo createInfo, VkHandleType* handlePtr)
+    : Handle(handlePtr)
+    , m_device(device)
+{
+    m_sets.resize(createInfo.maxSets());
+    ASSERT(create(vkCreateDescriptorPool, m_device, &createInfo, nullptr) == VK_SUCCESS,
+        "failed to create descriptor pool");
 }
 
 DescriptorPool::~DescriptorPool()
 {
-    vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+    destroy(vkDestroyDescriptorPool, m_device, handle(), nullptr);
 }
 
-std::shared_ptr<DescriptorSet> DescriptorPool::allocateSet(VkDescriptorSetLayout layout,
-    VkPipelineLayout pipelineLayout)
+std::shared_ptr<DescriptorSet> DescriptorPool::allocateSet(const DescriptorSetLayout& layout)
 {
-    const auto allocInfo = descriptorSetAllocateInfo(m_descriptorPool, &layout, 1);
+    const auto allocInfo = descriptorSetAllocateInfo(handle(), layout.handlePtr(), 1);
 
-    return std::shared_ptr<DescriptorSet>(new DescriptorSet(m_device, pipelineLayout, allocInfo));
+    auto iter = std::find_if(m_sets.begin(), m_sets.end(), [](const auto& x) {
+        return x.expired();
+    });
+
+    //  TO DO
+    ASSERT(iter != m_sets.end(), "pool reached max number of sets");
+
+    auto result = std::make_shared<DescriptorSet>(m_device, allocInfo);
+    *iter = result;
+
+    return result;
 }
 
 }}    //  namespace vk::handles

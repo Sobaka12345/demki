@@ -1,69 +1,40 @@
 #pragma once
 
-#include <renderer.hpp>
+#include <cstdint>
 #include <update_timer.hpp>
 
-#include <vk/ubo_value.hpp>
-#include <vk/graphical_application.hpp>
-#include <vk/handles/descriptor_pool.hpp>
+#include <graphical_application.hpp>
 
 #include <list>
 #include <memory>
 #include <functional>
 
-class Model;
+class Camera;
 class Field;
 
-namespace vk { namespace handles {
-class Sampler;
-class PipelineLayout;
-class DescriptorSet;
-class DescriptorSetLayout;
-}}
-
-class Tetris : public vk::GraphicalApplication
+class Tetris : public GraphicalApplication
 {
 public:
     Tetris();
-    ~Tetris() override;
+    ~Tetris();
 
-private:
-    virtual void initApplication() override;
+    void onKeyPressed(int key, int scancode, int action, int mods);
+
     virtual void update(int64_t dt) override;
-    virtual void recordCommandBuffer(const vk::handles::CommandBuffer& commandBuffer,
-        const vk::handles::Framebuffer& framebuffer) override;
-
-    void initTextures();
-    void createGraphicsPipeline();
-
-    static void onKeyPressed(GLFWwindow* window, int key, int scancode, int action, int mods);
+    virtual void draw(IRenderTarget &renderTarget) override;
 
 private:
-    std::unique_ptr<vk::handles::GraphicsPipeline> m_pipeline;
-    std::unique_ptr<vk::handles::PipelineLayout> m_pipelineLayout;
+    std::shared_ptr<Camera> m_camera;
+    std::shared_ptr<IRenderer> m_renderer;
+    std::shared_ptr<IPipeline> m_pipeline;
 
     bool m_rotate;
     int32_t m_dx;
     int32_t m_flushedTotal;
+
     UpdateTimer<TimeResolution> m_gameTimer;
     UpdateTimer<TimeResolution> m_moveTimer;
     UpdateTimer<TimeResolution> m_rotationTimer;
-
-    Renderer m_renderer;
-
-    std::shared_ptr<vk::handles::DescriptorSet> m_descriptorSet;
-    std::unique_ptr<vk::handles::DescriptorPool> m_descriptorPool;
-    std::unique_ptr<vk::handles::DescriptorSetLayout> m_descriptorSetLayout;
-
-    //  texture
-    std::unique_ptr<vk::handles::Image> m_roshiImage;
-    std::unique_ptr<vk::handles::ImageView> m_roshiImageView;
-    std::unique_ptr<vk::handles::Sampler> m_roshiImageSampler;
-
-    std::shared_ptr<Model> m_cube;
-    std::unique_ptr<vk::UBOValue<vk::UBOViewProjection>> m_camera;
-    std::unique_ptr<vk::UniformBuffer<vk::UBOModel>> m_modelBuffer;
-    std::unique_ptr<vk::UniformBuffer<vk::UBOViewProjection>> m_viewProjectionBuffer;
 
     std::shared_ptr<Field> m_field;
 };

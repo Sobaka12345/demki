@@ -15,6 +15,18 @@
 
 namespace vk { namespace handles {
 
+BEGIN_DECLARE_VKSTRUCT(DeviceCreateInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkDeviceCreateFlags, flags)
+    VKSTRUCT_PROPERTY(uint32_t, queueCreateInfoCount)
+    VKSTRUCT_PROPERTY(const VkDeviceQueueCreateInfo*, pQueueCreateInfos)
+    VKSTRUCT_PROPERTY(uint32_t, enabledLayerCount)
+    VKSTRUCT_PROPERTY(const char* const*, ppEnabledLayerNames)
+    VKSTRUCT_PROPERTY(uint32_t, enabledExtensionCount)
+    VKSTRUCT_PROPERTY(const char* const*, ppEnabledExtensionNames)
+    VKSTRUCT_PROPERTY(const VkPhysicalDeviceFeatures*, pEnabledFeatures)
+END_DECLARE_VKSTRUCT()
+
 class Queue;
 class CommandPool;
 

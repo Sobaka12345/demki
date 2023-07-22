@@ -2,7 +2,7 @@
 
 #include "utils.hpp"
 #include "command_pool.hpp"
-#include "../graphical_application.hpp"
+#include "../graphics_context.hpp"
 #include "queue.hpp"
 
 #include <vector>
@@ -130,10 +130,19 @@ void Device::createLogicalDevice()
         queueCreateInfos.push_back(deviceQueueCreateInfo(queueFamilyIndex, queuePriorities));
     }
 
-    VkDeviceCreateInfo createInfo = GraphicalApplication::s_enableValidationLayers ?
-        deviceCreateInfo(queueCreateInfos, s_deviceExtensions,
-            GraphicalApplication::s_validationLayers) :
-        deviceCreateInfo(queueCreateInfos, s_deviceExtensions);
+    const auto createInfo = GraphicsContext::s_enableValidationLayers ?
+        DeviceCreateInfo{}
+            .pQueueCreateInfos(queueCreateInfos.data())
+            .queueCreateInfoCount(queueCreateInfos.size())
+            .enabledExtensionCount(s_deviceExtensions.size())
+            .ppEnabledExtensionNames(s_deviceExtensions.data())
+            .enabledLayerCount(GraphicsContext::s_validationLayers.size())
+            .ppEnabledLayerNames(GraphicsContext::s_validationLayers.data()) :
+        DeviceCreateInfo{}
+            .pQueueCreateInfos(queueCreateInfos.data())
+            .queueCreateInfoCount(queueCreateInfos.size())
+            .enabledExtensionCount(s_deviceExtensions.size())
+            .ppEnabledExtensionNames(s_deviceExtensions.data());
 
     ASSERT(create(vkCreateDevice, m_physicalDevice, &createInfo, nullptr) == VK_SUCCESS,
         "failed to create logical device!");

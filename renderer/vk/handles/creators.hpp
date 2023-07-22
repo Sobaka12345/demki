@@ -7,24 +7,6 @@
 
 namespace vk { namespace handles {
 
-template <typename T>
-concept IsArrayContainer =
-    requires(const T& o) {
-        o.data();
-        o.size();
-    };
-
-BEGIN_DECLARE_VKSTRUCT(SubmitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO)
-    VKSTRUCT_PROPERTY(const void*, pNext)
-    VKSTRUCT_PROPERTY(uint32_t, waitSemaphoreCount)
-    VKSTRUCT_PROPERTY(const VkSemaphore*, pWaitSemaphores)
-    VKSTRUCT_PROPERTY(const VkPipelineStageFlags*, pWaitDstStageMask)
-    VKSTRUCT_PROPERTY(uint32_t, commandBufferCount)
-    VKSTRUCT_PROPERTY(const VkCommandBuffer*, pCommandBuffers)
-    VKSTRUCT_PROPERTY(uint32_t, signalSemaphoreCount)
-    VKSTRUCT_PROPERTY(const VkSemaphore*, pSignalSemaphores)
-END_DECLARE_VKSTRUCT()
-
 inline VkDeviceQueueCreateInfo deviceQueueCreateInfo(uint32_t queueFamilyIndex,
     const std::span<const float> queuePriorities,
     VkDeviceQueueCreateFlags flags = 0,
@@ -35,29 +17,6 @@ inline VkDeviceQueueCreateInfo deviceQueueCreateInfo(uint32_t queueFamilyIndex,
     result.queueFamilyIndex = queueFamilyIndex;
     result.queueCount = static_cast<uint32_t>(queuePriorities.size());
     result.pQueuePriorities = queuePriorities.data();
-    result.flags = flags;
-    result.pNext = pNext;
-
-    return result;
-}
-
-inline constexpr VkDeviceCreateInfo deviceCreateInfo(
-    const std::span<VkDeviceQueueCreateInfo> queueCreateInfos,
-    const std::span<const char* const> enabledExtensionNames,
-    const std::span<const char* const> enabledLayerNames = {},
-    const VkPhysicalDeviceFeatures* pEnabledFeatures = nullptr,
-    VkDeviceCreateFlags flags = 0,
-    const void* pNext = nullptr)
-{
-    VkDeviceCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    result.queueCreateInfoCount = static_cast<size_t>(queueCreateInfos.size());
-    result.pQueueCreateInfos = queueCreateInfos.data();
-    result.enabledLayerCount = static_cast<size_t>(enabledLayerNames.size());
-    result.ppEnabledLayerNames = enabledLayerNames.data();
-    result.enabledExtensionCount = static_cast<size_t>(enabledExtensionNames.size());
-    result.ppEnabledExtensionNames = enabledExtensionNames.data();
-    result.pEnabledFeatures = pEnabledFeatures;
     result.flags = flags;
     result.pNext = pNext;
 
@@ -171,55 +130,6 @@ inline constexpr VkCommandBufferBeginInfo commandBufferBeginInfo(
     return result;
 }
 
-BEGIN_DECLARE_VKSTRUCT(RenderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
-    VKSTRUCT_PROPERTY(const void*, pNext)
-    VKSTRUCT_PROPERTY(VkRenderPass, renderPass)
-    VKSTRUCT_PROPERTY(VkFramebuffer, framebuffer)
-    VKSTRUCT_PROPERTY(VkRect2D, renderArea)
-    VKSTRUCT_PROPERTY(uint32_t, clearValueCount)
-    VKSTRUCT_PROPERTY(const VkClearValue*, pClearValues)
-END_DECLARE_VKSTRUCT()
-
-inline constexpr VkRenderPassBeginInfo renderPassBeginInfo(VkRenderPass renderPass,
-    VkFramebuffer framebuffer,
-    VkRect2D renderArea,
-    std::span<const VkClearValue> clearValues = {},
-    const void* pNext = nullptr)
-{
-    VkRenderPassBeginInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    result.renderPass = renderPass;
-    result.framebuffer = framebuffer;
-    result.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    result.pClearValues = clearValues.data();
-    result.renderArea = renderArea;
-    result.pNext = pNext;
-
-    return result;
-}
-
-inline constexpr VkShaderModuleCreateInfo shaderModuleCreateInfo(uint32_t codeSize,
-    const uint32_t* codeData)
-{
-    VkShaderModuleCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    result.codeSize = codeSize;
-    result.pCode = codeData;
-
-    return result;
-}
-
-inline VkShaderModule shaderModule(VkDevice device, const std::vector<char>& code)
-{
-    const VkShaderModuleCreateInfo createInfo = shaderModuleCreateInfo(
-        static_cast<uint32_t>(code.size()), reinterpret_cast<const uint32_t*>(code.data()));
-
-    VkShaderModule result = VK_NULL_HANDLE;
-    ASSERT(vkCreateShaderModule(device, &createInfo, nullptr, &result) == VK_SUCCESS);
-
-    return result;
-}
-
 BEGIN_DECLARE_VKSTRUCT(PipelineViewportStateCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -229,7 +139,6 @@ BEGIN_DECLARE_VKSTRUCT(PipelineViewportStateCreateInfo,
     VKSTRUCT_PROPERTY(uint32_t, scissorCount)
     VKSTRUCT_PROPERTY(const VkRect2D*, pScissors)
 END_DECLARE_VKSTRUCT()
-
 
 BEGIN_DECLARE_VKSTRUCT(PipelineDynamicStateCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO)
@@ -287,7 +196,6 @@ BEGIN_DECLARE_UNTYPED_VKSTRUCT(PipelineColorBlendAttachmentState)
     VKSTRUCT_PROPERTY(VkColorComponentFlags, colorWriteMask)
 END_DECLARE_VKSTRUCT()
 
-
 BEGIN_DECLARE_VKSTRUCT(PipelineColorBlendStateCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -298,28 +206,6 @@ BEGIN_DECLARE_VKSTRUCT(PipelineColorBlendStateCreateInfo,
     VKSTRUCT_PROPERTY(const VkPipelineColorBlendAttachmentState*, pAttachments)
     VKSTRUCT_PROPERTY(std::array<float COMMA 4>, blendConstants)
 END_DECLARE_VKSTRUCT()
-
-inline constexpr VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
-    const IsArrayContainer auto& colorBlendAttachments,
-    VkBool32 logicOpEnable = VK_FALSE,
-    VkLogicOp logicOp = VK_LOGIC_OP_COPY,
-    const std::array<float, 4>& blendConstants = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f },
-    VkPipelineColorBlendStateCreateFlags flags = 0,
-    const void* pNext = nullptr)
-{
-    VkPipelineColorBlendStateCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    result.logicOpEnable = logicOpEnable;
-    result.logicOp = logicOp;
-    result.attachmentCount = static_cast<uint32_t>(colorBlendAttachments.size());
-    result.pAttachments = colorBlendAttachments.data();
-    result.blendConstants[0] = blendConstants[0];
-    result.blendConstants[1] = blendConstants[1];
-    result.blendConstants[2] = blendConstants[2];
-    result.blendConstants[3] = blendConstants[3];
-
-    return result;
-}
 
 BEGIN_DECLARE_VKSTRUCT(PipelineDepthStencilStateCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO)
@@ -335,36 +221,6 @@ BEGIN_DECLARE_VKSTRUCT(PipelineDepthStencilStateCreateInfo,
     VKSTRUCT_PROPERTY(float, minDepthBounds)
     VKSTRUCT_PROPERTY(float, maxDepthBounds)
 END_DECLARE_VKSTRUCT()
-
-inline constexpr VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo(
-    VkBool32 depthTestEnable,
-    VkBool32 depthWriteEnable,
-    VkCompareOp depthCompareOp,
-    VkBool32 depthBoundsTestEnable,
-    VkBool32 stencilTestEnable,
-    VkStencilOpState front = {},
-    VkStencilOpState back = {},
-    float minDepthBounds = 0.0f,
-    float maxDepthBounds = 0.0f,
-    VkPipelineDepthStencilStateCreateFlags flags = 0,
-    const void* pNext = nullptr)
-{
-    VkPipelineDepthStencilStateCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    result.depthTestEnable = depthTestEnable;
-    result.depthWriteEnable = depthWriteEnable;
-    result.depthCompareOp = depthCompareOp;
-    result.depthBoundsTestEnable = depthBoundsTestEnable;
-    result.stencilTestEnable = stencilTestEnable;
-    result.front = front;
-    result.back = back;
-    result.minDepthBounds = minDepthBounds;
-    result.maxDepthBounds = maxDepthBounds;
-    result.flags = flags;
-    result.pNext = pNext;
-
-    return result;
-}
 
 inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(uint32_t maxSets,
     std::span<const VkDescriptorPoolSize> poolSizes,
@@ -406,23 +262,16 @@ inline constexpr VkDescriptorSetAllocateInfo descriptorSetAllocateInfo(
     return result;
 }
 
-inline constexpr VkDescriptorBufferInfo descriptorBufferInfo(
-    VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
-{
-    VkDescriptorBufferInfo result{};
-    result.buffer = buffer;
-    result.offset = offset;
-    result.range = range;
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorBufferInfo)
+    VKSTRUCT_PROPERTY(VkBuffer, buffer)
+    VKSTRUCT_PROPERTY(VkDeviceSize, offset)
+    VKSTRUCT_PROPERTY(VkDeviceSize, range)
+END_DECLARE_VKSTRUCT()
 
-    return result;
-}
-
-BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorSetLayoutBinding)
-    VKSTRUCT_PROPERTY(uint32_t, binding)
-    VKSTRUCT_PROPERTY(VkDescriptorType, descriptorType)
-    VKSTRUCT_PROPERTY(uint32_t, descriptorCount)
-    VKSTRUCT_PROPERTY(VkShaderStageFlags, stageFlags)
-    VKSTRUCT_PROPERTY(const VkSampler*, pImmutableSamplers)
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorImageInfo)
+    VKSTRUCT_PROPERTY(VkSampler, sampler)
+    VKSTRUCT_PROPERTY(VkImageView, imageView)
+    VKSTRUCT_PROPERTY(VkImageLayout, imageLayout)
 END_DECLARE_VKSTRUCT()
 
 inline constexpr VkImageSubresourceRange imageSubresourceRange(VkImageAspectFlags aspectFlags,
@@ -451,40 +300,6 @@ inline constexpr VkExtent3D extent3D(uint32_t width, uint32_t height, uint32_t d
     return result;
 }
 
-inline constexpr VkImageCreateInfo imageCreateInfo(VkImageType type,
-    VkExtent3D extent,
-    uint32_t mipLevels,
-    uint32_t arrayLayers,
-    VkFormat format,
-    VkImageTiling tiling,
-    VkImageLayout initialLayout,
-    VkImageUsageFlags usage,
-    VkSampleCountFlagBits samples,
-    VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    std::span<const uint32_t> queueFamilyIndices = {},
-    VkImageCreateFlags flags = 0,
-    const void* pNext = nullptr)
-{
-    VkImageCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    result.imageType = VK_IMAGE_TYPE_2D;
-    result.extent = extent;
-    result.mipLevels = mipLevels;
-    result.arrayLayers = arrayLayers;
-    result.format = format;
-    result.tiling = tiling;
-    result.initialLayout = initialLayout;
-    result.usage = usage;
-    result.samples = samples;
-    result.sharingMode = sharingMode;
-    result.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
-    result.pQueueFamilyIndices = queueFamilyIndices.data();
-    result.flags = flags;
-    result.pNext = pNext;
-
-    return result;
-}
-
 BEGIN_DECLARE_VKSTRUCT(PipelineShaderStageCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -505,66 +320,44 @@ BEGIN_DECLARE_VKSTRUCT(PipelineVertexInputStateCreateInfo,
     VKSTRUCT_PROPERTY(const VkVertexInputAttributeDescription*, pVertexAttributeDescriptions)
 END_DECLARE_VKSTRUCT();
 
-inline constexpr VkFramebufferCreateInfo frameBufferCreateInfo(VkRenderPass renderPass,
-    const IsArrayContainer auto& attachments,
-    uint32_t width,
-    uint32_t height,
-    uint32_t layers,
-    VkFramebufferCreateFlags flags = 0,
-    const void* pNext = nullptr)
-{
-    VkFramebufferCreateInfo result{};
-    result.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    result.renderPass = renderPass;
-    result.attachmentCount = static_cast<uint32_t>(attachments.size());
-    result.pAttachments = attachments.data();
-    result.width = width;
-    result.height = height;
-    result.layers = layers;
-    result.flags = flags;
-    result.pNext = pNext;
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(AttachmentDescription)
+    VKSTRUCT_PROPERTY(VkAttachmentDescriptionFlags, flags)
+    VKSTRUCT_PROPERTY(VkFormat, format)
+    VKSTRUCT_PROPERTY(VkSampleCountFlagBits, samples)
+    VKSTRUCT_PROPERTY(VkAttachmentLoadOp, loadOp)
+    VKSTRUCT_PROPERTY(VkAttachmentStoreOp, storeOp)
+    VKSTRUCT_PROPERTY(VkAttachmentLoadOp, stencilLoadOp)
+    VKSTRUCT_PROPERTY(VkAttachmentStoreOp, stencilStoreOp)
+    VKSTRUCT_PROPERTY(VkImageLayout, initialLayout)
+    VKSTRUCT_PROPERTY(VkImageLayout, finalLayout)
+END_DECLARE_VKSTRUCT()
 
-    return result;
-}
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(AttachmentReference)
+    VKSTRUCT_PROPERTY(uint32_t, attachment)
+    VKSTRUCT_PROPERTY(VkImageLayout, layout)
+END_DECLARE_VKSTRUCT()
 
-inline constexpr VkSwapchainCreateInfoKHR swapChainCreateInfoKHR(VkSurfaceKHR surface,
-    uint32_t minImageCount,
-    VkFormat imageFormat,
-    VkColorSpaceKHR imageColorSpace,
-    VkExtent2D imageExtent,
-    uint32_t imageArrayLayers,
-    VkImageUsageFlags imageUsage,
-    VkSharingMode imageSharingMode,
-    std::span<const uint32_t> queueFamilyIndices,
-    VkSurfaceTransformFlagBitsKHR preTransform,
-    VkCompositeAlphaFlagBitsKHR compositeAlpha,
-    VkPresentModeKHR presentMode,
-    VkBool32 clipped,
-    VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE,
-    VkSwapchainCreateFlagsKHR flags = 0,
-    const void* pNext = nullptr)
-{
-    VkSwapchainCreateInfoKHR result;
-    result.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    result.surface = surface;
-    result.minImageCount = minImageCount;
-    result.imageFormat = imageFormat;
-    result.imageColorSpace = imageColorSpace;
-    result.imageExtent = imageExtent;
-    result.imageArrayLayers = imageArrayLayers;
-    result.imageUsage = imageUsage;
-    result.imageSharingMode = imageSharingMode;
-    result.queueFamilyIndexCount = queueFamilyIndices.size();
-    result.pQueueFamilyIndices = queueFamilyIndices.data();
-    result.preTransform = preTransform;
-    result.compositeAlpha = compositeAlpha;
-    result.presentMode = presentMode;
-    result.clipped = clipped;
-    result.oldSwapchain = oldSwapchain;
-    result.flags = flags;
-    result.pNext = pNext;
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(SubpassDescription)
+    VKSTRUCT_PROPERTY(VkSubpassDescriptionFlags, flags)
+    VKSTRUCT_PROPERTY(VkPipelineBindPoint, pipelineBindPoint)
+    VKSTRUCT_PROPERTY(uint32_t, inputAttachmentCount)
+    VKSTRUCT_PROPERTY(const VkAttachmentReference*, pInputAttachments)
+    VKSTRUCT_PROPERTY(uint32_t, colorAttachmentCount)
+    VKSTRUCT_PROPERTY(const VkAttachmentReference*, pColorAttachments)
+    VKSTRUCT_PROPERTY(const VkAttachmentReference*, pResolveAttachments)
+    VKSTRUCT_PROPERTY(const VkAttachmentReference*, pDepthStencilAttachment)
+    VKSTRUCT_PROPERTY(uint32_t, preserveAttachmentCount)
+    VKSTRUCT_PROPERTY(const uint32_t*, pPreserveAttachments)
+END_DECLARE_VKSTRUCT()
 
-    return result;
-}
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(SubpassDependency)
+    VKSTRUCT_PROPERTY(uint32_t, srcSubpass)
+    VKSTRUCT_PROPERTY(uint32_t, dstSubpass)
+    VKSTRUCT_PROPERTY(VkPipelineStageFlags, srcStageMask)
+    VKSTRUCT_PROPERTY(VkPipelineStageFlags, dstStageMask)
+    VKSTRUCT_PROPERTY(VkAccessFlags, srcAccessMask)
+    VKSTRUCT_PROPERTY(VkAccessFlags, dstAccessMask)
+    VKSTRUCT_PROPERTY(VkDependencyFlags, dependencyFlags)
+END_DECLARE_VKSTRUCT()
 
 }}    //  namespace vk::handles

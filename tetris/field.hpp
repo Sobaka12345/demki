@@ -2,16 +2,19 @@
 
 #include "position.hpp"
 
-#include <renderable.hpp>
-#include <vk/uniform_buffer.hpp>
-#include <vk/handles/descriptor_set.hpp>
-
+#include <array>
 #include <cstdint>
+#include <memory>
 
 class Block;
 class Figure;
+class RenderContext;
 
-class Field : public Renderable
+class IModel;
+class ITexture;
+class IResourceManager;
+
+class Field
 {
 public:
     static constexpr uint32_t s_width = 14;
@@ -25,7 +28,9 @@ public:
     using FieldType = std::array<RowType, s_height>;
 
 public:
-    Field(vk::handles::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider);
+    Field(IResourceManager& resources);
+    std::shared_ptr<Block> createBlock() const;
+
     int32_t flushRowsAndSpawnFigure();
     void tryRotateFigure();
     bool tryMoveFigure(int32_t dx, int32_t dy);
@@ -33,15 +38,17 @@ public:
 
     bool isBlocksOverflow() const;
 
-    virtual void setModel(std::weak_ptr<Model> model) override;
-    virtual void draw(const vk::handles::CommandBuffer& commandBuffer) const override;
+    void draw(RenderContext& context) const;
 
 private:
     int flushRows(int32_t topRowBound, int32_t bottomRowBound);
 
 private:
-    vk::IUBOProvider* m_uboProvider;
-    vk::handles::DescriptorSet* m_descriptorSet;
-    std::shared_ptr<Figure> m_figure;
+    IResourceManager& m_resources;
+
     FieldType m_blocks;
+    std::shared_ptr<IModel> m_cube;
+    std::shared_ptr<ITexture> m_cubeTexture;
+
+    std::shared_ptr<Figure> m_figure;
 };

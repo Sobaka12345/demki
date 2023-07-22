@@ -2,6 +2,8 @@
 
 #include "utils.hpp"
 
+#include <unordered_map>
+
 namespace vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(DescriptorSetLayoutCreateInfo,
@@ -10,6 +12,14 @@ BEGIN_DECLARE_VKSTRUCT(DescriptorSetLayoutCreateInfo,
     VKSTRUCT_PROPERTY(VkDescriptorSetLayoutCreateFlags, flags)
     VKSTRUCT_PROPERTY(uint32_t, bindingCount)
     VKSTRUCT_PROPERTY(const VkDescriptorSetLayoutBinding*, pBindings)
+END_DECLARE_VKSTRUCT()
+
+BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorSetLayoutBinding)
+    VKSTRUCT_PROPERTY(uint32_t, binding)
+    VKSTRUCT_PROPERTY(VkDescriptorType, descriptorType)
+    VKSTRUCT_PROPERTY(uint32_t, descriptorCount)
+    VKSTRUCT_PROPERTY(VkShaderStageFlags, stageFlags)
+    VKSTRUCT_PROPERTY(const VkSampler*, pImmutableSamplers)
 END_DECLARE_VKSTRUCT()
 
 class Device;
@@ -23,10 +33,13 @@ public:
         DescriptorSetLayoutCreateInfo info,
         VkHandleType* handlePtr = nullptr);
 
+    handles::DescriptorSetLayoutBinding binding(int32_t bindingId) const;
+
     ~DescriptorSetLayout();
 
 private:
     const Device& m_device;
+    std::unordered_map<int32_t, handles::DescriptorSetLayoutBinding> m_bindings;
 };
 
 }}    //  namespace vk::handles

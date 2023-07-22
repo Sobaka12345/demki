@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <chrono>
+
 template <typename T>
 class UpdateTimer
 {

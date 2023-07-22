@@ -8,7 +8,7 @@ Framebuffer::Framebuffer(Framebuffer&& other) noexcept
 {}
 
 Framebuffer::Framebuffer(
-    const Device& device, VkFramebufferCreateInfo createInfo, VkHandleType* handlePtr)
+    const Device& device, FramebufferCreateInfo createInfo, VkHandleType* handlePtr)
     : Handle(handlePtr)
     , m_device(device)
 {

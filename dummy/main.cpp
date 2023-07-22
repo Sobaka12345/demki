@@ -2,6 +2,5 @@
 
 int main()
 {
-    Dummy d;
-    return d.exec();
+    return Dummy{}.exec();
 }

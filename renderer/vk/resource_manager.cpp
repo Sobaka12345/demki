@@ -1,8 +1,11 @@
 #include "resource_manager.hpp"
 
-#include "handles/device.hpp"
+#include "graphics_context.hpp"
 
-#include "../model.hpp"
+#include "model.hpp"
+#include "texture.hpp"
+
+#include <iuniform_handle.hpp>
 
 #include <tiny_obj_loader.h>
 
@@ -13,13 +16,15 @@ namespace vk {
 
 using namespace handles;
 
-ResourceManager::ResourceManager(const Device& device)
-	: m_device(device)
-	, m_defaultBufferSize(1024 * 1024)
+ResourceManager::ResourceManager(const GraphicsContext& context)
+    : m_context(context)
+    , m_defaultBufferSize(1024 * 1024)
 {}
 
-std::shared_ptr<Model> ResourceManager::loadModel(std::span<const Vertex3DColoredTextured> vertices,
-    std::span<const uint32_t> indices)
+ResourceManager::~ResourceManager() {}
+
+std::shared_ptr<IModel> ResourceManager::createModel(
+    std::span<const Vertex3DColoredTextured> vertices, std::span<const uint32_t> indices)
 {
     constexpr size_t vertexSize = sizeof(vertices[0]);
     constexpr size_t indexSize = sizeof(indices[0]);
@@ -27,21 +32,21 @@ std::shared_ptr<Model> ResourceManager::loadModel(std::span<const Vertex3DColore
     const size_t verticesSize = vertices.size() * vertexSize;
     const size_t indicesSize = indices.size() * indexSize;
 
-    m_modelBuffers.emplace_back(m_device,
+    m_modelBuffers.emplace_back(m_context.device(),
         BufferCreateInfo()
             .size(verticesSize)
             .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
             .sharingMode(VK_SHARING_MODE_EXCLUSIVE));
     m_modelBuffers.back().allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    m_indBuffers.emplace_back(m_device,
+    m_indBuffers.emplace_back(m_context.device(),
         BufferCreateInfo()
             .size(indicesSize)
             .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
             .sharingMode(VK_SHARING_MODE_EXCLUSIVE));
     m_indBuffers.back().allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    Buffer stagingBuffer(m_device, Buffer::staging().size(indicesSize + verticesSize));
+    Buffer stagingBuffer(m_context.device(), Buffer::staging().size(indicesSize + verticesSize));
     auto mapped =
         stagingBuffer
             .allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -74,8 +79,7 @@ std::shared_ptr<Model> ResourceManager::loadModel(std::span<const Vertex3DColore
     });
 }
 
-std::shared_ptr<Model> ResourceManager::loadModel(std::filesystem::path path,
-    Resource::Storage targetStorage)
+std::shared_ptr<IModel> ResourceManager::createModel(std::filesystem::path path)
 {
     std::vector<Vertex3DColoredTextured> vertices;
     std::vector<uint32_t> indices;
@@ -115,7 +119,49 @@ std::shared_ptr<Model> ResourceManager::loadModel(std::filesystem::path path,
         }
     }
 
-    return loadModel(vertices, indices);
+    return createModel(vertices, indices);
+}
+
+std::shared_ptr<ITexture> ResourceManager::createTexture(ITexture::CreateInfo createInfo)
+{
+    return std::make_shared<Texture>(m_context, createInfo);
+}
+
+uint32_t ResourceManager::dynamicAlignment(uint32_t layoutSize) const
+{
+    const uint32_t minAlignment =
+        m_context.device().physicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
+
+    if (minAlignment > 0)
+    {
+        layoutSize = (layoutSize + minAlignment - 1) & ~(minAlignment - 1);
+    }
+    return layoutSize;
+}
+
+std::shared_ptr<IUniformHandle> ResourceManager::uniformHandle(uint32_t layoutSize)
+{
+    const uint32_t alignment = dynamicAlignment(layoutSize);
+    auto begin = m_uniformProviders.equal_range(alignment).first;
+    const auto end = m_uniformProviders.equal_range(alignment).second;
+
+    if (begin == end)
+    {
+        begin = m_uniformProviders.emplace(layoutSize,
+            UniformProvider{ m_context.device(), alignment, 100 });
+    }
+
+    for (auto iter = begin; iter != end; ++iter)
+    {
+        if (auto handle = begin->second.tryGetUniformHandle(); handle)
+        {
+            return handle;
+        }
+    }
+
+    return m_uniformProviders
+        .emplace(layoutSize, UniformProvider{ m_context.device(), alignment, 100 })
+        ->second.tryGetUniformHandle();
 }
 
 }    //  namespace vk

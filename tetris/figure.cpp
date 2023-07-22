@@ -2,14 +2,14 @@
 
 #include "field.hpp"
 
-Block::Block(std::unique_ptr<vk::UBOValue<vk::UBOModel>> position3D)
-    : m_position3D(std::move(position3D))
+Block::Block(Renderable renderable)
+    : m_renderable(std::move(renderable))
 {}
 
-void Block::draw(const vk::handles::CommandBuffer& commandBuffer) const
+void Block::draw(RenderContext& context)
 {
-    m_position3D->bind(commandBuffer);
-    Renderable::draw(commandBuffer);
+    m_renderable.bind(context);
+    m_renderable.draw(context);
 }
 
 void Block::move(int32_t dx, int32_t dy)
@@ -20,8 +20,7 @@ void Block::move(int32_t dx, int32_t dy)
 void Block::setPosition(Position position)
 {
     m_position = position;
-    m_position3D->set(vk::UBOModel{ position.position3D() });
-    m_position3D->sync();
+    m_renderable.setPosition(position.position3D());
 }
 
 Position Block::position() const
@@ -29,15 +28,12 @@ Position Block::position() const
     return m_position;
 }
 
-Figure::Figure(const Field* field,
-    const vk::handles::DescriptorSet* descriptorSet,
-    vk::IUBOProvider* uboProvider)
+Figure::Figure(const Field& field)
     : m_field(field)
 {
     for (auto& block : m_blocks)
     {
-        block = std::make_shared<Block>(std::make_unique<vk::UBOValue<vk::UBOModel>>(descriptorSet,
-            uboProvider->tryGetUBOHandler()));
+        block = field.createBlock();
     }
 }
 
@@ -64,7 +60,7 @@ bool Figure::tryMove(int32_t dx, int32_t dy)
     for (auto& block : m_blocks)
     {
         const Position newPosition{ block->position().x + dx, block->position().y + dy };
-        if (m_field->isPositionOccupied(newPosition))
+        if (m_field.isPositionOccupied(newPosition))
         {
             return false;
         }
@@ -86,7 +82,7 @@ bool Figure::tryRotate()
     {
         newPositions[i].x = -(m_blocks[i]->position().y - anchor.y) + anchor.x;
         newPositions[i].y = (m_blocks[i]->position().x - anchor.x) + anchor.y;
-        if (m_field->isPositionOccupied(newPositions[i]))
+        if (m_field.isPositionOccupied(newPositions[i]))
         {
             return false;
         }
@@ -100,7 +96,7 @@ bool Figure::tryRotate()
     return true;
 }
 
-void Figure::draw(const vk::handles::CommandBuffer& commandBuffer) const
+void Figure::draw(RenderContext& commandBuffer)
 {
     for (auto& block : m_blocks)
     {
@@ -108,19 +104,8 @@ void Figure::draw(const vk::handles::CommandBuffer& commandBuffer) const
     }
 }
 
-void Figure::setModel(std::weak_ptr<Model> model)
-{
-    for (auto& block : m_blocks)
-    {
-        block->setModel(model);
-    }
-    Renderable::setModel(model);
-}
-
-LFigure::LFigure(const Field* field,
-    const vk::handles::DescriptorSet* descriptorSet,
-    vk::IUBOProvider* uboProvider)
-    : Figure(field, descriptorSet, uboProvider)
+LFigure::LFigure(const Field& field)
+    : Figure(field)
 {
     m_blocks[0]->setPosition({ Field::s_middleX, 0 });
     m_blocks[1]->setPosition({ Field::s_middleX, 1 });
@@ -133,10 +118,8 @@ Position LFigure::rotationAnchor() const
     return m_blocks[1]->position();
 }
 
-LRFigure::LRFigure(const Field* field,
-    const vk::handles::DescriptorSet* descriptorSet,
-    vk::IUBOProvider* uboProvider)
-    : Figure(field, descriptorSet, uboProvider)
+LRFigure::LRFigure(const Field& field)
+    : Figure(field)
 {
     m_blocks[0]->setPosition({ Field::s_middleX, 0 });
     m_blocks[1]->setPosition({ Field::s_middleX, 1 });
@@ -149,10 +132,8 @@ Position LRFigure::rotationAnchor() const
     return m_blocks[1]->position();
 }
 
-ZFigure::ZFigure(const Field* field,
-    const vk::handles::DescriptorSet* descriptorSet,
-    vk::IUBOProvider* uboProvider)
-    : Figure(field, descriptorSet, uboProvider)
+ZFigure::ZFigure(const Field& field)
+    : Figure(field)
 {
     m_blocks[0]->setPosition({ Field::s_middleX - 1, 0 });
     m_blocks[1]->setPosition({ Field::s_middleX, 0 });
@@ -165,10 +146,8 @@ Position ZFigure::rotationAnchor() const
     return m_blocks[1]->position();
 }
 
-ZRFigure::ZRFigure(const Field* field,
-    const vk::handles::DescriptorSet* descriptorSet,
-    vk::IUBOProvider* uboProvider)
-    : Figure(field, descriptorSet, uboProvider)
+ZRFigure::ZRFigure(const Field& field)
+    : Figure(field)
 {
     m_blocks[0]->setPosition({ Field::s_middleX + 1, 0 });
     m_blocks[1]->setPosition({ Field::s_middleX, 0 });
@@ -181,10 +160,8 @@ Position ZRFigure::rotationAnchor() const
     return m_blocks[1]->position();
 }
 
-OFigure::OFigure(const Field* field,
-    const vk::handles::DescriptorSet* descriptorSet,
-    vk::IUBOProvider* uboProvider)
-    : Figure(field, descriptorSet, uboProvider)
+OFigure::OFigure(const Field& field)
+    : Figure(field)
 {
     m_blocks[0]->setPosition({ Field::s_middleX, 0 });
     m_blocks[1]->setPosition({ Field::s_middleX, 1 });
@@ -202,10 +179,8 @@ Position OFigure::rotationAnchor() const
     return {};
 }
 
-IFigure::IFigure(const Field* field,
-    const vk::handles::DescriptorSet* descriptorSet,
-    vk::IUBOProvider* uboProvider)
-    : Figure(field, descriptorSet, uboProvider)
+IFigure::IFigure(const Field& field)
+    : Figure(field)
 {
     m_blocks[0]->setPosition({ Field::s_middleX, 0 });
     m_blocks[1]->setPosition({ Field::s_middleX, 1 });
@@ -218,10 +193,8 @@ Position IFigure::rotationAnchor() const
     return m_blocks[1]->position();
 }
 
-TFigure::TFigure(const Field* field,
-    const vk::handles::DescriptorSet* descriptorSet,
-    vk::IUBOProvider* uboProvider)
-    : Figure(field, descriptorSet, uboProvider)
+TFigure::TFigure(const Field& field)
+    : Figure(field)
 {
     m_blocks[0]->setPosition({ Field::s_middleX, 0 });
     m_blocks[1]->setPosition({ Field::s_middleX - 1, 1 });

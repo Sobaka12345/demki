@@ -30,6 +30,8 @@ class Device;
 
 class DescriptorSet : public Handle<VkDescriptorSet>
 {
+    friend class DescriptorSets;
+
 public:
     struct Write
     {
@@ -42,19 +44,25 @@ public:
     DescriptorSet(DescriptorSet&& other);
 
     DescriptorSet(const Device& device,
-        VkPipelineLayout pipelineLayout,
         DescriptorSetAllocateInfo allocInfo,
         VkHandleType* handlePtr = nullptr);
 
     ~DescriptorSet();
 
-    virtual void bind(VkCommandBuffer commandBuffer, uint32_t offset) const;
-
     void write(std::span<const Write> writes);
+    void write(std::span<const WriteDescriptorSet> writes);
 
 protected:
     const Device& m_device;
-    VkPipelineLayout m_pipelineLayout;
+    VkDescriptorPool m_pool;
+};
+
+class DescriptorSets : public HandleVector<DescriptorSet>
+{
+public:
+    using HandleVector::HandleVector;
+
+    void write(std::span<const WriteDescriptorSet> writes);
 };
 
 }}    //  namespace vk::handles

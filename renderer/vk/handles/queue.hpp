@@ -1,8 +1,29 @@
 #pragma once
 
-#include "handle.hpp"
+#include "utils.hpp"
 
 namespace vk { namespace handles {
+
+BEGIN_DECLARE_VKSTRUCT(SubmitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(uint32_t, waitSemaphoreCount)
+    VKSTRUCT_PROPERTY(const VkSemaphore*, pWaitSemaphores)
+    VKSTRUCT_PROPERTY(const VkPipelineStageFlags*, pWaitDstStageMask)
+    VKSTRUCT_PROPERTY(uint32_t, commandBufferCount)
+    VKSTRUCT_PROPERTY(const VkCommandBuffer*, pCommandBuffers)
+    VKSTRUCT_PROPERTY(uint32_t, signalSemaphoreCount)
+    VKSTRUCT_PROPERTY(const VkSemaphore*, pSignalSemaphores)
+END_DECLARE_VKSTRUCT()
+
+BEGIN_DECLARE_VKSTRUCT(PresentInfoKHR, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(uint32_t, waitSemaphoreCount)
+    VKSTRUCT_PROPERTY(const VkSemaphore*, pWaitSemaphores)
+    VKSTRUCT_PROPERTY(uint32_t, swapchainCount)
+    VKSTRUCT_PROPERTY(const VkSwapchainKHR*, pSwapchains)
+    VKSTRUCT_PROPERTY(const uint32_t*, pImageIndices)
+    VKSTRUCT_PROPERTY(VkResult*, pResults)
+END_DECLARE_VKSTRUCT()
 
 class Device;
 
@@ -19,8 +40,8 @@ public:
 	~Queue();
 
 	VkResult waitIdle() const;
-	VkResult submit(uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) const;
-	VkResult presentKHR(const VkPresentInfoKHR* pPresentInfo) const;
+    VkResult submit(uint32_t submitCount, const SubmitInfo* pSubmits, VkFence fence) const;
+    VkResult presentKHR(PresentInfoKHR presentInfo) const;
 };
 
 }}    //  namespace vk::handles

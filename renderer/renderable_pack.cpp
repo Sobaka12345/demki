@@ -1,21 +1,22 @@
-#include "renderer.hpp"
+#include "renderable_pack.hpp"
 
-Renderer::Renderer() {}
+#include <imodel.hpp>
+#include <irenderable.hpp>
 
-void Renderer::draw(const vk::handles::CommandBuffer& commandBuffer)
+void RenderablePack::draw(const RenderContext& context) const
 {
     for (auto modelQueueIter = m_renderQueues.begin(); modelQueueIter != m_renderQueues.end();)
     {
         if (!modelQueueIter->first.expired())
         {
             const auto modelPtr = modelQueueIter->first.lock();
-            modelPtr->bind(commandBuffer);
+            modelPtr->bind(context);
 
             for (auto iter = modelQueueIter->second.begin(); iter != modelQueueIter->second.end();)
             {
                 if (!iter->expired())
                 {
-                    iter->lock()->draw(commandBuffer);
+                    iter->lock()->draw(context);
                     ++iter;
                 }
                 else
@@ -32,7 +33,7 @@ void Renderer::draw(const vk::handles::CommandBuffer& commandBuffer)
     }
 }
 
-Renderer::RenderableHandler Renderer::pushObject(RenderablePtr object)
+RenderablePack::RenderableHandler RenderablePack::pushObject(std::weak_ptr<IRenderable> object)
 {
     auto mapIter = m_renderQueues.find(object.lock()->model());
     if (mapIter == m_renderQueues.end())
@@ -48,7 +49,7 @@ Renderer::RenderableHandler Renderer::pushObject(RenderablePtr object)
     return handler;
 }
 
-void Renderer::removeObject(RenderableHandler handler)
+void RenderablePack::removeObject(RenderableHandler handler)
 {
     handler.mapIter->second.erase(handler.queueIter);
 }

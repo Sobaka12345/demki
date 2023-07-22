@@ -7,31 +7,22 @@ namespace vk { namespace handles {
 DescriptorSet::DescriptorSet(DescriptorSet&& other)
     : Handle(std::move(other))
     , m_device(other.m_device)
-    , m_pipelineLayout(other.m_pipelineLayout)
+    , m_pool(other.m_pool)
 {}
 
-DescriptorSet::DescriptorSet(const Device& device,
-    VkPipelineLayout pipelineLayout,
-    DescriptorSetAllocateInfo allocInfo,
-    VkHandleType* handlePtr)
+DescriptorSet::DescriptorSet(
+    const Device& device, DescriptorSetAllocateInfo allocInfo, VkHandleType* handlePtr)
     : Handle(handlePtr)
     , m_device(device)
-    , m_pipelineLayout(pipelineLayout)
+    , m_pool(allocInfo.descriptorPool())
 {
     ASSERT(create(vkAllocateDescriptorSets, m_device, &allocInfo) == VK_SUCCESS,
         "failed to allocate descriptor sets!");
-    setOwner(false);
 }
 
 DescriptorSet::~DescriptorSet()
 {
-    //  vkFreeDescriptorSets(m_device, )
-}
-
-void DescriptorSet::bind(VkCommandBuffer commandBuffer, uint32_t offset) const
-{
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1,
-        handlePtr(), 1, &offset);
+    destroy(vkFreeDescriptorSets, m_device, m_pool, 1, handlePtr());
 }
 
 void DescriptorSet::write(std::span<const Write> writes)
@@ -49,8 +40,20 @@ void DescriptorSet::write(std::span<const Write> writes)
                 .pBufferInfo(write.bufferInfo.has_value() ? &write.bufferInfo.value() : nullptr));
     }
 
-    vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writeDescriptorSets.size()),
-        writeDescriptorSets.data(), 0, nullptr);
+    write(writeDescriptorSets);
+}
+
+void DescriptorSet::write(std::span<const WriteDescriptorSet> writes)
+{
+    vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0,
+        nullptr);
+}
+
+void DescriptorSets::write(std::span<const WriteDescriptorSet> writes)
+{
+    DASSERT(size());
+    vkUpdateDescriptorSets((*this)[0].m_device, static_cast<uint32_t>(writes.size()), writes.data(),
+        0, nullptr);
 }
 
 }}    //  namespace vk::handles

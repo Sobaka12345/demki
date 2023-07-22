@@ -1,4 +1,5 @@
 #pragma once
+
 #include "handle.hpp"
 #include "creators.hpp"
 
@@ -8,6 +9,9 @@ namespace vk { namespace handles {
 
 class Device;
 class CommandPool;
+class DescriptorSet;
+class GraphicsPipeline;
+class PipelineLayout;
 
 class CommandBuffer : public Handle<VkCommandBuffer>
 {
@@ -36,6 +40,13 @@ public:
         const VkBuffer* pBuffers,
         const VkDeviceSize* pOffsets) const;
     void bindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const;
+    void bindPipeline(const GraphicsPipeline& pipeline,
+        VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) const;
+    void bindDescriptorSet(const PipelineLayout& layout,
+        uint32_t firstSet,
+        const DescriptorSet& set,
+        std::span<const uint32_t> dynamicOffsets,
+        VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) const;
 
     void copyBuffer(VkBuffer src, VkBuffer dst, std::span<const VkBufferCopy> regions) const;
     void copyBufferToImage(VkBuffer src,
@@ -48,6 +59,13 @@ public:
         std::span<const VkImageMemoryBarrier> imageMemoryBarriers = {},
         std::span<const VkMemoryBarrier> memoryBarriers = {},
         std::span<const VkBufferMemoryBarrier> bufferMemoryBarriers = {}) const;
+
+    void setViewports(
+        uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const;
+    void setViewport(VkViewport viewport) const;
+
+    void setScissors(uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const;
+    void setScissor(VkRect2D scissor) const;
 
 private:
     const Device& m_device;

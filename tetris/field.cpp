@@ -2,10 +2,29 @@
 
 #include "figure.hpp"
 
-Field::Field(vk::handles::DescriptorSet* descriptorSet, vk::IUBOProvider* uboProvider)
+#include <renderable.hpp>
+#include <iresource_manager.hpp>
+
+static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
+    Vertex3DColoredTextured{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
+    Vertex3DColoredTextured{ { 0.5f, -0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
+    Vertex3DColoredTextured{ { -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+    Vertex3DColoredTextured{ { 0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+    Vertex3DColoredTextured{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
+    Vertex3DColoredTextured{ { 0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
+    Vertex3DColoredTextured{ { -0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
+    Vertex3DColoredTextured{ { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+};
+
+static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
+    2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
+
+Field::Field(IResourceManager& resources)
+    : m_resources(resources)
 {
-    m_uboProvider = uboProvider;
-    m_descriptorSet = descriptorSet;
+    m_cube = resources.createModel(s_cubeVertices, s_cubeIndices);
+    m_cubeTexture = resources.createTexture(
+        { .path = vk::utils::fs::s_executablePath / "textures" / "roshi.jpg" });
 
     for (int32_t row = 0; row < m_blocks.size(); ++row)
     {
@@ -16,12 +35,20 @@ Field::Field(vk::handles::DescriptorSet* descriptorSet, vk::IUBOProvider* uboPro
             {
                 continue;
             }
-            m_blocks[row][col] =
-                std::make_shared<Block>(std::make_unique<vk::UBOValue<vk::UBOModel>>(descriptorSet,
-                    uboProvider->tryGetUBOHandler()));
+
+            m_blocks[row][col] = createBlock();
             m_blocks[row][col]->setPosition({ col, row });
         }
     }
+}
+
+std::shared_ptr<Block> Field::createBlock() const
+{
+    Renderable obj(m_resources);
+    obj.setModel(m_cube);
+    obj.setTexture(m_cubeTexture);
+
+    return std::make_shared<Block>(std::move(obj));
 }
 
 bool Field::tryMoveFigure(int32_t dx, int32_t dy)
@@ -67,8 +94,7 @@ int32_t Field::flushRowsAndSpawnFigure()
         }
         flushed = flushRows(topRow, bottomRow);
     }
-    m_figure = FiguresMaker::createRandomFigure(this, m_descriptorSet, m_uboProvider);
-    m_figure->setModel(model());
+    m_figure = FiguresMaker::createRandomFigure(*this);
 
     return flushed;
 }
@@ -124,11 +150,11 @@ void Field::tryRotateFigure()
     }
 }
 
-void Field::draw(const vk::handles::CommandBuffer& commandBuffer) const
+void Field::draw(RenderContext& context) const
 {
     if (m_figure)
     {
-        m_figure->draw(commandBuffer);
+        m_figure->draw(context);
     }
 
     for (auto& blockLine : m_blocks)
@@ -137,28 +163,8 @@ void Field::draw(const vk::handles::CommandBuffer& commandBuffer) const
         {
             if (block)
             {
-                block->draw(commandBuffer);
+                block->draw(context);
             }
         }
     }
-}
-
-void Field::setModel(std::weak_ptr<Model> model)
-{
-    for (auto& blockLine : m_blocks)
-    {
-        for (auto& block : blockLine)
-        {
-            if (block)
-            {
-                block->setModel(model);
-            }
-        }
-    }
-    if (m_figure)
-    {
-        m_figure->setModel(model);
-    }
-
-    Renderable::setModel(model);
 }
