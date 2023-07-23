@@ -9,6 +9,7 @@
 #include <ipipeline.hpp>
 
 #include <map>
+#include <set>
 
 namespace vk {
 

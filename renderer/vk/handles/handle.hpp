@@ -200,19 +200,4 @@ private:
     std::vector<typename T::VkHandleType> m_vkHandles;
 };
 
-template <typename T, VkStructureType sTypeArg>
-struct VkStruct : public T
-{
-    constexpr VkStruct(T structValue) noexcept
-        : T{ structValue }
-    {
-        if constexpr (sTypeArg != VK_STRUCTURE_TYPE_MAX_ENUM)
-        {
-            T::sType = sTypeArg;
-        }
-
-        static_assert(sizeof(VkStruct) == sizeof(T));
-    }
-};
-
 }}    //  namespace vk::handles

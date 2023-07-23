@@ -1,13 +1,8 @@
 #pragma once
 
-#include "utils.hpp"
-#include "device.hpp"
 #include "simemory_accessor.hpp"
 
-#include <list>
-#include <span>
-#include <memory>
-#include <optional>
+#include "vk/utils.hpp"
 
 namespace vk { namespace handles {
 
@@ -22,6 +17,7 @@ BEGIN_DECLARE_VKSTRUCT(BufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
 END_DECLARE_VKSTRUCT()
 
 class Image;
+class Device;
 
 class Buffer
     : public Handle<VkBuffer>
@@ -47,23 +43,19 @@ public:
     ~Buffer();
 
     bool bindMemory(uint32_t bindingOffset);
+
     std::weak_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties)
     {
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_device, handle(), &memRequirements);
-
-		m_memory = std::make_shared<Memory>(m_device,
-			memoryAllocateInfo(memRequirements.size,
-				utils::findMemoryType(m_device.physicalDevice(), memRequirements.memoryTypeBits,
-					properties)));
-
-		return m_memory;
+        return allocateMemoryImpl(properties);
     }
 
     void copyTo(const Buffer& dst, VkBufferCopy copyRegion) const;
     void copyToImage(const Image& dst, VkImageLayout dstLayout, VkBufferImageCopy copyRegion) const;
 
     VkDeviceSize size() const { return m_size; }
+
+private:
+    std::weak_ptr<Memory> allocateMemoryImpl(VkMemoryPropertyFlags properties);
 
 private:
     VkDeviceSize m_size;

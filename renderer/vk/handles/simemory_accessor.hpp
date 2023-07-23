@@ -7,6 +7,26 @@ namespace vk { namespace handles {
 template <typename Impl>
 class SIMemoryAccessor
 {
+protected:
+    static uint32_t findMemoryType(
+        VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
+    {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+        {
+            if ((typeFilter & (1 << i)) &&
+                (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+            {
+                return i;
+            }
+        }
+
+        ASSERT(false, "failed to find suitable memory type!");
+        return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    }
+
 public:
     SIMemoryAccessor(SIMemoryAccessor&& other) noexcept
         : m_device(std::move(other.m_device))
@@ -49,4 +69,4 @@ protected:
     std::shared_ptr<Memory> m_memory;
 };
 
-}}
+}}    //  namespace vk::handles

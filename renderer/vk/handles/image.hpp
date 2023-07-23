@@ -33,21 +33,16 @@ public:
     ~Image();
 
     bool bindMemory(uint32_t bindingOffset);
+
     std::weak_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties)
 	{
-		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(m_device, handle(), &memRequirements);
-
-		m_memory = std::make_shared<Memory>(m_device,
-			memoryAllocateInfo(memRequirements.size,
-				utils::findMemoryType(m_device.physicalDevice(), memRequirements.memoryTypeBits,
-					properties)));
-
-		return m_memory;
+        return allocateMemoryImpl(properties);
 	}
 
-
     void transitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+
+private:
+    std::weak_ptr<Memory> allocateMemoryImpl(VkMemoryPropertyFlags properties);
 };
 
 }}    //  namespace vk::handles

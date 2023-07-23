@@ -1,13 +1,9 @@
 #include "command_pool.hpp"
 
-#include "creators.hpp"
-
-#include <stdexcept>
-
 namespace vk { namespace handles {
 
 CommandPool::CommandPool(
-    const Device &device, VkCommandPoolCreateInfo poolInfo, VkHandleType *handlePtr)
+    const Device &device, CommandPoolCreateInfo poolInfo, VkHandleType *handlePtr)
     : Handle(handlePtr)
     , m_device(device)
 {
@@ -36,7 +32,8 @@ HandleVector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count,
     HandleVector<CommandBuffer> result;
     result.resize(count, m_device, *this);
 
-    const auto allocateInfo = commandBufferAllocateInfo(handle(), level, count);
+    const auto allocateInfo =
+        CommandBufferAllocateInfo{}.commandBufferCount(count).commandPool(handle()).level(level);
     ASSERT(vkAllocateCommandBuffers(m_device, &allocateInfo, result.handleData()) == VK_SUCCESS,
         "failed to allocate command buffer!");
 

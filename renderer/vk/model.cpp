@@ -1,5 +1,7 @@
 #include "model.hpp"
 
+#include "handles/command_buffer.hpp"
+
 namespace vk {
 
 Model::Model(Descriptor descriptor)

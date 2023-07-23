@@ -4,7 +4,6 @@
 #include "uniform_handle.hpp"
 
 #include "handles/command_buffer.hpp"
-#include "handles/creators.hpp"
 #include "handles/descriptor_pool.hpp"
 #include "handles/descriptor_set.hpp"
 #include "handles/descriptor_set_layout.hpp"
@@ -199,8 +198,8 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
             },
             m_createInfo.inputs[i]);
     }
-    
-    // TO DO: remove this cringe
+
+    //  TO DO: remove this cringe
 	constexpr int poolMultiplier = 100;
 
     std::vector<VkDescriptorSetLayout> layouts;
@@ -219,8 +218,9 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
                     .descriptorType(type)
                     .stageFlags(toShaderStageFlags(uniform.stage)));
 
-            if (auto iter = std::find_if(poolSizes.begin(), poolSizes.end(), [&](auto& x) {
-                return x.type() == type; }); iter != poolSizes.end())
+            if (auto iter = std::find_if(poolSizes.begin(), poolSizes.end(),
+                    [&](auto& x) { return x.type() == type; });
+                iter != poolSizes.end())
             {
 				iter->descriptorCount((iter->descriptorCount() + 1) * poolMultiplier);
 			}
@@ -231,12 +231,12 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
             }
         }
 
-         const auto& [iter, _] = m_setLayouts.emplace(set.first,
-             std::pair{ layouts.size(),
-                 handles::DescriptorSetLayout(m_context.device(),
-                     handles::DescriptorSetLayoutCreateInfo{}
-                         .bindingCount(setLayoutBindings.size())
-                         .pBindings(setLayoutBindings.data())) });
+        const auto& [iter, _] = m_setLayouts.emplace(set.first,
+            std::pair{ layouts.size(),
+                handles::DescriptorSetLayout(m_context.device(),
+                    handles::DescriptorSetLayoutCreateInfo{}
+                        .bindingCount(setLayoutBindings.size())
+                        .pBindings(setLayoutBindings.data())) });
         layouts.push_back(iter->second.second);
     }
 
@@ -255,7 +255,7 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
             .flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT));
 }
 
-Pipeline::~Pipeline() 
+Pipeline::~Pipeline()
 {
 	m_bindContexts.clear();
 	m_pool.reset();
@@ -287,14 +287,14 @@ std::weak_ptr<IPipeline::IBindContext> Pipeline::bindContext(const IUniformConta
     {
         void visit(UniformHandle& handle) override { result = &handle.descriptorBufferInfo; }
 
-        handles::DescriptorBufferInfo* result = nullptr;
+        DescriptorBufferInfo* result = nullptr;
     } bufferInfoVisitor;
 
     struct ImageInfoVisitor : public UniformHandleVisitor
     {
         void visit(UniformHandle& handle) override { result = &handle.descriptorImageInfo; }
 
-        handles::DescriptorImageInfo* result = nullptr;
+        DescriptorImageInfo* result = nullptr;
     } imageInfoVisitor;
 
     auto& [layoutId, layout] = m_setLayouts.at(container.id());
@@ -337,20 +337,20 @@ const handles::GraphicsPipeline& Pipeline::pipeline(const handles::RenderPass& r
     }
 
     handles::HandleVector<handles::ShaderModule> shaders;
-    std::vector<handles::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
+    std::vector<PipelineShaderStageCreateInfo> shaderStageCreateInfos;
 
     for (const auto& shaderInfo : m_createInfo.shaders)
     {
         shaders.emplace_back(m_context.device(), shaderInfo.path);
         shaderStageCreateInfos.push_back(
-            handles::PipelineShaderStageCreateInfo{}
+            PipelineShaderStageCreateInfo{}
                 .stage(toShaderStageFlags(shaderInfo.type))
                 .module(shaders.back())
                 .pName("main"));
     }
 
     const auto vertexInput =
-        handles::PipelineVertexInputStateCreateInfo()
+        PipelineVertexInputStateCreateInfo()
             .vertexBindingDescriptionCount(m_bindingDescriptions.size())
             .pVertexBindingDescriptions(m_bindingDescriptions.data())
             .vertexAttributeDescriptionCount(m_attributeDescriptions.size())

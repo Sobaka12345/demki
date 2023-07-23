@@ -58,8 +58,9 @@ std::shared_ptr<IModel> ResourceManager::createModel(
 
     stagingBuffer.memory().lock()->unmap();
 
-    stagingBuffer.copyTo(m_modelBuffers.back(), bufferCopy(verticesSize));
-    stagingBuffer.copyTo(m_indBuffers.back(), bufferCopy(indicesSize, verticesSize));
+    stagingBuffer.copyTo(m_modelBuffers.back(), BufferCopy{}.size(verticesSize));
+    stagingBuffer.copyTo(m_indBuffers.back(),
+        BufferCopy{}.size(indicesSize).srcOffset(verticesSize));
 
     return std::make_shared<Model>(Model::Descriptor{
         .vertices =
@@ -142,7 +143,7 @@ uint32_t ResourceManager::dynamicAlignment(uint32_t layoutSize) const
 std::shared_ptr<IUniformHandle> ResourceManager::uniformHandle(uint32_t layoutSize)
 {
     const uint32_t alignment = dynamicAlignment(layoutSize);
-    auto [ begin, end ]= m_uniformProviders.equal_range(alignment);
+    auto [begin, end] = m_uniformProviders.equal_range(alignment);
 
     if (begin == end)
     {

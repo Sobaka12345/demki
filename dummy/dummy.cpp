@@ -5,6 +5,7 @@
 #include <camera.hpp>
 #include <imodel.hpp>
 #include <renderable.hpp>
+#include <utils.hpp>
 
 static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
     Vertex3DColoredTextured{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
@@ -49,10 +50,9 @@ Dummy::Dummy()
 
     m_camera->setViewProjection(viewProjection);
 
-    m_model = context().resources().createModel(
-        vk::utils::fs::s_executablePath / "models" / "viking_room.obj");
+    m_model = context().resources().createModel(executablePath() / "models" / "viking_room.obj");
     m_texture = context().resources().createTexture(
-        { .path = vk::utils::fs::s_executablePath / "textures" / "viking_room.png" });
+        { .path = executablePath() / "textures" / "viking_room.png" });
 
     m_renderable = std::make_unique<Renderable>(context().resources());
     m_renderable->setModel(m_model);

@@ -1,5 +1,9 @@
 #include "memory.hpp"
 
+#include "device.hpp"
+
+#include <cstring>
+
 namespace vk { namespace handles {
 
 Memory::Mapped::Mapped(const Memory& memory, VkMemoryMapFlags flags, VkDeviceSize offset)
@@ -22,7 +26,7 @@ void Memory::Mapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
 
 void Memory::Mapped::sync(VkDeviceSize size, ptrdiff_t offset)
 {
-    const auto memoryRange = mappedMemoryRange(memory, offset, size);
+    const auto memoryRange = MappedMemoryRange{}.memory(memory).offset(offset).size(size);
     vkFlushMappedMemoryRanges(memory.device, 1, &memoryRange);
 }
 
@@ -32,11 +36,11 @@ void Memory::Mapped::writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t 
     sync(size, offset);
 }
 
-Memory::Memory(const Device& device, VkMemoryAllocateInfo allocInfo, VkHandleType* handlePtr)
+Memory::Memory(const Device& device, MemoryAllocateInfo allocInfo, VkHandleType* handlePtr)
     : Handle(handlePtr)
     , device(device)
-    , size(allocInfo.allocationSize)
-    , memoryType(allocInfo.memoryTypeIndex)
+    , size(allocInfo.allocationSize())
+    , memoryType(allocInfo.memoryTypeIndex())
 {
     ASSERT(create(vkAllocateMemory, device, &allocInfo, nullptr) == VK_SUCCESS);
 }

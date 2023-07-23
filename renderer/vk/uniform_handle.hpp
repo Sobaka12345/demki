@@ -1,6 +1,6 @@
 #pragma once
 
-#include "handles/creators.hpp"
+#include "vk/types.hpp"
 
 #include <iuniform_handle.hpp>
 
@@ -38,8 +38,8 @@ public:
     uint32_t alignment = 0;
 
     std::weak_ptr<handles::Memory> memory;
-    handles::DescriptorBufferInfo descriptorBufferInfo;
-    handles::DescriptorImageInfo descriptorImageInfo;
+    DescriptorBufferInfo descriptorBufferInfo;
+    DescriptorImageInfo descriptorImageInfo;
 };
 
 }    //  namespace vk

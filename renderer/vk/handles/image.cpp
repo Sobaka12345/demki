@@ -1,5 +1,7 @@
 #include "image.hpp"
 
+#include "device.hpp"
+
 namespace vk { namespace handles {
 
 Image::Image(Image&& other) noexcept
@@ -29,7 +31,6 @@ bool Image::bindMemory(uint32_t bindingOffset)
 {
     return vkBindImageMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
 }
-
 
 void Image::transitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
 {
@@ -75,6 +76,20 @@ void Image::transitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
 
     oneTimeCommand().pipelineBarrier(sourceStage, destinationStage, 0,
         std::span<VkImageMemoryBarrier, 1>(&barrier, 1));
+}
+
+std::weak_ptr<Memory> Image::allocateMemoryImpl(VkMemoryPropertyFlags properties)
+{
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(m_device, handle(), &memRequirements);
+
+    m_memory = std::make_shared<Memory>(m_device,
+        MemoryAllocateInfo{}
+            .allocationSize(memRequirements.size)
+            .memoryTypeIndex(findMemoryType(m_device.physicalDevice(),
+                memRequirements.memoryTypeBits, properties)));
+
+    return m_memory;
 }
 
 }}    //  namespace vk::handles

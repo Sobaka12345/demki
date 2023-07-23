@@ -8,7 +8,6 @@
 
 #include <memory>
 
-class RenderContext;
 class Window;
 
 namespace vk {

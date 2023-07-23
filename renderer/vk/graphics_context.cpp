@@ -11,19 +11,69 @@
 #include <render_context.hpp>
 #include <window.hpp>
 
-#include <limits>
-#include <fstream>
+#include <cstring>
 #include <iostream>
-#include <algorithm>
-#include <stdexcept>
-#include <functional>
-
-#include <boost/pfr.hpp>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 namespace vk {
+
+static bool requiredExtensionsSupported(const std::vector<const char*>& required)
+{
+    uint32_t systemExtensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &systemExtensionCount, nullptr);
+    std::vector<VkExtensionProperties> systemExtensions(systemExtensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &systemExtensionCount, systemExtensions.data());
+
+    for (auto& required : required)
+    {
+        bool exists = false;
+        for (auto& x : systemExtensions)
+        {
+            if (!std::strcmp(x.extensionName, required))
+            {
+                exists = true;
+                break;
+            }
+        }
+
+        if (exists == false)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool requiredValidationLayerSupported(const std::span<const char* const> required)
+{
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (auto& required : required)
+    {
+        bool exists = false;
+        for (auto& x : availableLayers)
+        {
+            if (!std::strcmp(x.layerName, required))
+            {
+                exists = true;
+                break;
+            }
+        }
+
+        if (exists == false)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -98,7 +148,7 @@ GraphicsContext::GraphicsContext(const Window& window)
 
     if (s_enableValidationLayers)
     {
-        ASSERT(utils::requiredValidationLayerSupported(GraphicsContext::s_validationLayers),
+        ASSERT(requiredValidationLayerSupported(GraphicsContext::s_validationLayers),
             "required validation layers are absent");
 
         createInfo.enabledLayerCount(s_validationLayers.size())
@@ -112,7 +162,7 @@ GraphicsContext::GraphicsContext(const Window& window)
     }
 
     const auto extensions = getRequiredExtensions();
-    ASSERT(utils::requiredExtensionsSupported(extensions), "required extensions are absent");
+    ASSERT(requiredExtensionsSupported(extensions), "required extensions are absent");
 
     createInfo.enabledExtensionCount(extensions.size()).ppEnabledExtensionNames(extensions.data());
 

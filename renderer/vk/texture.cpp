@@ -47,12 +47,19 @@ Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo
 
     m_image->transitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    const auto copyRegion = handles::bufferImageCopy(0,
-        0,
-        0,
-        handles::imageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1),
-        { 0, 0, 0 },
-        { static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1 });
+    const auto copyRegion =
+        BufferImageCopy{}
+            .bufferOffset(0)
+            .bufferImageHeight(0)
+            .bufferRowLength(0)
+            .imageSubresource(
+                ImageSubresourceLayers{}
+                    .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .baseArrayLayer(0)
+                    .layerCount(1)
+                    .mipLevel(0))
+            .imageOffset({ 0, 0, 0 })
+            .imageExtent({ static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1 });
 
     stagingBuffer.copyToImage(*m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegion);
 
@@ -67,7 +74,12 @@ Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo
             .viewType(VK_IMAGE_VIEW_TYPE_2D)
             .format(VK_FORMAT_R8G8B8A8_SRGB)
             .subresourceRange(
-                handles::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1)));
+                ImageSubresourceRange{}
+                    .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .baseArrayLayer(0)
+                    .layerCount(1)
+                    .baseMipLevel(0)
+                    .levelCount(1)));
 
     m_sampler = std::make_unique<handles::Sampler>(m_context.device(),
         handles::SamplerCreateInfo()

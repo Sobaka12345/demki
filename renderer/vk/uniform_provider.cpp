@@ -16,8 +16,7 @@ UniformProvider::UniformProvider(
               .sharingMode(VK_SHARING_MODE_EXCLUSIVE))
 {
     m_uniformHandles.resize(objectCount);
-    m_descriptorBufferInfo =
-        handles::DescriptorBufferInfo{}.buffer(m_buffer).offset(0).range(alignment);
+    m_descriptorBufferInfo = DescriptorBufferInfo{}.buffer(m_buffer).offset(0).range(alignment);
 
     m_buffer.allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT).lock()->map();
 }

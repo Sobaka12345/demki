@@ -1,7 +1,8 @@
 #pragma once
 
-#include "device.hpp"
-#include "utils.hpp"
+#include "handle.hpp"
+
+#include "vk/utils.hpp"
 
 namespace vk { namespace handles {
 
@@ -14,6 +15,8 @@ BEGIN_DECLARE_VKSTRUCT(ImageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_
     VKSTRUCT_PROPERTY(VkComponentMapping, components)
     VKSTRUCT_PROPERTY(VkImageSubresourceRange, subresourceRange)
 END_DECLARE_VKSTRUCT()
+
+class Device;
 
 class ImageView : public Handle<VkImageView>
 {

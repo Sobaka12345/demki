@@ -1,8 +1,11 @@
 #pragma once
 
-#include "utils.hpp"
+#include "handle.hpp"
+
+#include "vk/utils.hpp"
 
 #include <span>
+#include <optional>
 
 namespace vk { namespace handles {
 

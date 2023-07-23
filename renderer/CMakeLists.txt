@@ -12,7 +12,6 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/command_buffer.cpp
     vk/handles/command_pool.hpp
     vk/handles/command_pool.cpp
-    vk/handles/creators.hpp
     vk/handles/debug_utils_messenger.hpp
     vk/handles/debug_utils_messenger.cpp
     vk/handles/descriptor_set.hpp
@@ -57,7 +56,6 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/surface.cpp
     vk/handles/swapchain.hpp
     vk/handles/swapchain.cpp
-    vk/handles/utils.hpp
     vk/graphics_context.hpp
     vk/graphics_context.cpp
     vk/model.hpp
@@ -74,10 +72,12 @@ add_library(${PROJECT_NAME} STATIC
     vk/swapchain.cpp
     vk/texture.hpp
     vk/texture.cpp
+    vk/types.hpp
     vk/uniform_handle.hpp
     vk/uniform_handle.cpp
     vk/uniform_provider.hpp
     vk/uniform_provider.cpp
+    vk/utils.hpp
     assert.hpp
     camera.hpp
     camera.cpp
@@ -100,6 +100,7 @@ add_library(${PROJECT_NAME} STATIC
     render_context.hpp
     types.hpp
     update_timer.hpp
+    utils.hpp
     uniform.hpp
     uniform.cpp
     uniform_value.hpp

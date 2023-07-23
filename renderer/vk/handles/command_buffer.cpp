@@ -1,7 +1,6 @@
 #include "command_buffer.hpp"
 
 #include "command_pool.hpp"
-#include "creators.hpp"
 #include "descriptor_set.hpp"
 #include "graphics_pipeline.hpp"
 #include "pipeline_layout.hpp"
@@ -35,12 +34,13 @@ CommandBuffer::CommandBuffer(const Device& device,
     , m_device(device)
     , m_pool(pool)
 {
-    const auto allocateInfo = commandBufferAllocateInfo(pool, level, 1);
+    const auto allocateInfo =
+        CommandBufferAllocateInfo{}.commandPool(pool).level(level).commandBufferCount(1);
     ASSERT(create(vkAllocateCommandBuffers, device, &allocateInfo) == VK_SUCCESS,
         "failed to create CommandBuffer");
 }
 
-VkResult CommandBuffer::begin(VkCommandBufferBeginInfo beginInfo) const
+VkResult CommandBuffer::begin(CommandBufferBeginInfo beginInfo) const
 {
     return vkBeginCommandBuffer(handle(), &beginInfo);
 }

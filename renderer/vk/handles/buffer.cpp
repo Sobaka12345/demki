@@ -1,8 +1,7 @@
 #include "buffer.hpp"
-#include "creators.hpp"
-#include "image.hpp"
 
-#include <iostream>
+#include "device.hpp"
+#include "image.hpp"
 
 namespace vk { namespace handles {
 
@@ -54,6 +53,20 @@ void Buffer::copyToImage(
 {
     m_device.oneTimeCommand(GRAPHICS)().copyBufferToImage(handle(), dst, dstLayout,
         { &copyRegion, 1 });
+}
+
+std::weak_ptr<Memory> Buffer::allocateMemoryImpl(VkMemoryPropertyFlags properties)
+{
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(m_device, handle(), &memRequirements);
+
+    m_memory = std::make_shared<Memory>(m_device,
+        MemoryAllocateInfo{}
+            .allocationSize(memRequirements.size)
+            .memoryTypeIndex(findMemoryType(m_device.physicalDevice(),
+                memRequirements.memoryTypeBits, properties)));
+
+    return m_memory;
 }
 
 }}    //  namespace vk::handles

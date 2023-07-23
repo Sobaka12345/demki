@@ -1,5 +1,7 @@
 #include "image_view.hpp"
 
+#include "device.hpp"
+
 namespace vk { namespace handles {
 
 ImageView::ImageView(ImageView&& other) noexcept

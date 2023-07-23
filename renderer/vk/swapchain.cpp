@@ -2,7 +2,6 @@
 
 #include "graphics_context.hpp"
 
-#include "handles/creators.hpp"
 #include "handles/command_pool.hpp"
 #include "handles/queue.hpp"
 #include "handles/render_pass.hpp"
@@ -355,7 +354,12 @@ void Swapchain::create()
                 .viewType(VK_IMAGE_VIEW_TYPE_2D)
                 .format(m_swapchain->imageFormat())
                 .subresourceRange(
-                    handles::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1)));
+                    ImageSubresourceRange{}
+                        .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .baseArrayLayer(0)
+                        .layerCount(1)
+                        .baseMipLevel(0)
+                        .levelCount(1)));
     }
 
     m_depthImage = std::make_unique<handles::Image>(m_context.device(),
@@ -382,7 +386,12 @@ void Swapchain::create()
             .viewType(VK_IMAGE_VIEW_TYPE_2D)
             .format(m_depthFormat)
             .subresourceRange(
-                handles::imageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1)));
+                ImageSubresourceRange{}
+                    .aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT)
+                    .baseArrayLayer(0)
+                    .layerCount(1)
+                    .baseMipLevel(0)
+                    .levelCount(1)));
 }
 
 }    //  namespace vk

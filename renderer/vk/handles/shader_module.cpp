@@ -2,6 +2,8 @@
 
 #include "device.hpp"
 
+#include <utils.hpp>
+
 namespace vk { namespace handles {
 
 ShaderModule::ShaderModule(ShaderModule &&other)
@@ -11,7 +13,7 @@ ShaderModule::ShaderModule(ShaderModule &&other)
 
 ShaderModule::ShaderModule(
     const Device &device, std::filesystem::path path, VkHandleType *handlePtr)
-    : ShaderModule(device, utils::fs::readFile(path), handlePtr)
+    : ShaderModule(device, readFile(path), handlePtr)
 {}
 
 ShaderModule::ShaderModule(const Device &device, std::vector<char> code, VkHandleType *handlePtr)

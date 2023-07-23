@@ -1,5 +1,8 @@
+.vscode
+.cache
 build
 install
 build_env
 compile_commands.json
 CMakeUserPresets.json
+CMakeLists.txt.user

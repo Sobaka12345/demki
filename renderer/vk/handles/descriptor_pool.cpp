@@ -1,6 +1,5 @@
 #include "descriptor_pool.hpp"
 
-#include "creators.hpp"
 #include "device.hpp"
 #include "descriptor_set.hpp"
 #include "descriptor_set_layout.hpp"
@@ -29,7 +28,11 @@ DescriptorPool::~DescriptorPool()
 
 std::shared_ptr<DescriptorSet> DescriptorPool::allocateSet(const DescriptorSetLayout& layout)
 {
-    const auto allocInfo = descriptorSetAllocateInfo(handle(), layout.handlePtr(), 1);
+    const auto allocInfo =
+        DescriptorSetAllocateInfo{}
+            .descriptorPool(handle())
+            .pSetLayouts(layout.handlePtr())
+            .descriptorSetCount(1);
 
     auto iter = std::find_if(m_sets.begin(), m_sets.end(), [](const auto& x) {
         return x.expired();

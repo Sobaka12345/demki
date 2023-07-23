@@ -1,6 +1,5 @@
 #include "device.hpp"
 
-#include "utils.hpp"
 #include "command_pool.hpp"
 #include "../graphics_context.hpp"
 #include "queue.hpp"
@@ -14,6 +13,33 @@ namespace vk { namespace handles {
 const std::array<const char* const, 1> Device::s_deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
+
+Device::SwapChainSupportDetails Device::swapChainSupportDetails(VkPhysicalDevice physicalDevice,
+    VkSurfaceKHR surface)
+{
+    SwapChainSupportDetails details;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities);
+    uint32_t formatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+    if (formatCount)
+    {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount,
+            details.formats.data());
+    }
+
+    uint32_t presentModeCount = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+    if (presentModeCount)
+    {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount,
+            details.presentModes.data());
+    }
+
+    return details;
+}
 
 QueueFamilies::QueueFamilies()
 {
@@ -127,7 +153,11 @@ void Device::createLogicalDevice()
     const std::array<float, 1> queuePriorities{ 1.0f };
     for (uint32_t queueFamilyIndex : queueFamiliesSet)
     {
-        queueCreateInfos.push_back(deviceQueueCreateInfo(queueFamilyIndex, queuePriorities));
+        queueCreateInfos.push_back(
+            DeviceQueueCreateInfo{}
+                .queueFamilyIndex(queueFamilyIndex)
+                .pQueuePriorities(queuePriorities.data())
+                .queueCount(queuePriorities.size()));
     }
 
     const auto createInfo = GraphicsContext::s_enableValidationLayers ?
@@ -155,7 +185,7 @@ bool Device::isDeviceSuitable(VkPhysicalDevice device)
         return false;
     }
 
-    const auto swapChainSupportDetails = utils::swapChainSupportDetails(device, m_surface);
+    const auto swapChainSupportDetails = Device::swapChainSupportDetails(device, m_surface);
     const bool swapChainAdequate =
         !swapChainSupportDetails.formats.empty() && !swapChainSupportDetails.presentModes.empty();
 
@@ -205,7 +235,7 @@ std::weak_ptr<CommandPool> Device::commandPool(QueueFamilyType type) const
     {
         auto [res, _] = m_commandPools.emplace(std::pair{ familyIdx,
             std::make_shared<CommandPool>(*this,
-                commandPoolCreateInfo(familyIdx,
+                CommandPoolCreateInfo{}.queueFamilyIndex(familyIdx).flags(
                     VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)) });
         return res->second;
     }

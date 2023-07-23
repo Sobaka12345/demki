@@ -7,11 +7,17 @@
 
 namespace vk { namespace handles {
 
+BEGIN_DECLARE_VKSTRUCT(CommandPoolCreateInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkCommandPoolCreateFlags, flags)
+    VKSTRUCT_PROPERTY(uint32_t, queueFamilyIndex)
+END_DECLARE_VKSTRUCT()
+
 class CommandPool : public Handle<VkCommandPool>
 {
 public:
     CommandPool(
-        const Device& device, VkCommandPoolCreateInfo poolInfo, VkHandleType* handlePtr = nullptr);
+        const Device& device, CommandPoolCreateInfo poolInfo, VkHandleType* handlePtr = nullptr);
     CommandPool(CommandPool&& other) noexcept;
     CommandPool(const CommandPool& other) = delete;
     ~CommandPool();

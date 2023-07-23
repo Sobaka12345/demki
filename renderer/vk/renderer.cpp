@@ -3,7 +3,6 @@
 #include "graphics_context.hpp"
 #include "swapchain.hpp"
 
-#include "handles/creators.hpp"
 #include "handles/render_pass.hpp"
 
 #include <render_context.hpp>
@@ -61,7 +60,7 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
     target.accept(renderInfo);
 
     const auto colorAttachment =
-        handles::AttachmentDescription{}
+        AttachmentDescription{}
             .format(renderInfo.imageFormat)
             .samples(VK_SAMPLE_COUNT_1_BIT)
             .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
@@ -72,7 +71,7 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
             .finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     const auto depthAttachment =
-        handles::AttachmentDescription{}
+        AttachmentDescription{}
             .format(renderInfo.depthFormat)
             .samples(VK_SAMPLE_COUNT_1_BIT)
             .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
@@ -82,21 +81,21 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
             .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
             .finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-    const auto colorAttachmentRef = handles::AttachmentReference{}.attachment(0).layout(
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto colorAttachmentRef =
+        AttachmentReference{}.attachment(0).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-    const auto depthAttachmentRef = handles::AttachmentReference{}.attachment(1).layout(
+    const auto depthAttachmentRef = AttachmentReference{}.attachment(1).layout(
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
     const auto subpass =
-        handles::SubpassDescription{}
+        SubpassDescription{}
             .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .colorAttachmentCount(1)
             .pColorAttachments(&colorAttachmentRef)
             .pDepthStencilAttachment(&depthAttachmentRef);
 
     const auto dependency =
-        handles::SubpassDependency{}
+        SubpassDependency{}
             .srcSubpass(VK_SUBPASS_EXTERNAL)
             .dstSubpass(0)
             .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |

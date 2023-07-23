@@ -12,7 +12,9 @@ OneTimeCommand::OneTimeCommand(const Queue& queue, const CommandPool& pool)
 {
 	m_commandBuffer.setOwner(true);
 	m_commandBuffer.begin(
-        commandBufferBeginInfo(nullptr, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+        CommandBufferBeginInfo{}
+            .flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
+            .pInheritanceInfo(nullptr));
 }
 
 OneTimeCommand::OneTimeCommand(const Device& device, QueueFamilyType type, uint32_t queueIdx)

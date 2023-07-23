@@ -1,14 +1,27 @@
 #pragma once
 
-#include "device.hpp"
+#include "handle.hpp"
 
-#include <vulkan/vulkan.h>
-#include <list>
-#include <span>
+#include "vk/utils.hpp"
+
 #include <memory>
-#include <optional>
 
 namespace vk { namespace handles {
+
+BEGIN_DECLARE_VKSTRUCT(MappedMemoryRange, VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkDeviceMemory, memory)
+    VKSTRUCT_PROPERTY(VkDeviceSize, offset)
+    VKSTRUCT_PROPERTY(VkDeviceSize, size)
+END_DECLARE_VKSTRUCT()
+
+BEGIN_DECLARE_VKSTRUCT(MemoryAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkDeviceSize, allocationSize)
+    VKSTRUCT_PROPERTY(uint32_t, memoryTypeIndex)
+END_DECLARE_VKSTRUCT()
+
+class Device;
 
 struct Memory : public Handle<VkDeviceMemory>
 {
@@ -25,7 +38,7 @@ struct Memory : public Handle<VkDeviceMemory>
         VkDeviceSize offset;
     };
 
-    Memory(const Device& device, VkMemoryAllocateInfo size, VkHandleType* handlePtr = nullptr);
+    Memory(const Device& device, MemoryAllocateInfo size, VkHandleType* handlePtr = nullptr);
     Memory(Memory&& other);
     ~Memory();
 

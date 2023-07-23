@@ -1,7 +1,6 @@
 #pragma once
 
 #include "handles/buffer.hpp"
-#include "handles/creators.hpp"
 
 #include "uniform_handle.hpp"
 
@@ -25,7 +24,7 @@ private:
     const uint64_t m_resourceId;
     const uint32_t m_objectCount;
     const uint32_t m_alignment;
-    handles::DescriptorBufferInfo m_descriptorBufferInfo;
+    DescriptorBufferInfo m_descriptorBufferInfo;
 
     handles::Buffer m_buffer;
     std::vector<std::weak_ptr<UniformHandle>> m_uniformHandles;

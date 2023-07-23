@@ -1,11 +1,28 @@
 #pragma once
 
 #include "handle.hpp"
-#include "creators.hpp"
+
+#include "vk/utils.hpp"
 
 #include <vulkan/vulkan.h>
 
+#include <span>
+
 namespace vk { namespace handles {
+
+BEGIN_DECLARE_VKSTRUCT(CommandBufferAllocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
+    VKSTRUCT_PROPERTY(VkStructureType, sType)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkCommandPool, commandPool)
+    VKSTRUCT_PROPERTY(VkCommandBufferLevel, level)
+    VKSTRUCT_PROPERTY(uint32_t, commandBufferCount)
+END_DECLARE_VKSTRUCT()
+
+BEGIN_DECLARE_VKSTRUCT(CommandBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkCommandBufferUsageFlags, flags)
+    VKSTRUCT_PROPERTY(const VkCommandBufferInheritanceInfo*, pInheritanceInfo)
+END_DECLARE_VKSTRUCT()
 
 class Device;
 class CommandPool;
@@ -25,7 +42,9 @@ public:
         VkHandleType* handlePtr = nullptr);
     ~CommandBuffer();
 
-    VkResult begin(VkCommandBufferBeginInfo beginInfo = commandBufferBeginInfo(nullptr)) const;
+    VkResult begin(
+        CommandBufferBeginInfo beginInfo = CommandBufferBeginInfo{}.pInheritanceInfo(
+            nullptr)) const;
     VkResult end() const;
     VkResult reset(VkCommandBufferResetFlags flags = 0) const;
     void free() const;

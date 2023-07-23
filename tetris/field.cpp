@@ -2,6 +2,7 @@
 
 #include "figure.hpp"
 
+#include <utils.hpp>
 #include <renderable.hpp>
 #include <iresource_manager.hpp>
 
@@ -23,8 +24,8 @@ Field::Field(IResourceManager& resources)
     : m_resources(resources)
 {
     m_cube = resources.createModel(s_cubeVertices, s_cubeIndices);
-    m_cubeTexture = resources.createTexture(
-        { .path = vk::utils::fs::s_executablePath / "textures" / "roshi.jpg" });
+    m_cubeTexture =
+        resources.createTexture({ .path = executablePath() / "textures" / "roshi.jpg" });
 
     for (int32_t row = 0; row < m_blocks.size(); ++row)
     {

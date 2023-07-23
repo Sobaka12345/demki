@@ -1,0 +1,30 @@
+@startuml uniform
+
+class Uniforms {
+    vec3 Position
+}
+
+class Renderable {
+    Uniforms uniforms;
+
+    +void draw(const CommandBuffer&);
+    +void setModel(weak_ptr<Model>);
+    +void setPosition(vec3);
+}
+
+Renderable <-- Uniforms
+
+class "Factory<Renderable>" {
+    -Factory(const ResourceManager&);
+
+    +RenderablePtr spawn();
+}
+
+class ResourceManager {
+    +Factory<Renderable> createFactory<Renderable>();
+}
+
+ResourceManager ..> "Factory<Renderable>"
+"Factory<Renderable>" ..> Renderable
+
+@enduml
