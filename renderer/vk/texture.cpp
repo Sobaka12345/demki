@@ -129,7 +129,7 @@ std::shared_ptr<IUniformHandle> Texture::uniformHandle()
         handle->descriptorImageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             .imageView(*m_imageView)
             .sampler(*m_sampler);
-        handle->resourceId = 555;
+        handle->resourceId = id();
         m_handle = handle;
     }
 

@@ -1,11 +1,13 @@
 #pragma once
 
+#include "iresource.hpp"
+
 #include <filesystem>
 
 class RenderContext;
 class IUniformHandle;
 
-class ITexture
+class ITexture : public IResource
 {
 public:
     struct CreateInfo

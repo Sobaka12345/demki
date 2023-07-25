@@ -89,6 +89,7 @@ add_library(${PROJECT_NAME} STATIC
     irenderable.hpp
     irenderer.hpp
     irender_target.hpp
+    iresource.hpp
     iresource_manager.hpp
     iswapchain.hpp
     itexture.hpp

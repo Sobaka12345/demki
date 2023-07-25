@@ -2,13 +2,10 @@
 
 namespace vk {
 
-uint64_t UniformProvider::s_resourceCounter = 0;
-
 UniformProvider::UniformProvider(
     const handles::Device& device, uint32_t alignment, uint32_t objectCount)
     : m_objectCount(objectCount)
     , m_alignment(alignment)
-    , m_resourceId(s_resourceCounter++)
     , m_buffer(device,
           handles::BufferCreateInfo{}
               .size(alignment * objectCount)
@@ -37,7 +34,7 @@ std::shared_ptr<UniformHandle> UniformProvider::tryGetUniformHandle()
     }
 
     auto result = UniformHandle::create();
-    result->resourceId = m_resourceId;
+    result->resourceId = id();
     result->offset = index * alignment();
     result->memory = m_buffer.memory();
     result->alignment = alignment();
