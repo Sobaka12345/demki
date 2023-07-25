@@ -2,15 +2,16 @@
 
 #include <vulkan/vulkan.h>
 
-#include <array>
+#include <type_traits>
+#include <span>
 
 namespace std {
 template <typename Type>
-struct is_std_array : std::false_type
+struct is_std_span : std::false_type
 {};
 
 template <typename Item, std::size_t N>
-struct is_std_array<std::array<Item, N>> : std::true_type
+struct is_std_span<std::span<Item, N>> : std::true_type
 {};
 }
 
@@ -19,6 +20,8 @@ namespace vk {
 template <typename T, VkStructureType sTypeArg>
 struct VkStruct : public T
 {
+    using VkStructType = T;
+
     constexpr VkStruct(T structValue) noexcept
         : T{ structValue }
     {
@@ -30,6 +33,14 @@ struct VkStruct : public T
         static_assert(sizeof(VkStruct) == sizeof(T));
     }
 };
+
+template <typename T>
+concept IsVkStruct =
+    requires {
+        {
+            typename T::VkStructType{}
+            } -> std::convertible_to<T>;
+    };
 
 }    //  namespace vk
 
@@ -62,32 +73,62 @@ struct VkStruct : public T
 #define BEGIN_DECLARE_UNTYPED_VKSTRUCT(structName) \
     BEGIN_DECLARE_VKSTRUCT(structName, VK_STRUCTURE_TYPE_MAX_ENUM)
 
-#define VKSTRUCT_PROPERTY(type, name)                          \
-                                                               \
-private:                                                       \
-    template <typename T>                                      \
-    constexpr inline void _set##name(T value)                  \
-    {                                                          \
-        if constexpr (std::is_std_array<T>::value)             \
-            std::copy(value.begin(), value.end(), Base::name); \
-        else                                                   \
-            Base::name = value;                                \
-    }                                                          \
-                                                               \
-public:                                                        \
-    template <typename T = type>                               \
-    constexpr T name() const                                   \
-    {                                                          \
-        if constexpr (std::is_std_array<T>::value)             \
-        {                                                      \
-            return std::to_array<T::value_type>(Base::name);   \
-        }                                                      \
-        else                                                   \
-            return Base::name;                                 \
-    }                                                          \
-                                                               \
-    constexpr auto& name(type value)                           \
-    {                                                          \
-        _set##name(std::forward<type>(value));                 \
-        return *this;                                          \
+#define VKSTRUCT_PROPERTY(_type, name)                                                            \
+                                                                                                  \
+private:                                                                                          \
+    template <typename T>                                                                         \
+    constexpr inline void _set##name(T value)                                                     \
+    {                                                                                             \
+        if constexpr (std::is_std_span<T>::value)                                                 \
+            std::copy(value.begin(), value.end(), Base::name);                                    \
+        else                                                                                      \
+            Base::name = value;                                                                   \
+    }                                                                                             \
+                                                                                                  \
+public:                                                                                           \
+    template <typename T = _type>                                                                 \
+    constexpr                                                                                     \
+        typename std::enable_if<!std::is_std_span<T>::value, const std::remove_const_t<T>&>::type \
+        name() const                                                                              \
+    {                                                                                             \
+        if constexpr (IsVkStruct<T>)                                                              \
+        {                                                                                         \
+            return reinterpret_cast<const T&>(this->*(&Base::name));                              \
+        }                                                                                         \
+        else                                                                                      \
+            return Base::name;                                                                    \
+    }                                                                                             \
+                                                                                                  \
+    template <typename T = _type>                                                                 \
+    constexpr typename std::enable_if<std::is_std_span<T>::value,                                 \
+        std::span<const std::remove_const_t<typename T::value_type>, T::extent>>::type            \
+        name() const                                                                              \
+    {                                                                                             \
+        return { Base::name };                                                                    \
+    }                                                                                             \
+                                                                                                  \
+    template <typename T = _type>                                                                 \
+    constexpr typename std::enable_if<!std::is_std_span<T>::value, T&>::type name()               \
+    {                                                                                             \
+        if constexpr (IsVkStruct<T>)                                                              \
+        {                                                                                         \
+            return reinterpret_cast<T&>(this->*(&Base::name));                                    \
+        }                                                                                         \
+        else                                                                                      \
+            return Base::name;                                                                    \
+    }                                                                                             \
+                                                                                                  \
+    template <typename T = _type>                                                                 \
+    constexpr typename std::enable_if<std::is_std_span<T>::value,                                 \
+        std::span<std::remove_const_t<typename T::value_type>, T::extent>>::type                  \
+        name()                                                                                    \
+    {                                                                                             \
+        return { Base::name };                                                                    \
+    }                                                                                             \
+                                                                                                  \
+    template <typename T = _type>                                                                 \
+    constexpr auto& name(T&& value)                                                               \
+    {                                                                                             \
+        _set##name<_type>(std::forward<T>(value));                                                \
+        return *this;                                                                             \
     }

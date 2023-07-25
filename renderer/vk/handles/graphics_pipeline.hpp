@@ -83,7 +83,7 @@ BEGIN_DECLARE_VKSTRUCT(PipelineColorBlendStateCreateInfo,
     VKSTRUCT_PROPERTY(VkLogicOp, logicOp)
     VKSTRUCT_PROPERTY(uint32_t, attachmentCount)
     VKSTRUCT_PROPERTY(const VkPipelineColorBlendAttachmentState*, pAttachments)
-    VKSTRUCT_PROPERTY(std::array<float COMMA 4>, blendConstants)
+    VKSTRUCT_PROPERTY(std::span<const float COMMA 4>, blendConstants)
 END_DECLARE_VKSTRUCT()
 
 BEGIN_DECLARE_VKSTRUCT(PipelineDepthStencilStateCreateInfo,

@@ -24,7 +24,14 @@ public:
     virtual std::shared_ptr<IUniformHandle> uniformHandle() override;
 
 private:
+    void generateMipmaps();
+
+private:
     const GraphicsContext& m_context;
+
+    uint32_t m_mipLevels;
+    int m_width;
+    int m_height;
 
     std::shared_ptr<IUniformHandle> m_handle;
     std::unique_ptr<handles::Image> m_image;

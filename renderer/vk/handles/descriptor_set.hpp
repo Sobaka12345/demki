@@ -10,7 +10,6 @@
 namespace vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(DescriptorSetAllocateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO)
-    VKSTRUCT_PROPERTY(VkStructureType, sType)
     VKSTRUCT_PROPERTY(const void*, pNext)
     VKSTRUCT_PROPERTY(VkDescriptorPool, descriptorPool)
     VKSTRUCT_PROPERTY(uint32_t, descriptorSetCount)

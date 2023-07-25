@@ -1,6 +1,6 @@
 #pragma once
 
-#include "handle.hpp"
+#include "image.hpp"
 
 #include "vk/utils.hpp"
 
@@ -75,9 +75,15 @@ public:
     void pipelineBarrier(VkPipelineStageFlags srcStageMask,
         VkPipelineStageFlags dstStageMask,
         VkDependencyFlags dependencyFlags,
-        std::span<const VkImageMemoryBarrier> imageMemoryBarriers = {},
+        std::span<const ImageMemoryBarrier> imageMemoryBarriers = {},
         std::span<const VkMemoryBarrier> memoryBarriers = {},
         std::span<const VkBufferMemoryBarrier> bufferMemoryBarriers = {}) const;
+    void blitImage(VkImage srcImage,
+        VkImageLayout srcImageLayout,
+        VkImage dstImage,
+        VkImageLayout dstImageLayout,
+        std::span<const ImageBlit> regions,
+        VkFilter filter) const;
 
     void setViewports(
         uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const;

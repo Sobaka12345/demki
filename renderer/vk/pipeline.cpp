@@ -141,12 +141,14 @@ handles::GraphicsPipelineCreateInfo Pipeline::defaultPipeline()
             .dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO)
     };
 
+    static constexpr std::array blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f };
+
     static constexpr handles::PipelineColorBlendStateCreateInfo colorBlending =
         handles::PipelineColorBlendStateCreateInfo()
             .attachmentCount(colorBlendAttachments.size())
             .pAttachments(colorBlendAttachments.data())
             .logicOp(VK_LOGIC_OP_COPY)
-            .blendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
+            .blendConstants(blendConstants);
 
     return handles::GraphicsPipelineCreateInfo()
         .layout(VK_NULL_HANDLE)

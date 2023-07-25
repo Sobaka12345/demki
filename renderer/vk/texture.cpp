@@ -10,15 +10,21 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+namespace {
+constexpr auto s_imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+}
+
 namespace vk {
 
 Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo)
     : m_context(context)
 {
-    int texWidth, texHeight, texChannels;
-    stbi_uc *pixels = stbi_load(
-		createInfo.path.string().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
+    int texChannels;
+    stbi_uc *pixels = stbi_load(createInfo.path.string().c_str(), &m_width, &m_height, &texChannels,
+        STBI_rgb_alpha);
+    VkDeviceSize imageSize = m_width * m_height * 4;
+
+    m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1;
 
     ASSERT(pixels, "failed to load texture image!");
 
@@ -34,18 +40,29 @@ Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo
     m_image = std::make_unique<handles::Image>(m_context.device(),
         handles::ImageCreateInfo()
             .imageType(VK_IMAGE_TYPE_2D)
-            .extent({ static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1 })
-            .mipLevels(1)
+            .extent(
+                VkExtent3D{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height), 1 })
+            .mipLevels(m_mipLevels)
             .arrayLayers(1)
-            .format(VK_FORMAT_R8G8B8A8_SRGB)
+            .format(s_imageFormat)
             .tiling(VK_IMAGE_TILING_OPTIMAL)
             .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-            .usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+            .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                VK_IMAGE_USAGE_SAMPLED_BIT)
             .samples(VK_SAMPLE_COUNT_1_BIT)
             .sharingMode(VK_SHARING_MODE_EXCLUSIVE));
     m_image->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    m_image->transitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    const auto subresourceRange =
+        ImageSubresourceRange{}
+            .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+            .baseArrayLayer(0)
+            .layerCount(1)
+            .baseMipLevel(0)
+            .levelCount(m_mipLevels);
+
+    m_image->transitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        subresourceRange);
 
     const auto copyRegion =
         BufferImageCopy{}
@@ -58,13 +75,13 @@ Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo
                     .baseArrayLayer(0)
                     .layerCount(1)
                     .mipLevel(0))
-            .imageOffset({ 0, 0, 0 })
-            .imageExtent({ static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1 });
+            .imageOffset(VkOffset3D{ 0, 0, 0 })
+            .imageExtent(
+                VkExtent3D{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height), 1 });
 
     stagingBuffer.copyToImage(*m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegion);
 
-    m_image->transitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    generateMipmaps();
 
     stbi_image_free(pixels);
 
@@ -72,20 +89,17 @@ Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo
         handles::ImageViewCreateInfo()
             .image(*m_image)
             .viewType(VK_IMAGE_VIEW_TYPE_2D)
-            .format(VK_FORMAT_R8G8B8A8_SRGB)
-            .subresourceRange(
-                ImageSubresourceRange{}
-                    .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                    .baseArrayLayer(0)
-                    .layerCount(1)
-                    .baseMipLevel(0)
-                    .levelCount(1)));
+            .format(s_imageFormat)
+            .subresourceRange(subresourceRange));
 
     m_sampler = std::make_unique<handles::Sampler>(m_context.device(),
         handles::SamplerCreateInfo()
             .magFilter(VK_FILTER_LINEAR)
             .minFilter(VK_FILTER_LINEAR)
             .mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+            .minLod(0.0f)
+            .maxLod(m_mipLevels)
+            .mipLodBias(0.0f)
             .addressModeU(VK_SAMPLER_ADDRESS_MODE_REPEAT)
             .addressModeV(VK_SAMPLER_ADDRESS_MODE_REPEAT)
             .addressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT)
@@ -120,6 +134,92 @@ std::shared_ptr<IUniformHandle> Texture::uniformHandle()
     }
 
     return m_handle;
+}
+
+void Texture::generateMipmaps()
+{
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(m_context.device().physicalDevice(), s_imageFormat,
+        &formatProperties);
+
+    if (!(formatProperties.optimalTilingFeatures &
+            VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+    {
+        throw std::runtime_error("texture image format does not support linear blitting!");
+    }
+
+    auto oneTimeCommand = m_context.device().oneTimeCommand(handles::GRAPHICS);
+
+    auto barrier =
+        ImageMemoryBarrier{}
+            .image(*m_image)
+            .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+            .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+            .subresourceRange(
+                ImageSubresourceRange{}
+                    .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .baseArrayLayer(0)
+                    .layerCount(1)
+                    .levelCount(1));
+
+    int32_t mipWidth = m_width;
+    int32_t mipHeight = m_height;
+
+    for (uint32_t i = 1; i < m_mipLevels; i++)
+    {
+        barrier.oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+            .newLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+            .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+            .dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+            .subresourceRange()
+            .baseMipLevel(i - 1);
+
+        oneTimeCommand().pipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, std::span{ &barrier, 1 });
+
+        auto blit = ImageBlit{};
+        blit.srcOffsets()[0] = Offset3D{}.x(0).y(0).z(0);
+        blit.srcOffsets()[1] = Offset3D{}.x(mipWidth).y(mipHeight).z(1);
+        blit.dstOffsets()[0] = Offset3D{}.x(0).y(0).z(0);
+        blit.dstOffsets()[1] =
+            Offset3D{}.x(mipWidth > 1 ? mipWidth / 2 : 1).y(mipHeight > 1 ? mipHeight / 2 : 1).z(1);
+        blit.srcSubresource(
+                ImageSubresourceLayers{}
+                    .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .baseArrayLayer(0)
+                    .layerCount(1)
+                    .mipLevel(i - 1))
+            .dstSubresource(
+                ImageSubresourceLayers{}
+                    .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                    .baseArrayLayer(0)
+                    .layerCount(1)
+                    .mipLevel(i));
+
+        oneTimeCommand().blitImage(*m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, std::span{ &blit, 1 }, VK_FILTER_LINEAR);
+
+        barrier.oldLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+            .newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+            .srcAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+            .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+
+        oneTimeCommand().pipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, std::span{ &barrier, 1 });
+
+        if (mipWidth > 1) mipWidth /= 2;
+        if (mipHeight > 1) mipHeight /= 2;
+    }
+
+    barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+        .dstAccessMask(VK_ACCESS_SHADER_READ_BIT)
+        .oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        .newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        .subresourceRange()
+        .baseMipLevel(m_mipLevels - 1);
+
+    oneTimeCommand().pipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, std::span{ &barrier, 1 });
 }
 
 }    //  namespace vk

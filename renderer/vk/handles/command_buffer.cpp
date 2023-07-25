@@ -117,7 +117,7 @@ void CommandBuffer::copyBufferToImage(VkBuffer src,
 void CommandBuffer::pipelineBarrier(VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask,
     VkDependencyFlags dependencyFlags,
-    std::span<const VkImageMemoryBarrier> imageMemoryBarriers,
+    std::span<const ImageMemoryBarrier> imageMemoryBarriers,
     std::span<const VkMemoryBarrier> memoryBarriers,
     std::span<const VkBufferMemoryBarrier> bufferMemoryBarriers) const
 {
@@ -125,6 +125,17 @@ void CommandBuffer::pipelineBarrier(VkPipelineStageFlags srcStageMask,
         static_cast<uint32_t>(memoryBarriers.size()), memoryBarriers.data(),
         static_cast<uint32_t>(bufferMemoryBarriers.size()), bufferMemoryBarriers.data(),
         static_cast<uint32_t>(imageMemoryBarriers.size()), imageMemoryBarriers.data());
+}
+
+void CommandBuffer::blitImage(VkImage srcImage,
+    VkImageLayout srcImageLayout,
+    VkImage dstImage,
+    VkImageLayout dstImageLayout,
+    std::span<const ImageBlit> regions,
+    VkFilter filter) const
+{
+    vkCmdBlitImage(handle(), srcImage, srcImageLayout, dstImage, dstImageLayout, regions.size(),
+        regions.data(), filter);
 }
 
 void CommandBuffer::setViewports(
