@@ -1,6 +1,8 @@
 #include "texture.hpp"
 
 #include "graphics_context.hpp"
+#include "types.hpp"
+#include "uniform_handle.hpp"
 
 #include "handles/buffer.hpp"
 #include "handles/image.hpp"

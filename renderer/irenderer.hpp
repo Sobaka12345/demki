@@ -35,7 +35,7 @@ class IRenderer
 public:
     struct CreateInfo
     {
-        uint32_t samplesCount = 1;
+        Multisampling multisampling = Multisampling::MSA_1X;
     };
 
 public:

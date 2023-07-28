@@ -93,9 +93,10 @@ Swapchain::SwapChainSupportDetails Swapchain::supportDetails(VkPhysicalDevice ph
     return details;
 }
 
-Swapchain::Swapchain(const GraphicsContext& context, VkFormat depthFormat)
+Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _createInfo)
     : m_context(context)
-    , m_depthFormat(depthFormat)
+    , m_swapchainInfo(std::move(_createInfo))
+    , m_depthFormat(context.findDepthFormat())
     , m_currentFrame(0)
     , m_currentImage(0)
     , m_maxFramesInFlight(2)
@@ -260,12 +261,64 @@ void Swapchain::populateRenderContext(::RenderContext& context)
 {
     auto& specContext = get(context);
 
+    specContext.renderTarget = this;
+
     if (!m_swapChainFramebuffers.size())
     {
-        for (size_t i = 0; i < m_swapChainImageViews.size(); i++)
+        for (size_t i = 0; i < m_swapChainImageViews.size(); ++i)
         {
-            const std::array<VkImageView, 2> attachments = { m_swapChainImageViews[i],
-                *m_depthImageView };
+            //  TO DO: remove this cringe
+            std::vector<VkImageView> attachments;
+            attachments.reserve(specContext.renderPass->attachments().size());
+            for (auto attachment : specContext.renderPass->attachments())
+            {
+                if (attachment.finalLayout() == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+                {
+                    attachments.push_back(m_swapChainImageViews[i]);
+                }
+                else if (attachment.finalLayout() ==
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+                {
+                    if (!m_depthImage)
+                    {
+                        m_depthImage = std::make_unique<handles::Image>(m_context.device(),
+                            imageCreateInfo()
+                                .format(m_depthFormat)
+                                .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+                                .samples(attachment.samples()));
+                        m_depthImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+                        auto depthViewInfo =
+                            imageViewCreateInfo().image(*m_depthImage).format(m_depthFormat);
+                        depthViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                        m_depthImageView = std::make_unique<handles::ImageView>(m_context.device(),
+                            std::move(depthViewInfo));
+                    }
+                    attachments.push_back(*m_depthImageView);
+                }
+                else if (attachment.finalLayout() == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+                {
+                    if (!m_colorImage)
+                    {
+                        m_colorImage = std::make_unique<handles::Image>(m_context.device(),
+                            imageCreateInfo()
+                                .format(m_swapchain->imageFormat())
+                                .usage(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                                .samples(attachment.samples()));
+                        m_colorImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+                        auto colorViewInfo =
+                            imageViewCreateInfo()
+                                .image(*m_colorImage)
+                                .format(m_swapchain->imageFormat());
+                        colorViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                        m_colorImageView = std::make_unique<handles::ImageView>(m_context.device(),
+                            std::move(colorViewInfo));
+                    }
+                    attachments.push_back(*m_colorImageView);
+                }
+            }
 
             const auto framebufferInfo =
                 handles::FramebufferCreateInfo{}
@@ -314,6 +367,30 @@ handles::CommandBuffer& Swapchain::currentCommandBuffer()
     return m_commandBuffers[m_currentFrame];
 }
 
+handles::ImageCreateInfo Swapchain::imageCreateInfo() const
+{
+    return handles::ImageCreateInfo{}
+        .imageType(VK_IMAGE_TYPE_2D)
+        .extent(VkExtent3D{
+            m_swapchainCreateInfo.imageExtent().width,
+            m_swapchainCreateInfo.imageExtent().height,
+            1,
+        })
+        .mipLevels(1)
+        .arrayLayers(1)
+        .tiling(VK_IMAGE_TILING_OPTIMAL)
+        .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+        .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+}
+
+handles::ImageViewCreateInfo Swapchain::imageViewCreateInfo() const
+{
+    return handles::ImageViewCreateInfo()
+        .viewType(VK_IMAGE_VIEW_TYPE_2D)
+        .subresourceRange(
+            ImageSubresourceRange{}.baseArrayLayer(0).layerCount(1).baseMipLevel(0).levelCount(1));
+}
+
 void Swapchain::recreate()
 {
     while (m_context.window().iconified())
@@ -334,6 +411,8 @@ void Swapchain::destroy()
 {
     m_depthImageView.reset();
     m_depthImage.reset();
+    m_colorImageView.reset();
+    m_colorImage.reset();
 
     m_swapChainFramebuffers.clear();
     m_swapChainImageViews.clear();
@@ -348,50 +427,11 @@ void Swapchain::create()
 
     for (size_t i = 0; i < m_swapChainImages.size(); ++i)
     {
-        m_swapChainImageViews.emplace_back(m_swapchain->device(),
-            handles::ImageViewCreateInfo()
-                .image(m_swapChainImages[i])
-                .viewType(VK_IMAGE_VIEW_TYPE_2D)
-                .format(m_swapchain->imageFormat())
-                .subresourceRange(
-                    ImageSubresourceRange{}
-                        .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                        .baseArrayLayer(0)
-                        .layerCount(1)
-                        .baseMipLevel(0)
-                        .levelCount(1)));
+        auto createInfo =
+            imageViewCreateInfo().image(m_swapChainImages[i]).format(m_swapchain->imageFormat());
+        createInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        m_swapChainImageViews.emplace_back(m_swapchain->device(), std::move(createInfo));
     }
-
-    m_depthImage = std::make_unique<handles::Image>(m_context.device(),
-        handles::ImageCreateInfo{}
-            .imageType(VK_IMAGE_TYPE_2D)
-            .extent(VkExtent3D{
-                m_swapchainCreateInfo.imageExtent().width,
-                m_swapchainCreateInfo.imageExtent().height,
-                1,
-            })
-            .mipLevels(1)
-            .arrayLayers(1)
-            .format(m_depthFormat)
-            .tiling(VK_IMAGE_TILING_OPTIMAL)
-            .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-            .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-            .samples(VK_SAMPLE_COUNT_1_BIT)
-            .sharingMode(VK_SHARING_MODE_EXCLUSIVE));
-    m_depthImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    m_depthImageView = std::make_unique<handles::ImageView>(m_context.device(),
-        handles::ImageViewCreateInfo()
-            .image(*m_depthImage)
-            .viewType(VK_IMAGE_VIEW_TYPE_2D)
-            .format(m_depthFormat)
-            .subresourceRange(
-                ImageSubresourceRange{}
-                    .aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT)
-                    .baseArrayLayer(0)
-                    .layerCount(1)
-                    .baseMipLevel(0)
-                    .levelCount(1)));
 }
 
 }    //  namespace vk

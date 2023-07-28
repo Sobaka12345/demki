@@ -64,26 +64,6 @@ BEGIN_DECLARE_UNTYPED_VKSTRUCT(Offset3D)
     VKSTRUCT_PROPERTY(int32_t, z)
 END_DECLARE_VKSTRUCT()
 
-BEGIN_DECLARE_VKSTRUCT(PipelineShaderStageCreateInfo,
-    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
-    VKSTRUCT_PROPERTY(const void*, pNext)
-    VKSTRUCT_PROPERTY(VkPipelineShaderStageCreateFlags, flags)
-    VKSTRUCT_PROPERTY(VkShaderStageFlagBits, stage)
-    VKSTRUCT_PROPERTY(VkShaderModule, module)
-    VKSTRUCT_PROPERTY(const char*, pName)
-    VKSTRUCT_PROPERTY(const VkSpecializationInfo*, pSpecializationInfo)
-END_DECLARE_VKSTRUCT();
-
-BEGIN_DECLARE_VKSTRUCT(PipelineVertexInputStateCreateInfo,
-    VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)
-    VKSTRUCT_PROPERTY(const void*, pNext)
-    VKSTRUCT_PROPERTY(VkPipelineVertexInputStateCreateFlags, flags)
-    VKSTRUCT_PROPERTY(uint32_t, vertexBindingDescriptionCount)
-    VKSTRUCT_PROPERTY(const VkVertexInputBindingDescription*, pVertexBindingDescriptions)
-    VKSTRUCT_PROPERTY(uint32_t, vertexAttributeDescriptionCount)
-    VKSTRUCT_PROPERTY(const VkVertexInputAttributeDescription*, pVertexAttributeDescriptions)
-END_DECLARE_VKSTRUCT();
-
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(AttachmentDescription)
     VKSTRUCT_PROPERTY(VkAttachmentDescriptionFlags, flags)
     VKSTRUCT_PROPERTY(VkFormat, format)

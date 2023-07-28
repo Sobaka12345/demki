@@ -14,6 +14,7 @@
 namespace vk {
 
 class Renderer;
+class RenderContext;
 class GraphicsContext;
 
 class UniformHandle;
@@ -50,7 +51,7 @@ class Pipeline : public IPipeline
     };
 
 private:
-    static handles::GraphicsPipelineCreateInfo defaultPipeline();
+    static GraphicsPipelineCreateInfo defaultPipeline();
 
 public:
     Pipeline(const GraphicsContext& context, IPipeline::CreateInfo createInfo);
@@ -62,7 +63,7 @@ public:
     const handles::PipelineLayout& layout() const { return *m_pipelineLayout; }
 
 private:
-    const handles::GraphicsPipeline& pipeline(const handles::RenderPass& renderPass);
+    const handles::GraphicsPipeline& pipeline(const vk::RenderContext& context);
 
 private:
     const GraphicsContext& m_context;

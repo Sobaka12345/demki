@@ -6,8 +6,7 @@
 
 #include <span>
 
-namespace vk { namespace handles {
-
+namespace vk {
 
 BEGIN_DECLARE_VKSTRUCT(PipelineViewportStateCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO)
@@ -101,26 +100,55 @@ BEGIN_DECLARE_VKSTRUCT(PipelineDepthStencilStateCreateInfo,
     VKSTRUCT_PROPERTY(float, maxDepthBounds)
 END_DECLARE_VKSTRUCT()
 
+BEGIN_DECLARE_VKSTRUCT(PipelineTessellationStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineTessellationStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(uint32_t, patchControlPoints)
+END_DECLARE_VKSTRUCT()
+
+BEGIN_DECLARE_VKSTRUCT(PipelineShaderStageCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineShaderStageCreateFlags, flags)
+    VKSTRUCT_PROPERTY(VkShaderStageFlagBits, stage)
+    VKSTRUCT_PROPERTY(VkShaderModule, module)
+    VKSTRUCT_PROPERTY(const char*, pName)
+    VKSTRUCT_PROPERTY(const VkSpecializationInfo*, pSpecializationInfo)
+END_DECLARE_VKSTRUCT();
+
+BEGIN_DECLARE_VKSTRUCT(PipelineVertexInputStateCreateInfo,
+    VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkPipelineVertexInputStateCreateFlags, flags)
+    VKSTRUCT_PROPERTY(uint32_t, vertexBindingDescriptionCount)
+    VKSTRUCT_PROPERTY(const VkVertexInputBindingDescription*, pVertexBindingDescriptions)
+    VKSTRUCT_PROPERTY(uint32_t, vertexAttributeDescriptionCount)
+    VKSTRUCT_PROPERTY(const VkVertexInputAttributeDescription*, pVertexAttributeDescriptions)
+END_DECLARE_VKSTRUCT();
+
 BEGIN_DECLARE_VKSTRUCT(GraphicsPipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
     VKSTRUCT_PROPERTY(VkPipelineCreateFlags, flags)
     VKSTRUCT_PROPERTY(uint32_t, stageCount)
-    VKSTRUCT_PROPERTY(const VkPipelineShaderStageCreateInfo*, pStages)
-    VKSTRUCT_PROPERTY(const VkPipelineVertexInputStateCreateInfo*, pVertexInputState)
-    VKSTRUCT_PROPERTY(const VkPipelineInputAssemblyStateCreateInfo*, pInputAssemblyState)
-    VKSTRUCT_PROPERTY(const VkPipelineTessellationStateCreateInfo*, pTessellationState)
-    VKSTRUCT_PROPERTY(const VkPipelineViewportStateCreateInfo*, pViewportState)
-    VKSTRUCT_PROPERTY(const VkPipelineRasterizationStateCreateInfo*, pRasterizationState)
-    VKSTRUCT_PROPERTY(const VkPipelineMultisampleStateCreateInfo*, pMultisampleState)
-    VKSTRUCT_PROPERTY(const VkPipelineDepthStencilStateCreateInfo*, pDepthStencilState)
-    VKSTRUCT_PROPERTY(const VkPipelineColorBlendStateCreateInfo*, pColorBlendState)
-    VKSTRUCT_PROPERTY(const VkPipelineDynamicStateCreateInfo*, pDynamicState)
+    VKSTRUCT_PROPERTY(const PipelineShaderStageCreateInfo*, pStages)
+    VKSTRUCT_PROPERTY(const PipelineVertexInputStateCreateInfo*, pVertexInputState)
+    VKSTRUCT_PROPERTY(const PipelineInputAssemblyStateCreateInfo*, pInputAssemblyState)
+    VKSTRUCT_PROPERTY(const PipelineTessellationStateCreateInfo*, pTessellationState)
+    VKSTRUCT_PROPERTY(const PipelineViewportStateCreateInfo*, pViewportState)
+    VKSTRUCT_PROPERTY(const PipelineRasterizationStateCreateInfo*, pRasterizationState)
+    VKSTRUCT_PROPERTY(const PipelineMultisampleStateCreateInfo*, pMultisampleState)
+    VKSTRUCT_PROPERTY(const PipelineDepthStencilStateCreateInfo*, pDepthStencilState)
+    VKSTRUCT_PROPERTY(const PipelineColorBlendStateCreateInfo*, pColorBlendState)
+    VKSTRUCT_PROPERTY(const PipelineDynamicStateCreateInfo*, pDynamicState)
     VKSTRUCT_PROPERTY(VkPipelineLayout, layout)
     VKSTRUCT_PROPERTY(VkRenderPass, renderPass)
     VKSTRUCT_PROPERTY(uint32_t, subpass)
     VKSTRUCT_PROPERTY(VkPipeline, basePipelineHandle)
     VKSTRUCT_PROPERTY(int32_t, basePipelineIndex)
 END_DECLARE_VKSTRUCT()
+
+namespace handles {
 
 class Device;
 
@@ -145,4 +173,5 @@ private:
 	VkPipelineCache m_cache;
 };
 
-}}    //  namespace vk::handles
+}    //  namespace handles
+}    //  namespace vk

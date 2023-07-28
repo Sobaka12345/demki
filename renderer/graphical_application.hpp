@@ -1,5 +1,6 @@
 #pragma once
 
+#include "irender_target.hpp"
 #include "igraphics_context.hpp"
 
 #include "window.hpp"
@@ -7,7 +8,6 @@
 #include <memory>
 #include <ratio>
 
-class IRenderTarget;
 class ISwapchain;
 class Renderer;
 

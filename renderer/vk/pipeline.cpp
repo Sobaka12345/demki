@@ -1,6 +1,7 @@
 #include "pipeline.hpp"
 
 #include "graphics_context.hpp"
+#include "renderer.hpp"
 #include "uniform_handle.hpp"
 
 #include "handles/command_buffer.hpp"
@@ -79,28 +80,28 @@ void Pipeline::BindContext::bind(::RenderContext& context, const IUniformContain
         offsets);
 }
 
-handles::GraphicsPipelineCreateInfo Pipeline::defaultPipeline()
+GraphicsPipelineCreateInfo Pipeline::defaultPipeline()
 {
     static constexpr std::array<VkDynamicState, 2> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR,
     };
 
-    static constexpr handles::PipelineDynamicStateCreateInfo dynamicState =
-        handles::PipelineDynamicStateCreateInfo()
+    static constexpr PipelineDynamicStateCreateInfo dynamicState =
+        PipelineDynamicStateCreateInfo()
             .dynamicStateCount(dynamicStates.size())
             .pDynamicStates(dynamicStates.data());
 
-    static constexpr handles::PipelineViewportStateCreateInfo viewportState =
-        handles::PipelineViewportStateCreateInfo().viewportCount(1).scissorCount(1);
+    static constexpr PipelineViewportStateCreateInfo viewportState =
+        PipelineViewportStateCreateInfo().viewportCount(1).scissorCount(1);
 
-    static constexpr handles::PipelineInputAssemblyStateCreateInfo inputAssembly =
-        handles::PipelineInputAssemblyStateCreateInfo()
+    static constexpr PipelineInputAssemblyStateCreateInfo inputAssembly =
+        PipelineInputAssemblyStateCreateInfo()
             .topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .primitiveRestartEnable(VK_FALSE);
 
-    static constexpr handles::PipelineRasterizationStateCreateInfo rasterizer =
-        handles::PipelineRasterizationStateCreateInfo()
+    static constexpr PipelineRasterizationStateCreateInfo rasterizer =
+        PipelineRasterizationStateCreateInfo()
             .depthClampEnable(VK_FALSE)
             .rasterizerDiscardEnable(VK_FALSE)
             .polygonMode(VK_POLYGON_MODE_FILL)
@@ -112,17 +113,8 @@ handles::GraphicsPipelineCreateInfo Pipeline::defaultPipeline()
             .depthBiasConstantFactor(0.0f)
             .depthBiasSlopeFactor(0.0f);
 
-    static constexpr handles::PipelineMultisampleStateCreateInfo multisampling =
-        handles::PipelineMultisampleStateCreateInfo()
-            .sampleShadingEnable(VK_FALSE)
-            .rasterizationSamples(VK_SAMPLE_COUNT_1_BIT)
-            .minSampleShading(1.0f)
-            .pSampleMask(nullptr)
-            .alphaToCoverageEnable(VK_FALSE)
-            .alphaToOneEnable(VK_FALSE);
-
-    static constexpr handles::PipelineDepthStencilStateCreateInfo depthStencil =
-        handles::PipelineDepthStencilStateCreateInfo()
+    static constexpr PipelineDepthStencilStateCreateInfo depthStencil =
+        PipelineDepthStencilStateCreateInfo()
             .depthTestEnable(VK_TRUE)
             .depthWriteEnable(VK_TRUE)
             .depthCompareOp(VK_COMPARE_OP_LESS)
@@ -130,7 +122,7 @@ handles::GraphicsPipelineCreateInfo Pipeline::defaultPipeline()
             .stencilTestEnable(VK_FALSE);
 
     static constexpr std::array colorBlendAttachments = {
-        handles::PipelineColorBlendAttachmentState()
+        PipelineColorBlendAttachmentState()
             .colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                 VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
             .colorBlendOp(VK_BLEND_OP_ADD)
@@ -143,14 +135,14 @@ handles::GraphicsPipelineCreateInfo Pipeline::defaultPipeline()
 
     static constexpr std::array blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-    static constexpr handles::PipelineColorBlendStateCreateInfo colorBlending =
-        handles::PipelineColorBlendStateCreateInfo()
+    static constexpr PipelineColorBlendStateCreateInfo colorBlending =
+        PipelineColorBlendStateCreateInfo()
             .attachmentCount(colorBlendAttachments.size())
             .pAttachments(colorBlendAttachments.data())
             .logicOp(VK_LOGIC_OP_COPY)
             .blendConstants(blendConstants);
 
-    return handles::GraphicsPipelineCreateInfo()
+    return GraphicsPipelineCreateInfo()
         .layout(VK_NULL_HANDLE)
         .renderPass(VK_NULL_HANDLE)
         .pStages(nullptr)
@@ -160,7 +152,6 @@ handles::GraphicsPipelineCreateInfo Pipeline::defaultPipeline()
         .pTessellationState(nullptr)
         .pViewportState(&viewportState)
         .pRasterizationState(&rasterizer)
-        .pMultisampleState(&multisampling)
         .pColorBlendState(&colorBlending)
         .pDynamicState(&dynamicState)
         .pDepthStencilState(&depthStencil)
@@ -175,10 +166,10 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
     : m_context(_context)
     , m_createInfo(std::move(createInfo))
 {
-    m_bindingDescriptions.resize(m_createInfo.inputs.size());
-    m_attributeDescriptions.reserve(m_createInfo.inputs.size() * 3);
+    m_bindingDescriptions.resize(m_createInfo.inputs().size());
+    m_attributeDescriptions.reserve(m_createInfo.inputs().size() * 3);
 
-    for (uint32_t i = 0; i < m_createInfo.inputs.size(); ++i)
+    for (uint32_t i = 0; i < m_createInfo.inputs().size(); ++i)
     {
         std::visit(
             [&](auto& val) {
@@ -198,7 +189,7 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
                     });
                 });
             },
-            m_createInfo.inputs[i]);
+            m_createInfo.inputs()[i]);
     }
 
     //  TO DO: remove this cringe
@@ -206,7 +197,7 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
 
     std::vector<VkDescriptorSetLayout> layouts;
     std::vector<handles::DescriptorPoolSize> poolSizes;
-    for (auto& set : m_createInfo.uniformSets)
+    for (auto& set : m_createInfo.uniformContainers())
     {
         std::vector<handles::DescriptorSetLayoutBinding> setLayoutBindings;
         auto span = set.second;
@@ -266,7 +257,7 @@ Pipeline::~Pipeline()
 void Pipeline::bind(::RenderContext& context)
 {
     auto& specContext = get(context);
-    specContext.commandBuffer->bindPipeline(pipeline(*specContext.renderPass));
+    specContext.commandBuffer->bindPipeline(pipeline(specContext));
     specContext.pipeline = this;
 }
 
@@ -331,9 +322,9 @@ std::weak_ptr<IPipeline::IBindContext> Pipeline::bindContext(const IUniformConta
     return result;
 }
 
-const handles::GraphicsPipeline& Pipeline::pipeline(const handles::RenderPass& renderPass)
+const handles::GraphicsPipeline& Pipeline::pipeline(const RenderContext& context)
 {
-    if (auto el = m_pipelines.find(&renderPass); el != m_pipelines.end())
+    if (auto el = m_pipelines.find(context.renderPass); el != m_pipelines.end())
     {
         return el->second;
     }
@@ -341,7 +332,7 @@ const handles::GraphicsPipeline& Pipeline::pipeline(const handles::RenderPass& r
     handles::HandleVector<handles::ShaderModule> shaders;
     std::vector<PipelineShaderStageCreateInfo> shaderStageCreateInfos;
 
-    for (const auto& shaderInfo : m_createInfo.shaders)
+    for (const auto& shaderInfo : m_createInfo.shaders())
     {
         shaders.emplace_back(m_context.device(), shaderInfo.path);
         shaderStageCreateInfos.push_back(
@@ -351,6 +342,16 @@ const handles::GraphicsPipeline& Pipeline::pipeline(const handles::RenderPass& r
                 .pName("main"));
     }
 
+    PipelineMultisampleStateCreateInfo multisampling =
+        PipelineMultisampleStateCreateInfo()
+            .sampleShadingEnable(
+                m_createInfo.sampleShading() == SampleShading::SS_0_PERCENT ? VK_FALSE : VK_TRUE)
+            .rasterizationSamples(context.renderer->sampleCount())
+            .minSampleShading(toVkSampleShadingCoefficient(m_createInfo.sampleShading()))
+            .pSampleMask(nullptr)
+            .alphaToCoverageEnable(VK_FALSE)
+            .alphaToOneEnable(VK_FALSE);
+
     const auto vertexInput =
         PipelineVertexInputStateCreateInfo()
             .vertexBindingDescriptionCount(m_bindingDescriptions.size())
@@ -358,10 +359,11 @@ const handles::GraphicsPipeline& Pipeline::pipeline(const handles::RenderPass& r
             .vertexAttributeDescriptionCount(m_attributeDescriptions.size())
             .pVertexAttributeDescriptions(m_attributeDescriptions.data());
 
-    auto [newEl, _] = m_pipelines.emplace(&renderPass,
+    auto [newEl, _] = m_pipelines.emplace(context.renderPass,
         handles::GraphicsPipeline{ m_context.device(), VK_NULL_HANDLE,
             defaultPipeline()
-                .renderPass(renderPass)
+                .pMultisampleState(&multisampling)
+                .renderPass(*context.renderPass)
                 .layout(*m_pipelineLayout)
                 .stageCount(shaderStageCreateInfos.size())
                 .pStages(shaderStageCreateInfos.data())

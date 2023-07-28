@@ -1,5 +1,8 @@
 #pragma once
 
+#include <assert.hpp>
+#include <types.hpp>
+
 #include <vulkan/vulkan.h>
 
 #include <type_traits>
@@ -16,6 +19,39 @@ struct is_std_span<std::span<Item, N>> : std::true_type
 }
 
 namespace vk {
+
+inline VkSampleCountFlagBits toVkSampleFlagBits(Multisampling sampleCount)
+{
+    switch (sampleCount)
+    {
+        case Multisampling::MSA_64X: return VK_SAMPLE_COUNT_64_BIT;
+        case Multisampling::MSA_32X: return VK_SAMPLE_COUNT_32_BIT;
+        case Multisampling::MSA_16X: return VK_SAMPLE_COUNT_16_BIT;
+        case Multisampling::MSA_8X: return VK_SAMPLE_COUNT_8_BIT;
+        case Multisampling::MSA_4X: return VK_SAMPLE_COUNT_4_BIT;
+        case Multisampling::MSA_2X: return VK_SAMPLE_COUNT_2_BIT;
+        case Multisampling::MSA_1X: return VK_SAMPLE_COUNT_1_BIT;
+    }
+
+    ASSERT(false, "sample count not declared");
+    return VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
+}
+
+inline float toVkSampleShadingCoefficient(SampleShading sampleShading)
+{
+    switch (sampleShading)
+    {
+        case SampleShading::SS_0_PERCENT: return 0.0f;
+        case SampleShading::SS_20_PERCENT: return 0.2f;
+        case SampleShading::SS_40_PERCENT: return 0.4f;
+        case SampleShading::SS_60_PERCENT: return 0.6f;
+        case SampleShading::SS_80_PERCENT: return 0.8f;
+        case SampleShading::SS_100_PERCENT: return 1.0f;
+    }
+
+    ASSERT(false, "sample shading not declared");
+    return VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
+}
 
 template <typename T, VkStructureType sTypeArg>
 struct VkStruct : public T

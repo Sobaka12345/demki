@@ -257,7 +257,7 @@ std::shared_ptr<IRenderer> GraphicsContext::createRenderer(IRenderer::CreateInfo
 std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(
     ISwapchain::CreateInfo createInfo) const
 {
-    return std::make_shared<Swapchain>(*this, findDepthFormat());
+    return std::make_shared<Swapchain>(*this, std::move(createInfo));
 }
 
 IResourceManager& GraphicsContext::resources() const
@@ -268,6 +268,39 @@ IResourceManager& GraphicsContext::resources() const
 void GraphicsContext::waitIdle()
 {
     m_device->waitIdle();
+}
+
+Multisampling GraphicsContext::maxSampleCount() const
+{
+    VkSampleCountFlags counts =
+        m_device->physicalDeviceProperties().limits.framebufferColorSampleCounts &
+        m_device->physicalDeviceProperties().limits.framebufferDepthSampleCounts;
+    if (counts & VK_SAMPLE_COUNT_64_BIT)
+    {
+        return Multisampling::MSA_64X;
+    }
+    if (counts & VK_SAMPLE_COUNT_32_BIT)
+    {
+        return Multisampling::MSA_32X;
+    }
+    if (counts & VK_SAMPLE_COUNT_16_BIT)
+    {
+        return Multisampling::MSA_16X;
+    }
+    if (counts & VK_SAMPLE_COUNT_8_BIT)
+    {
+        return Multisampling::MSA_8X;
+    }
+    if (counts & VK_SAMPLE_COUNT_4_BIT)
+    {
+        return Multisampling::MSA_4X;
+    }
+    if (counts & VK_SAMPLE_COUNT_2_BIT)
+    {
+        return Multisampling::MSA_2X;
+    }
+
+    return Multisampling::MSA_1X;
 }
 
 }    //  namespace vk

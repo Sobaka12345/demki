@@ -1,8 +1,10 @@
 #include "device.hpp"
 
 #include "command_pool.hpp"
-#include "../graphics_context.hpp"
 #include "queue.hpp"
+
+#include "vk/graphics_context.hpp"
+#include "vk/types.hpp"
 
 #include <vector>
 #include <functional>
@@ -160,8 +162,13 @@ void Device::createLogicalDevice()
                 .queueCount(queuePriorities.size()));
     }
 
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE;
+
     const auto createInfo = GraphicsContext::s_enableValidationLayers ?
         DeviceCreateInfo{}
+            .pEnabledFeatures(&deviceFeatures)
             .pQueueCreateInfos(queueCreateInfos.data())
             .queueCreateInfoCount(queueCreateInfos.size())
             .enabledExtensionCount(s_deviceExtensions.size())
@@ -169,6 +176,7 @@ void Device::createLogicalDevice()
             .enabledLayerCount(GraphicsContext::s_validationLayers.size())
             .ppEnabledLayerNames(GraphicsContext::s_validationLayers.data()) :
         DeviceCreateInfo{}
+            .pEnabledFeatures(&deviceFeatures)
             .pQueueCreateInfos(queueCreateInfos.data())
             .queueCreateInfoCount(queueCreateInfos.size())
             .enabledExtensionCount(s_deviceExtensions.size())

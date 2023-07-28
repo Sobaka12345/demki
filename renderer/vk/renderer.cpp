@@ -23,14 +23,13 @@ struct RenderInfoVisitor : public ::RenderInfoVisitor
 
 Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createInfo)
     : m_context(context)
-{
-    //  TO DO CREATE INFO
-    (void)createInfo;
-}
+    , m_multisampling(toVkSampleFlagBits(createInfo.multisampling))
+{}
 
 ::RenderContext Renderer::start(IRenderTarget& target)
 {
-    ::RenderContext result = vk::RenderContext{ .renderPass = &renderPass(target) };
+    ::RenderContext result =
+        vk::RenderContext{ .renderer = this, .renderPass = &renderPass(target) };
 
     target.populateRenderContext(result);
     const auto& kek = get(result);
@@ -59,40 +58,69 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
     RenderInfoVisitor renderInfo;
     target.accept(renderInfo);
 
-    const auto colorAttachment =
+    std::vector<VkAttachmentDescription> attachments;
+    std::optional<vk::AttachmentReference> colorAttachmentRef;
+    std::optional<vk::AttachmentReference> depthAttachmentRef;
+    std::optional<vk::AttachmentReference> colorAttachmentResolveRef;
+
+    attachments.emplace_back(
+        //  color attachment
         AttachmentDescription{}
             .format(renderInfo.imageFormat)
-            .samples(VK_SAMPLE_COUNT_1_BIT)
+            .samples(m_multisampling)
             .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
             .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
             .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
             .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
             .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-            .finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+            .finalLayout(m_multisampling == VK_SAMPLE_COUNT_1_BIT ?
+                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR :
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+    colorAttachmentRef.emplace(
+        AttachmentReference{}.attachment(0).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
-    const auto depthAttachment =
+    attachments.emplace_back(
+        //  depth attachment =
         AttachmentDescription{}
             .format(renderInfo.depthFormat)
-            .samples(VK_SAMPLE_COUNT_1_BIT)
+            .samples(m_multisampling)
             .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
             .storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
             .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
             .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
             .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-            .finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            .finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+    depthAttachmentRef.emplace(AttachmentReference{}.attachment(1).layout(
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
 
-    const auto colorAttachmentRef =
-        AttachmentReference{}.attachment(0).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    const auto depthAttachmentRef = AttachmentReference{}.attachment(1).layout(
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    if (m_multisampling > VK_SAMPLE_COUNT_1_BIT)
+    {
+        attachments.emplace_back(
+            //  color attachment resolve
+            AttachmentDescription{}
+                .format(renderInfo.imageFormat)
+                .samples(VK_SAMPLE_COUNT_1_BIT)
+                .loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
+                .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                .finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
+        colorAttachmentResolveRef.emplace(
+            AttachmentReference{}.attachment(2).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+    }
 
     const auto subpass =
         SubpassDescription{}
             .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .colorAttachmentCount(1)
-            .pColorAttachments(&colorAttachmentRef)
-            .pDepthStencilAttachment(&depthAttachmentRef);
+            .pColorAttachments(
+                colorAttachmentRef.has_value() ? &colorAttachmentRef.value() : nullptr)
+            .pDepthStencilAttachment(
+                depthAttachmentRef.has_value() ? &depthAttachmentRef.value() : nullptr)
+            .pResolveAttachments(colorAttachmentResolveRef.has_value() ?
+                    &colorAttachmentResolveRef.value() :
+                    nullptr);
 
     const auto dependency =
         SubpassDependency{}
@@ -105,8 +133,6 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT)
             .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
-
-    std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
 
     m_renderPasses.emplace(&target,
         handles::RenderPass{ device(),
@@ -124,6 +150,11 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
 const handles::Device& Renderer::device() const
 {
     return m_context.device();
+}
+
+VkSampleCountFlagBits Renderer::sampleCount() const
+{
+    return m_multisampling;
 }
 
 handles::RenderPass& Renderer::renderPass(IRenderTarget& target)

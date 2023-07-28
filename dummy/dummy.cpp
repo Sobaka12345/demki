@@ -24,7 +24,7 @@ static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0,
 Dummy::Dummy()
 {
     m_timer.setIntervalMS(100);
-    m_renderer = context().createRenderer({});
+    m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
 
     m_pipeline = context().createPipeline(
         IPipeline::CreateInfo{}
@@ -68,7 +68,7 @@ void Dummy::update(int64_t dt)
     if (m_timer.timePassed(dt))
     {
         m_renderable->setPosition(
-            glm::rotate(m_renderable->position(), 0.1f, glm::vec3(0.f, 1.f, 0.f)));
+            glm::rotate(m_renderable->position(), 0.01f, glm::vec3(0.f, 1.f, 0.f)));
     }
 }
 
@@ -78,8 +78,8 @@ void Dummy::draw(IRenderTarget &renderTarget)
     context.setViewport({
         .x = 0,
         .y = 0,
-        .width = static_cast<float>(clientWidth()),
-        .height = static_cast<float>(clientHeight()),
+        .width = static_cast<float>(renderTarget.width()),
+        .height = static_cast<float>(renderTarget.height()),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
@@ -87,8 +87,8 @@ void Dummy::draw(IRenderTarget &renderTarget)
     context.setScissors({
         .x = 0,
         .y = 0,
-        .width = clientWidth(),
-        .height = clientHeight(),
+        .width = renderTarget.width(),
+        .height = renderTarget.height(),
     });
 
     m_pipeline->bind(context);

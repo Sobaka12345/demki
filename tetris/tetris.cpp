@@ -54,7 +54,7 @@ Tetris::Tetris()
             .addUniformContainer<Camera>()
             .addUniformContainer<Renderable>());
 
-    m_renderer = context().createRenderer({});
+    m_renderer = context().createRenderer({ .multisampling = Multisampling::MSA_1X });
 
     m_field = std::make_shared<Field>(context().resources());
     m_field->flushRowsAndSpawnFigure();

@@ -62,6 +62,7 @@ add_library(${PROJECT_NAME} STATIC
     vk/model.cpp
     vk/pipeline.hpp
     vk/pipeline.cpp
+    vk/render_target.hpp
     vk/renderer.hpp
     vk/renderer.cpp
     vk/render_context.hpp

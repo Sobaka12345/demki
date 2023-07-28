@@ -2,7 +2,7 @@
 
 #include "handle.hpp"
 
-#include "vk/utils.hpp"
+#include "vk/types.hpp"
 
 namespace vk { namespace handles {
 
@@ -39,8 +39,11 @@ public:
         const Device& device, RenderPassCreateInfo createInfo, VkHandleType* handlePtr = nullptr);
     ~RenderPass();
 
+    std::span<const AttachmentDescription> attachments();
+
 private:
     const Device& m_device;
+    std::vector<AttachmentDescription> m_attachments;
 };
 
 }}    //  namespace vk::handles

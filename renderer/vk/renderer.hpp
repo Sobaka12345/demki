@@ -22,12 +22,14 @@ public:
     virtual IRenderer& addRenderTarget(IRenderTarget& target) override;
 
     const handles::Device& device() const;
+    VkSampleCountFlagBits sampleCount() const;
 
 private:
     handles::RenderPass& renderPass(IRenderTarget& target);
 
 private:
     const GraphicsContext& m_context;
+    VkSampleCountFlagBits m_multisampling;
     std::map<const IRenderTarget*, handles::RenderPass> m_renderPasses;
 };
 

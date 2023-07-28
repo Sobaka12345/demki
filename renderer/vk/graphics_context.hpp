@@ -49,17 +49,20 @@ public:
 
     virtual void waitIdle() override;
 
+    virtual Multisampling maxSampleCount() const override;
+
     ResourceManager& resources();
 
     const handles::Surface& surface() const;
     const handles::Device& device() const;
     const Window& window() const;
 
+    VkFormat findDepthFormat() const;
+
 private:
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
         VkImageTiling tiling,
         VkFormatFeatureFlags features) const;
-    VkFormat findDepthFormat() const;
     bool hasStencilComponent(VkFormat format) const;
 
 private:

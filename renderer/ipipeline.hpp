@@ -1,5 +1,6 @@
 #pragma once
 
+#include "types.hpp"
 #include "uniform.hpp"
 #include "vertex.hpp"
 
@@ -36,30 +37,55 @@ public:
         std::filesystem::path path;
     };
 
-    struct CreateInfo
+    class CreateInfo
     {
+    public:
         template <IsUniformContainer T>
         CreateInfo& addUniformContainer()
         {
-            uniformSets.push_back({ T::sId(), T::sLayout() });
+            m_uniformContainers.push_back({ T::sId(), T::sLayout() });
             return *this;
         }
+
+        const auto& uniformContainers() const { return m_uniformContainers; }
+
+        auto& uniformContainers() { return m_uniformContainers; }
 
         CreateInfo& addShader(ShaderInfo shaderInfo)
         {
-            shaders.push_back(shaderInfo);
+            m_shaders.push_back(shaderInfo);
             return *this;
         }
+
+        const auto& shaders() const { return m_shaders; }
+
+        auto& shaders() { return m_shaders; }
 
         CreateInfo& addInput(InputType input)
         {
-            inputs.push_back(input);
+            m_inputs.push_back(input);
             return *this;
         }
 
-        std::vector<InputType> inputs;
-        std::vector<ShaderInfo> shaders;
-        std::vector<std::pair<uint32_t, std::span<const UniformBinding>>> uniformSets;
+        const auto& inputs() const { return m_inputs; }
+
+        auto& inputs() { return m_inputs; }
+
+        CreateInfo& sampleShading(SampleShading value)
+        {
+            m_sampleShading = value;
+            return *this;
+        }
+
+        const auto& sampleShading() const { return m_sampleShading; }
+
+        auto& sampleShading() { return m_sampleShading; }
+
+    private:
+        SampleShading m_sampleShading = SampleShading::SS_0_PERCENT;
+        std::vector<InputType> m_inputs;
+        std::vector<ShaderInfo> m_shaders;
+        std::vector<std::pair<uint32_t, std::span<const UniformBinding>>> m_uniformContainers;
     };
 
     struct IBindContext

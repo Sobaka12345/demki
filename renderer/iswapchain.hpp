@@ -1,11 +1,13 @@
 #pragma once
 
-#include "irender_target.hpp"
+#include <types.hpp>
 
 #include <cstdint>
 #include <functional>
 
-class ISwapchain : public IRenderTarget
+class IRenderTarget;
+
+class ISwapchain
 {
 public:
     struct CreateInfo
@@ -14,6 +16,8 @@ public:
 public:
     virtual ~ISwapchain() {}
 
+    virtual uint32_t width() const = 0;
+    virtual uint32_t height() const = 0;
     virtual void setDrawCallback(std::function<void(IRenderTarget&)> callback) = 0;
     virtual void present() = 0;
 };

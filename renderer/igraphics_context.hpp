@@ -3,8 +3,8 @@
 #include <ipipeline.hpp>
 #include <irenderer.hpp>
 #include <iswapchain.hpp>
-
 #include <iresource_manager.hpp>
+#include <types.hpp>
 
 class IGraphicsContext
 {
@@ -15,6 +15,8 @@ public:
         ISwapchain::CreateInfo createInfo) const = 0;
 
     virtual IResourceManager& resources() const = 0;
+
+    virtual Multisampling maxSampleCount() const = 0;
 
     virtual void waitIdle() = 0;
 

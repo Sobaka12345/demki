@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pipeline.hpp"
-#include "uniform_handle.hpp"
 
 #include <uniform.hpp>
 #include <types.hpp>
@@ -10,12 +9,15 @@
 
 namespace vk {
 
+class RenderTarget;
+
 namespace handles {
 
 class CommandBuffer;
 class Framebuffer;
 class PipelineLayout;
 class RenderPass;
+class Renderer;
 
 }
 
@@ -28,6 +30,9 @@ struct RenderContext
     Pipeline* pipeline = nullptr;
     handles::Framebuffer* framebuffer = nullptr;
     handles::CommandBuffer* commandBuffer = nullptr;
+    RenderTarget* renderTarget = nullptr;
+
+    Renderer* const renderer = nullptr;
     handles::RenderPass* const renderPass = nullptr;
 };
 

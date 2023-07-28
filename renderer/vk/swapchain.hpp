@@ -1,5 +1,7 @@
 #pragma once
 
+#include "render_target.hpp"
+
 #include "handles/fence.hpp"
 #include "handles/semaphore.hpp"
 #include "handles/swapchain.hpp"
@@ -20,7 +22,9 @@ namespace handles {
 class Surface;
 }
 
-class Swapchain : public ISwapchain
+class Swapchain
+    : public ISwapchain
+    , public RenderTarget
 {
     struct SwapChainSupportDetails
     {
@@ -39,7 +43,7 @@ class Swapchain : public ISwapchain
         VkSurfaceKHR surface);
 
 public:
-    Swapchain(const GraphicsContext& context, VkFormat depthFormat);
+    Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo createInfo);
     ~Swapchain();
 
     virtual void setDrawCallback(std::function<void(IRenderTarget&)> callback) override;
@@ -53,6 +57,7 @@ public:
 
     VkFormat imageFormat() const;
     VkFormat depthFormat() const;
+    VkSampleCountFlagBits sampleCount() const;
 
 private:
     void recreate();
@@ -62,11 +67,18 @@ private:
     handles::Framebuffer& currentFramebuffer();
     handles::CommandBuffer& currentCommandBuffer();
 
+    handles::ImageCreateInfo imageCreateInfo() const;
+    handles::ImageViewCreateInfo imageViewCreateInfo() const;
+
 private:
     const GraphicsContext& m_context;
+    ISwapchain::CreateInfo m_swapchainInfo;
     VkFormat m_depthFormat;
     handles::SwapchainCreateInfoKHR m_swapchainCreateInfo;
 
+
+    std::unique_ptr<handles::Image> m_colorImage;
+    std::unique_ptr<handles::ImageView> m_colorImageView;
     std::unique_ptr<handles::Image> m_depthImage;
     std::unique_ptr<handles::ImageView> m_depthImageView;
     std::unique_ptr<handles::Swapchain> m_swapchain;
@@ -78,6 +90,7 @@ private:
     uint32_t m_currentImage;
     int m_currentFrame;
     int m_maxFramesInFlight;
+
     handles::HandleVector<handles::CommandBuffer> m_commandBuffers;
     handles::HandleVector<handles::Semaphore> m_imageAvailableSemaphores;
     handles::HandleVector<handles::Semaphore> m_renderFinishedSemaphores;
