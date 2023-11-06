@@ -136,15 +136,15 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
         imageCount = supportDetails.capabilities.maxImageCount;
     }
 
-    static std::span<const uint32_t> queueFamilyIndices = {};
+    static std::vector<uint32_t> queueFamilyIndices = {};
     VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     if (m_context.device().queueFamilies()[handles::GRAPHICS] !=
         m_context.device().queueFamilies()[handles::PRESENT])
     {
         sharingMode = VK_SHARING_MODE_CONCURRENT;
-        queueFamilyIndices = { m_context.device().queueFamilies().begin(),
-            m_context.device().queueFamilies().end() };
+        queueFamilyIndices = { m_context.device().queueFamilies()[handles::GRAPHICS],
+            m_context.device().queueFamilies()[handles::PRESENT] };
     }
 
     m_swapchainCreateInfo =

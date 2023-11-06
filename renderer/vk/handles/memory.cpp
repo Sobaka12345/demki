@@ -26,8 +26,20 @@ void Memory::Mapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
 
 void Memory::Mapped::sync(VkDeviceSize size, ptrdiff_t offset)
 {
-    const auto memoryRange = MappedMemoryRange{}.memory(memory).offset(offset).size(size);
-    vkFlushMappedMemoryRanges(memory.device, 1, &memoryRange);
+    const auto atomSize = memory.device.physicalDeviceProperties().limits.nonCoherentAtomSize;
+
+    //  TO DO: reorganize memory flushing
+    if (size < atomSize) size = atomSize;
+    else if (auto rem = size % atomSize; size > atomSize && size < memory.size && rem != 0)
+    {
+        size = size - rem + atomSize;
+    }
+
+    if (auto rem = offset % atomSize; rem != 0) offset = offset - rem;
+
+    const auto range = MappedMemoryRange{}.memory(memory).offset(offset).size(size);
+
+    vkFlushMappedMemoryRanges(memory.device, 1, &range);
 }
 
 void Memory::Mapped::writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset)
