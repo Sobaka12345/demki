@@ -7,7 +7,7 @@
 class RenderContext;
 class IUniformHandle;
 
-class ITexture : public IResource
+class ITexture : virtual public IResource
 {
 public:
     struct CreateInfo

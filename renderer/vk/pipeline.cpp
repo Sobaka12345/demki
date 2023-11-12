@@ -2,7 +2,6 @@
 
 #include "graphics_context.hpp"
 #include "renderer.hpp"
-#include "uniform_handle.hpp"
 
 #include "handles/command_buffer.hpp"
 #include "handles/descriptor_pool.hpp"
@@ -46,6 +45,7 @@ VkShaderStageFlagBits toShaderStageFlags(IPipeline::ShaderType type)
     {
         case UniformStage::VERTEX: return VK_SHADER_STAGE_VERTEX_BIT;
         case UniformStage::FRAGMENT: return VK_SHADER_STAGE_FRAGMENT_BIT;
+        case UniformStage::COMPUTE: return VK_SHADER_STAGE_COMPUTE_BIT;
         default: ASSERT(false, "unknown shader type");
     }
 
@@ -59,6 +59,7 @@ VkDescriptorType toDescriptorType(UniformType type)
         case UniformType::DYNAMIC: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         case UniformType::STATIC: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         case UniformType::SAMPLER: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        case UniformType::STORAGE: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         default: ASSERT(false, "unknown descriptor type");
     };
 
@@ -69,12 +70,23 @@ void Pipeline::BindContext::bind(::RenderContext& context, const IUniformContain
 {
     auto& specContext = get(context);
     const auto uniforms = container.dynamicUniforms();
-
-    std::vector<uint32_t> offsets(uniforms.size());
-    std::transform(uniforms.begin(), uniforms.end(), offsets.begin(), [](const auto& descriptor) {
+    std::vector<uint32_t> offsets(uniforms.size(), 0);
+    std::for_each(uniforms.begin(), uniforms.end(), [](auto& descriptor) {
         DASSERT(!descriptor.handle.expired(), "handle is expired or has not been initialized");
-        return descriptor.handle.lock()->resourceOffset();
+        struct ResourceIdVisitor : public UniformHandleVisitor
+        {
+            void visit(UniformHandle& handle) override { handle.assureUBOCount(2); }
+        } visitor;
+        descriptor.handle.lock()->accept(visitor);
     });
+    //    std::vector<uint32_t> offsets(uniforms.size());
+    //    std::transform(uniforms.begin(), uniforms.end(), offsets.begin(), [](const auto&
+    //    descriptor) {
+    //        DASSERT(!descriptor.handle.expired(), "handle is expired or has not been
+    //        initialized"); return descriptor.handle.lock()->resourceOffset();
+    //    });
+
+    //  TO DO: RETURN DYNAMIC OFFSETS
 
     specContext.commandBuffer->bindDescriptorSet(specContext.pipeline->layout(), setId, *set,
         offsets);
@@ -185,7 +197,6 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
                         .format = attrubuteFormat(subVal),
                         .offset = static_cast<uint32_t>(
                             reinterpret_cast<int8_t*>(&subVal) - reinterpret_cast<int8_t*>(&val)),
-
                     });
                 });
             },
@@ -193,7 +204,7 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
     }
 
     //  TO DO: remove this cringe
-	constexpr int poolMultiplier = 100;
+    constexpr int poolMultiplier = 10000;
 
     std::vector<VkDescriptorSetLayout> layouts;
     std::vector<handles::DescriptorPoolSize> poolSizes;
@@ -263,12 +274,20 @@ void Pipeline::bind(::RenderContext& context)
 
 std::weak_ptr<IPipeline::IBindContext> Pipeline::bindContext(const IUniformContainer& container)
 {
+    struct ResourceIdVisitor : public UniformHandleVisitor
+    {
+        void visit(UniformHandle& handle) override { result = &handle.currentDescriptor()->id; }
+
+        UBODescriptor::Id* result = nullptr;
+    } resourceIdVisitor;
+
     std::span descriptors = container.uniforms();
-    std::set<uint64_t> keySet;
+    std::set<UBODescriptor::Id> keySet;
     std::transform(descriptors.begin(), descriptors.end(), std::inserter(keySet, keySet.begin()),
-        [](const auto& x) {
+        [&resourceIdVisitor](const auto& x) {
             DASSERT(!x.handle.expired(), "descriptor handle is expired or was not initialized");
-            return x.handle.lock()->resource();
+            x.handle.lock()->accept(resourceIdVisitor);
+            return *resourceIdVisitor.result;
         });
 
     if (auto iter = m_bindContexts.find(keySet); iter != m_bindContexts.end())
@@ -278,14 +297,20 @@ std::weak_ptr<IPipeline::IBindContext> Pipeline::bindContext(const IUniformConta
 
     struct BufferInfoVisitor : public UniformHandleVisitor
     {
-        void visit(UniformHandle& handle) override { result = &handle.descriptorBufferInfo; }
+        void visit(UniformHandle& handle) override
+        {
+            result = &handle.currentDescriptor()->descriptorBufferInfo;
+        }
 
         DescriptorBufferInfo* result = nullptr;
     } bufferInfoVisitor;
 
     struct ImageInfoVisitor : public UniformHandleVisitor
     {
-        void visit(UniformHandle& handle) override { result = &handle.descriptorImageInfo; }
+        void visit(UniformHandle& handle) override
+        {
+            result = &handle.currentDescriptor()->descriptorImageInfo;
+        }
 
         DescriptorImageInfo* result = nullptr;
     } imageInfoVisitor;

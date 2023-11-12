@@ -2,6 +2,8 @@
 
 #include <itexture.hpp>
 
+#include "uniform_resource.hpp"
+
 #include <memory>
 
 namespace vk {
@@ -14,16 +16,21 @@ class ImageView;
 class Sampler;
 }
 
-class Texture : public ITexture
+class Texture
+    : public ITexture
+    , public UniformResource
 {
 public:
     Texture(const GraphicsContext& context, ITexture::CreateInfo createInfo);
     ~Texture();
 
     virtual void bind(::RenderContext& context) override;
+    virtual std::shared_ptr<UBODescriptor> fetchUBODescriptor() override;
     virtual std::shared_ptr<IUniformHandle> uniformHandle() override;
 
 private:
+    virtual void freeUBODescriptor(const UBODescriptor& descriptor) override;
+
     void generateMipmaps();
 
 private:

@@ -11,7 +11,9 @@ class ISwapchain
 {
 public:
     struct CreateInfo
-    {};
+    {
+        uint32_t framesInFlight = 2;
+    };
 
 public:
     virtual ~ISwapchain() {}

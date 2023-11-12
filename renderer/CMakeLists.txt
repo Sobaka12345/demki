@@ -74,10 +74,14 @@ add_library(${PROJECT_NAME} STATIC
     vk/texture.hpp
     vk/texture.cpp
     vk/types.hpp
+	vk/ubo_descriptor.hpp
+	vk/ubo_descriptor.cpp
+	vk/uniform_resource.hpp
+	vk/uniform_resource.cpp
     vk/uniform_handle.hpp
     vk/uniform_handle.cpp
-    vk/uniform_provider.hpp
-    vk/uniform_provider.cpp
+	vk/uniform_allocator.hpp
+	vk/uniform_allocator.cpp
     vk/utils.hpp
     assert.hpp
     camera.hpp
@@ -95,6 +99,8 @@ add_library(${PROJECT_NAME} STATIC
     iswapchain.hpp
     itexture.hpp
     iuniform_handle.hpp
+	particles.hpp
+	particles.cpp
     renderable.hpp
     renderable.cpp
     renderable_pack.hpp

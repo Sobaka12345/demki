@@ -31,22 +31,12 @@ struct IUniformHandle
     virtual void accept(UniformHandleVisitor& visitor) = 0;
     virtual void accept(UniformHandleVisitor& visitor) const = 0;
 
-    virtual uint64_t resource() const = 0;
-    virtual uint32_t resourceOffset() const = 0;
-
     virtual void write(const void* src, uint32_t layoutSize) = 0;
-    virtual void sync(uint32_t layoutSize) = 0;
 
     template <typename T>
     void write(const T* src)
     {
         write(src, sizeof(T));
-    }
-
-    template <typename T>
-    void sync()
-    {
-        sync(sizeof(T));
     }
 };
 

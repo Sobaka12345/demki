@@ -11,6 +11,8 @@ enum class UniformID : int32_t
     CAMERA = 0,
     POSITION = 1,
     SAMPLER = 2,
+    PARTICLES_BEFORE = 3,
+    PARTICLES_NOW = 4,
     USER,
     MAX = 100
 };
@@ -20,14 +22,16 @@ enum class UniformType
     INVALID = -1,
     STATIC = 0,
     DYNAMIC,
-    SAMPLER
+    SAMPLER,
+    STORAGE
 };
 
 enum class UniformStage
 {
     INVALID = -1,
     VERTEX,
-    FRAGMENT
+    FRAGMENT,
+    COMPUTE
 };
 
 struct UniformBinding

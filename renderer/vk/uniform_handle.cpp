@@ -6,39 +6,44 @@
 
 namespace vk {
 
-UniformHandle::UniformHandle() {}
+UniformHandle::UniformHandle(UniformResource& uniformAllocator)
+    : m_uniformAllocator(uniformAllocator)
+{
+    assureUBOCount(1);
+    m_currentDescriptor = m_descriptors.begin();
+}
 
 UniformHandle::~UniformHandle() {}
 
 void UniformHandle::write(const void* src, uint32_t layoutSize)
 {
-    if (!memory.expired())
+    if (!currentDescriptor()->memory.expired())
     {
-        memory.lock()->mapped->write(src, layoutSize, offset);
+        nextDescriptor();
+        currentDescriptor()->memory.lock()->mapped->write(src, layoutSize,
+            currentDescriptor()->descriptorBufferInfo.offset());
     }
 }
 
-void UniformHandle::sync(uint32_t layoutSize)
+void UniformHandle::assureUBOCount(uint32_t requiredCount)
 {
-    if (!memory.expired())
-    {
-        memory.lock()->mapped->sync(layoutSize, offset);
-    }
+    while (m_descriptors.size() < requiredCount)
+        m_descriptors.emplace_back(m_uniformAllocator.fetchUBODescriptor());
 }
 
-uint32_t UniformHandle::resourceOffset() const
+std::shared_ptr<UBODescriptor> UniformHandle::currentDescriptor()
 {
-    return offset;
+    return *m_currentDescriptor;
 }
 
-uint64_t UniformHandle::resource() const
+void UniformHandle::nextDescriptor()
 {
-    return resourceId;
+    if (++m_currentDescriptor == m_descriptors.end()) m_currentDescriptor = m_descriptors.begin();
 }
 
-std::shared_ptr<UniformHandle> UniformHandle::create()
+std::shared_ptr<UniformHandle> UniformHandle::create(UniformResource& allocator)
 {
-    return std::shared_ptr<UniformHandle>{new UniformHandle};
+    return std::shared_ptr<UniformHandle>{ new UniformHandle(allocator) };
 }
 
 }    //  namespace vk

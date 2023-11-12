@@ -55,6 +55,7 @@ public:
     virtual uint32_t width() const override;
     virtual uint32_t height() const override;
 
+    int maxFramesInFlight() const;
     VkFormat imageFormat() const;
     VkFormat depthFormat() const;
     VkSampleCountFlagBits sampleCount() const;

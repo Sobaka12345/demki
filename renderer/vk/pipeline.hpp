@@ -1,6 +1,7 @@
 #pragma once
 
 #include "uniform.hpp"
+#include "uniform_handle.hpp"
 
 #include "handles/descriptor_set.hpp"
 #include "handles/descriptor_set_layout.hpp"
@@ -29,13 +30,13 @@ class Pipeline : public IPipeline
 {
     struct SetHasher
     {
-        size_t operator()(const std::set<uint64_t>& e) const
+        size_t operator()(const std::set<UBODescriptor::Id>& e) const
         {
             size_t result = 0;
             uint64_t pow = 1;
-            for (uint64_t el : e)
+            for (UBODescriptor::Id el : e)
             {
-                result += el * pow;
+                result += el.resourceId * pow + el.descriptorId * pow * 2 + el.bufferId * pow * 3;
                 pow *= 10;
             }
 
@@ -69,7 +70,8 @@ private:
     const GraphicsContext& m_context;
 
     std::unique_ptr<handles::DescriptorPool> m_pool;
-    std::unordered_map<std::set<uint64_t>, std::shared_ptr<BindContext>, SetHasher> m_bindContexts;
+    std::unordered_map<std::set<UBODescriptor::Id>, std::shared_ptr<BindContext>, SetHasher>
+        m_bindContexts;
     std::unordered_map<uint32_t, std::pair<uint32_t, handles::DescriptorSetLayout>> m_setLayouts;
 
     std::unique_ptr<handles::PipelineLayout> m_pipelineLayout;

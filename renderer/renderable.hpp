@@ -44,11 +44,7 @@ public:
     virtual std::weak_ptr<ITexture> texture() const override;
     virtual void setTexture(std::weak_ptr<ITexture> texture) override;
 
-    void setPosition(glm::mat4 position)
-    {
-        m_position.set(std::move(position));
-        m_position.sync();
-    }
+    void setPosition(glm::mat4 position) { m_position.set(std::move(position)); }
 
     glm::mat4 position() const { return m_position.get(); }
 

@@ -123,15 +123,23 @@ Texture::~Texture()
 
 void Texture::bind(::RenderContext &context) {}
 
+std::shared_ptr<UBODescriptor> Texture::fetchUBODescriptor()
+{
+    auto result = UniformResource::fetchUBODescriptor();
+    result->descriptorImageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        .imageView(*m_imageView)
+        .sampler(*m_sampler);
+
+    return result;
+}
+
+void Texture::freeUBODescriptor(const UBODescriptor &descriptor) {}
+
 std::shared_ptr<IUniformHandle> Texture::uniformHandle()
 {
     if (!m_handle)
     {
-        auto handle = UniformHandle::create();
-        handle->descriptorImageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-            .imageView(*m_imageView)
-            .sampler(*m_sampler);
-        handle->resourceId = id();
+        auto handle = UniformHandle::create(*this);
         m_handle = handle;
     }
 

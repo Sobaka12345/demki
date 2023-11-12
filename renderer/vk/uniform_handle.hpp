@@ -1,45 +1,49 @@
 #pragma once
 
 #include "vk/types.hpp"
+#include "vk/uniform_allocator.hpp"
 
 #include <iuniform_handle.hpp>
 
+#include <list>
 #include <memory>
 
 namespace vk {
+
+class UBODescriptor;
+class UniformResource;
 
 namespace handles {
 class Memory;
 }
 
-struct UniformHandle
+class UniformHandle
     : public IUniformHandle
     , public std::enable_shared_from_this<UniformHandle>
 {
 private:
-    UniformHandle();
+    UniformHandle(UniformResource&);
 
 public:
-    [[nodiscard]] static std::shared_ptr<UniformHandle> create();
+    [[nodiscard]] static std::shared_ptr<UniformHandle> create(UniformResource&);
     ~UniformHandle();
 
     virtual void accept(UniformHandleVisitor& visitor) override { visitor.visit(*this); }
 
     virtual void accept(UniformHandleVisitor& visitor) const override { visitor.visit(*this); }
 
-    virtual uint32_t resourceOffset() const override;
-    virtual uint64_t resource() const override;
-
     virtual void write(const void* src, uint32_t layoutSize) override;
-    virtual void sync(uint32_t layoutSize) override;
 
-    uint64_t resourceId = 0;
-    uint32_t offset = 0;
-    uint32_t alignment = 0;
+    void assureUBOCount(uint32_t requiredCount);
+    std::shared_ptr<UBODescriptor> currentDescriptor();
 
-    std::weak_ptr<handles::Memory> memory;
-    DescriptorBufferInfo descriptorBufferInfo;
-    DescriptorImageInfo descriptorImageInfo;
+private:
+    void nextDescriptor();
+
+private:
+    UniformResource& m_uniformAllocator;
+    std::list<std::shared_ptr<UBODescriptor>> m_descriptors;
+    std::list<std::shared_ptr<UBODescriptor>>::const_iterator m_currentDescriptor;
 };
 
 }    //  namespace vk

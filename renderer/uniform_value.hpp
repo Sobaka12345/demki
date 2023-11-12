@@ -24,8 +24,6 @@ public:
 
     inline LayoutType get() const { return m_value; }
 
-    inline void sync() { m_uniformHandle->sync<LayoutType>(); }
-
     inline const std::weak_ptr<IUniformHandle> handle() const { return m_uniformHandle; }
 
 private:

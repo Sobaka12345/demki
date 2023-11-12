@@ -1,6 +1,6 @@
 #pragma once
 
-#include "uniform_provider.hpp"
+#include "uniform_allocator.hpp"
 
 #include "handles/handle.hpp"
 #include "handles/buffer.hpp"
@@ -68,7 +68,7 @@ private:
 	std::vector<size_t> m_freeBufferSpace;
     handles::HandleVector<handles::Buffer> m_modelBuffers;
     handles::HandleVector<handles::Buffer> m_indBuffers;
-    std::unordered_multimap<uint32_t, UniformProvider> m_uniformProviders;
+    std::unordered_map<uint32_t, UniformAllocator> m_uniformAllocators;
 };
 
 }    //  namespace vk

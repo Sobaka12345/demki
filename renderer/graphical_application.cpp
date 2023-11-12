@@ -9,7 +9,7 @@ GraphicalApplication::GraphicalApplication()
     m_window = std::make_unique<Window>(640, 480, "demki");
     m_graphicsContext = std::make_unique<vk::GraphicsContext>(*m_window);
 
-    m_swapchain = m_graphicsContext->createSwapchain({});
+    m_swapchain = m_graphicsContext->createSwapchain({ .framesInFlight = 2 });
     m_swapchain->setDrawCallback(
         std::bind(&GraphicalApplication::draw, this, std::placeholders::_1));
 }

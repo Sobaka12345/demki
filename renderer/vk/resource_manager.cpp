@@ -142,26 +142,12 @@ uint32_t ResourceManager::dynamicAlignment(uint32_t layoutSize) const
 
 std::shared_ptr<IUniformHandle> ResourceManager::uniformHandle(uint32_t layoutSize)
 {
-    const uint32_t alignment = dynamicAlignment(layoutSize);
-    auto [begin, end] = m_uniformProviders.equal_range(alignment);
+    const auto alignment = dynamicAlignment(layoutSize);
 
-    if (begin == end)
-    {
-        begin = m_uniformProviders.emplace(layoutSize,
-            UniformProvider{ m_context.device(), alignment, 100 });
-    }
+    auto [iter, _] = m_uniformAllocators.emplace(
+        std::pair{ alignment, vk::UniformAllocator{ m_context.device(), alignment, 100 } });
 
-    for (auto iter = begin; iter != end; ++iter)
-    {
-        if (auto handle = begin->second.tryGetUniformHandle(); handle)
-        {
-            return handle;
-        }
-    }
-
-    return m_uniformProviders
-        .emplace(layoutSize, UniformProvider{ m_context.device(), alignment, 100 })
-        ->second.tryGetUniformHandle();
+    return UniformHandle::create(iter->second);
 }
 
 }    //  namespace vk

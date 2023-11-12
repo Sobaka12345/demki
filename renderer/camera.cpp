@@ -12,7 +12,6 @@ void Camera::setView(glm::mat4 view)
     auto old = m_viewProjection.get();
     old.view = std::move(view);
     m_viewProjection.set(old);
-    m_viewProjection.sync();
 }
 
 void Camera::setProjection(glm::mat4 projection)
@@ -20,23 +19,23 @@ void Camera::setProjection(glm::mat4 projection)
     auto old = m_viewProjection.get();
     old.projection = std::move(projection);
     m_viewProjection.set(old);
-    m_viewProjection.sync();
 }
 
 void Camera::setViewProjection(ViewProjection viewProjection)
 {
     m_viewProjection.set(std::move(viewProjection));
-    m_viewProjection.sync();
 }
 
 void Camera::bind(RenderContext &context)
 {
-    if (m_bindContext.expired())
-    {
-        m_bindContext = context.pipeline().bindContext(*this);
-    }
+    //    if (m_bindContext.expired())
+    //    {
+    //        m_bindContext = context.pipeline().bindContext(*this);
+    //    }
 
-    m_bindContext.lock()->bind(context, *this);
+    //    m_bindContext.lock()->bind(context, *this);
+
+    context.pipeline().bindContext(*this).lock()->bind(context, *this);
 }
 
 std::span<const IUniformContainer::UniformDescriptor> Camera::uniforms() const

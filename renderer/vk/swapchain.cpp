@@ -99,9 +99,9 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
     , m_depthFormat(context.findDepthFormat())
     , m_currentFrame(0)
     , m_currentImage(0)
-    , m_maxFramesInFlight(2)
     , m_needRecreate(false)
 {
+    m_maxFramesInFlight = m_swapchainInfo.framesInFlight;
     m_context.window().registerFramebufferResizeCallback([this](int, int) {
         m_needRecreate = true;
     });
@@ -345,6 +345,11 @@ uint32_t Swapchain::width() const
 uint32_t Swapchain::height() const
 {
     return m_swapchainCreateInfo.imageExtent().height;
+}
+
+int Swapchain::maxFramesInFlight() const
+{
+    return m_maxFramesInFlight;
 }
 
 VkFormat Swapchain::imageFormat() const
