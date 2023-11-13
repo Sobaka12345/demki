@@ -2,41 +2,41 @@
 
 #include "irenderable.hpp"
 
-#include "uniform.hpp"
+#include "shader_interface.hpp"
 #include "uniform_value.hpp"
 
 #include <glm/mat4x4.hpp>
 
-class IUniformProvider;
+class IShaderResourceProvider;
 
 class Renderable
     : public IRenderable
-    , public SIUniformContainer<Renderable>
+    , public SIShaderInterfaceContainer<Renderable>
 {
 public:
-    static constexpr std::array s_layout = {
-        UniformBinding{
-            .id = UniformID::POSITION,
-            .type = UniformType::DYNAMIC,
-            .stage = UniformStage::VERTEX,
+    static constexpr ShaderInterfaceLayout<2> s_layout = {
+        ShaderInterfaceBinding{
+            .id = InterfaceBlockID::IBLOCK_ID_1,
+            .type = ShaderBlockType::UNIFORM_DYNAMIC,
+            .stage = ShaderStage::VERTEX,
         },
-        UniformBinding{
-            .id = UniformID::SAMPLER,
-            .type = UniformType::SAMPLER,
-            .stage = UniformStage::FRAGMENT,
+        ShaderInterfaceBinding{
+            .id = InterfaceBlockID::IBLOCK_ID_2,
+            .type = ShaderBlockType::SAMPLER,
+            .stage = ShaderStage::FRAGMENT,
         },
     };
 
 public:
-    Renderable(IUniformProvider& provider);
+    Renderable(IShaderResourceProvider& provider);
     Renderable(const Renderable& other) noexcept;
     Renderable(Renderable&& other) noexcept;
     virtual ~Renderable();
     virtual void draw(const RenderContext& context) const override;
 
     virtual void bind(RenderContext& context) override;
-    virtual std::span<const UniformDescriptor> uniforms() const override;
-    virtual std::span<const UniformDescriptor> dynamicUniforms() const override;
+    virtual std::span<const InterfaceDescriptor> uniforms() const override;
+    virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override;
 
     virtual std::weak_ptr<IModel> model() const override;
     virtual void setModel(std::weak_ptr<IModel> model) override;
@@ -49,12 +49,12 @@ public:
     glm::mat4 position() const { return m_position.get(); }
 
 private:
-    IUniformProvider& m_uniformProvider;
+    IShaderResourceProvider& m_shaderResourceProvider;
 
     std::weak_ptr<IModel> m_model;
     std::weak_ptr<ITexture> m_texture;
     UniformValue<glm::mat4> m_position;
 
     std::weak_ptr<IPipeline::IBindContext> m_bindContext;
-    std::array<UniformDescriptor, s_layout.size()> m_uniformDescriptors;
+    std::array<InterfaceDescriptor, s_layout.size()> m_uniformDescriptors;
 };

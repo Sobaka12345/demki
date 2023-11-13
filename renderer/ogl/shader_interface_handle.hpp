@@ -2,7 +2,7 @@
 
 namespace ogl {
 
-struct UniformHandle
+struct ShaderInterfaceHandle
 {};
 
 }

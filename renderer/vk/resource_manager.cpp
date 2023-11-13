@@ -5,7 +5,7 @@
 #include "model.hpp"
 #include "texture.hpp"
 
-#include <iuniform_handle.hpp>
+#include <ishader_interface_handle.hpp>
 
 #include <tiny_obj_loader.h>
 
@@ -140,14 +140,29 @@ uint32_t ResourceManager::dynamicAlignment(uint32_t layoutSize) const
     return layoutSize;
 }
 
-std::shared_ptr<IUniformHandle> ResourceManager::uniformHandle(uint32_t layoutSize)
+std::shared_ptr<IShaderInterfaceHandle> ResourceManager::fetchHandle(ShaderBlockType sbt,
+    uint32_t layoutSize)
 {
-    const auto alignment = dynamicAlignment(layoutSize);
+    const uint32_t alignment = dynamicAlignment(layoutSize);
 
-    auto [iter, _] = m_uniformAllocators.emplace(
-        std::pair{ alignment, vk::UniformAllocator{ m_context.device(), alignment, 100 } });
+    auto insertAndFetchSpecificHandle = [&](auto& map) {
+        if (auto el = map.find(layoutSize); el != map.end())
+        {
+            return ShaderInterfaceHandle::create(el->second);
+        }
+        using PairType = typename std::remove_reference<decltype(map)>::type::value_type;
+        auto [iter, _] = map.emplace(PairType{
+            alignment, typename PairType::second_type{ m_context.device(), alignment, 100 } });
 
-    return UniformHandle::create(iter->second);
+        return ShaderInterfaceHandle::create(iter->second);
+    };
+
+    if (sbt == ShaderBlockType::STORAGE)
+    {
+        return insertAndFetchSpecificHandle(m_storageShaderResources);
+    }
+
+    return insertAndFetchSpecificHandle(m_uniformShaderResources);
 }
 
 }    //  namespace vk

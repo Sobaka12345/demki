@@ -30,9 +30,11 @@ find_package(tinyobjloader REQUIRED)
 set(SHARED_SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 
 add_subdirectory(renderer)
+add_subdirectory(particles)
 add_subdirectory(tetris)
 add_subdirectory(dummy)
 
 target_link_libraries(renderer PUBLIC glfw Vulkan::Vulkan glm::glm stb::stb tinyobjloader::tinyobjloader pfr::pfr)
 target_link_libraries(tetris PRIVATE renderer)
 target_link_libraries(dummy PRIVATE renderer)
+target_link_libraries(particles PRIVATE renderer)

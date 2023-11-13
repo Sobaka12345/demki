@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iuniform_handle.hpp>
+#include <ishader_interface_handle.hpp>
 #include <render_context.hpp>
 
 #include <memory>
@@ -12,7 +12,7 @@ public:
     constexpr static uint64_t s_layoutSize = sizeof(LayoutType);
 
 public:
-    UniformValue(std::shared_ptr<IUniformHandle> handler)
+    UniformValue(std::shared_ptr<IShaderInterfaceHandle> handler)
         : m_uniformHandle(handler)
     {}
 
@@ -24,9 +24,9 @@ public:
 
     inline LayoutType get() const { return m_value; }
 
-    inline const std::weak_ptr<IUniformHandle> handle() const { return m_uniformHandle; }
+    inline const std::weak_ptr<IShaderInterfaceHandle> handle() const { return m_uniformHandle; }
 
 private:
     LayoutType m_value;
-    std::shared_ptr<IUniformHandle> m_uniformHandle;
+    std::shared_ptr<IShaderInterfaceHandle> m_uniformHandle;
 };

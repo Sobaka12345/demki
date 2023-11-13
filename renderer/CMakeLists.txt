@@ -3,7 +3,7 @@ declare_project()
 add_library(${PROJECT_NAME} STATIC
     ogl/render_context.hpp
     ogl/render_context.cpp
-    ogl/uniform_handle.hpp
+	ogl/shader_interface_handle.hpp
     vk/handles/buffer.hpp
     vk/handles/buffer.cpp
     vk/handles/command.hpp
@@ -11,7 +11,9 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/command_buffer.hpp
     vk/handles/command_buffer.cpp
     vk/handles/command_pool.hpp
-    vk/handles/command_pool.cpp
+	vk/handles/command_pool.cpp
+	vk/handles/compute_pipeline.hpp
+	vk/handles/compute_pipeline.cpp
     vk/handles/debug_utils_messenger.hpp
     vk/handles/debug_utils_messenger.cpp
     vk/handles/descriptor_set.hpp
@@ -37,7 +39,9 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/instance.cpp
     vk/handles/memory.hpp
     vk/handles/memory.cpp
-    vk/handles/pipeline_layout.hpp
+	vk/handles/pipeline.hpp
+	vk/handles/pipeline.cpp
+	vk/handles/pipeline_layout.hpp
     vk/handles/pipeline_layout.cpp
     vk/handles/physical_device.hpp
     vk/handles/physical_device.cpp
@@ -60,8 +64,12 @@ add_library(${PROJECT_NAME} STATIC
     vk/graphics_context.cpp
     vk/model.hpp
     vk/model.cpp
-    vk/pipeline.hpp
-    vk/pipeline.cpp
+	vk/compute_pipeline.hpp
+	vk/compute_pipeline.cpp
+	vk/graphics_pipeline.hpp
+	vk/graphics_pipeline.cpp
+	vk/pipeline.hpp
+	vk/pipeline.cpp
     vk/render_target.hpp
     vk/renderer.hpp
     vk/renderer.cpp
@@ -73,15 +81,13 @@ add_library(${PROJECT_NAME} STATIC
     vk/swapchain.cpp
     vk/texture.hpp
     vk/texture.cpp
-    vk/types.hpp
-	vk/ubo_descriptor.hpp
-	vk/ubo_descriptor.cpp
-	vk/uniform_resource.hpp
-	vk/uniform_resource.cpp
-    vk/uniform_handle.hpp
-    vk/uniform_handle.cpp
-	vk/uniform_allocator.hpp
-	vk/uniform_allocator.cpp
+	vk/types.hpp
+	vk/shader_resource.hpp
+	vk/shader_resource.cpp
+	vk/shader_interface_handle.hpp
+	vk/shader_interface_handle.cpp
+	vk/buffer_shader_resource.hpp
+	vk/buffer_shader_resource.cpp
     vk/utils.hpp
     assert.hpp
     camera.hpp
@@ -98,7 +104,7 @@ add_library(${PROJECT_NAME} STATIC
     iresource_manager.hpp
     iswapchain.hpp
     itexture.hpp
-    iuniform_handle.hpp
+	ishader_interface_handle.hpp
 	particles.hpp
 	particles.cpp
     renderable.hpp
@@ -109,8 +115,8 @@ add_library(${PROJECT_NAME} STATIC
     types.hpp
     update_timer.hpp
     utils.hpp
-    uniform.hpp
-    uniform.cpp
+	shader_interface.hpp
+	shader_interface.cpp
     uniform_value.hpp
     vertex.hpp
     window.hpp

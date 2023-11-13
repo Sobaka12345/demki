@@ -37,8 +37,8 @@ Dummy::Dummy()
                 .type = IPipeline::ShaderType::FRAGMENT,
                 .path = "./shaders/shader.frag.spv",
             })
-            .addUniformContainer<Camera>()
-            .addUniformContainer<Renderable>());
+            .addShaderInterfaceContainer<Camera>()
+            .addShaderInterfaceContainer<Renderable>());
 
     m_camera = std::make_unique<Camera>(context().resources());
 

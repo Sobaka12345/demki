@@ -1,7 +1,7 @@
 #pragma once
 
 #include <itexture.hpp>
-#include <iuniform_handle.hpp>
+#include <ishader_interface_handle.hpp>
 
 #include <span>
 #include <cstdint>
@@ -9,7 +9,7 @@
 class IModel;
 class Vertex3DColoredTextured;
 
-class IResourceManager : public IUniformProvider
+class IResourceManager : public IShaderResourceProvider
 {
 public:
     struct CreateInfo

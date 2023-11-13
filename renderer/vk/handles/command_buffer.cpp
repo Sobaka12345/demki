@@ -83,8 +83,7 @@ void CommandBuffer::bindIndexBuffer(
     vkCmdBindIndexBuffer(handle(), buffer, offset, indexType);
 }
 
-void CommandBuffer::bindPipeline(const GraphicsPipeline& pipeline,
-    VkPipelineBindPoint bindPoint) const
+void CommandBuffer::bindPipeline(const Pipeline& pipeline, VkPipelineBindPoint bindPoint) const
 {
     vkCmdBindPipeline(handle(), bindPoint, pipeline);
 }

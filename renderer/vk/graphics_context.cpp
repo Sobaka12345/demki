@@ -4,7 +4,8 @@
 
 #include "handles/surface.hpp"
 
-#include "pipeline.hpp"
+#include "compute_pipeline.hpp"
+#include "graphics_pipeline.hpp"
 #include "renderer.hpp"
 #include "swapchain.hpp"
 
@@ -246,7 +247,13 @@ const Window& GraphicsContext::window() const
 
 std::shared_ptr<IPipeline> GraphicsContext::createPipeline(IPipeline::CreateInfo createInfo) const
 {
-    return std::make_shared<Pipeline>(*this, std::move(createInfo));
+    if (createInfo.type() == IPipeline::GRAPHICS)
+        return std::make_shared<GraphicsPipeline>(*this, std::move(createInfo));
+    else if (createInfo.type() == IPipeline::COMPUTE)
+        return std::make_shared<ComputePipeline>(*this, std::move(createInfo));
+
+    ASSERT(false, "not implemented");
+    return nullptr;
 }
 
 std::shared_ptr<IRenderer> GraphicsContext::createRenderer(IRenderer::CreateInfo createInfo) const

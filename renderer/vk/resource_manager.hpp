@@ -1,6 +1,6 @@
 #pragma once
 
-#include "uniform_allocator.hpp"
+#include "buffer_shader_resource.hpp"
 
 #include "handles/handle.hpp"
 #include "handles/buffer.hpp"
@@ -56,7 +56,8 @@ public:
     virtual std::shared_ptr<IModel> createModel(std::filesystem::path path) override;
     virtual std::shared_ptr<ITexture> createTexture(ITexture::CreateInfo createInfo) override;
 
-    virtual std::shared_ptr<IUniformHandle> uniformHandle(uint32_t layoutSize) override;
+    virtual std::shared_ptr<IShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt,
+        uint32_t layoutSize) override;
 
 private:
     uint32_t dynamicAlignment(uint32_t layoutSize) const;
@@ -68,7 +69,8 @@ private:
 	std::vector<size_t> m_freeBufferSpace;
     handles::HandleVector<handles::Buffer> m_modelBuffers;
     handles::HandleVector<handles::Buffer> m_indBuffers;
-    std::unordered_map<uint32_t, UniformAllocator> m_uniformAllocators;
+    std::unordered_map<uint32_t, UniformBufferShaderResource> m_uniformShaderResources;
+    std::unordered_map<uint32_t, StorageBufferShaderResource> m_storageShaderResources;
 };
 
 }    //  namespace vk

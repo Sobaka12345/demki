@@ -1,10 +1,6 @@
 #pragma once
 
-#include "handle.hpp"
-
-#include "vk/utils.hpp"
-
-#include <span>
+#include "pipeline.hpp"
 
 namespace vk {
 
@@ -107,16 +103,6 @@ BEGIN_DECLARE_VKSTRUCT(PipelineTessellationStateCreateInfo,
     VKSTRUCT_PROPERTY(uint32_t, patchControlPoints)
 END_DECLARE_VKSTRUCT()
 
-BEGIN_DECLARE_VKSTRUCT(PipelineShaderStageCreateInfo,
-    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
-    VKSTRUCT_PROPERTY(const void*, pNext)
-    VKSTRUCT_PROPERTY(VkPipelineShaderStageCreateFlags, flags)
-    VKSTRUCT_PROPERTY(VkShaderStageFlagBits, stage)
-    VKSTRUCT_PROPERTY(VkShaderModule, module)
-    VKSTRUCT_PROPERTY(const char*, pName)
-    VKSTRUCT_PROPERTY(const VkSpecializationInfo*, pSpecializationInfo)
-END_DECLARE_VKSTRUCT();
-
 BEGIN_DECLARE_VKSTRUCT(PipelineVertexInputStateCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -152,12 +138,12 @@ namespace handles {
 
 class Device;
 
-class GraphicsPipeline : public Handle<VkPipeline>
+class GraphicsPipeline : public Pipeline
 {
 public:
     static HandleVector<GraphicsPipeline> create(const Device& device,
         VkPipelineCache cache,
-		std::span<const GraphicsPipelineCreateInfo> createInfos);
+        std::span<const GraphicsPipelineCreateInfo> createInfos);
 
 	GraphicsPipeline(const GraphicsPipeline& other) = delete;
 	GraphicsPipeline(GraphicsPipeline&& other);
@@ -166,11 +152,6 @@ public:
         VkPipelineCache cache,
         GraphicsPipelineCreateInfo createInfo,
         VkHandleType* handlePtr = nullptr);
-	~GraphicsPipeline();
-
-private:
-	const Device& m_device;
-	VkPipelineCache m_cache;
 };
 
 }    //  namespace handles

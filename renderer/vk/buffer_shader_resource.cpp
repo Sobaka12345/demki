@@ -1,19 +1,17 @@
-#include "uniform_allocator.hpp"
+#include "buffer_shader_resource.hpp"
 
 #include <ranges>
 
 namespace vk {
 
-UniformAllocator::UniformAllocator(
+BufferShaderResource::BufferShaderResource(
     const handles::Device& device, uint32_t alignment, uint32_t chunkObjectCount)
     : m_chunkObjectCount(chunkObjectCount)
     , m_alignment(alignment)
     , m_device(device)
-{
-    allocateBuffer();
-}
+{}
 
-std::shared_ptr<UBODescriptor> UniformAllocator::fetchUBODescriptor()
+std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::fetchDescriptor()
 {
     for (int64_t bufferId = m_buffers.size() - 1; bufferId >= 0; --bufferId)
     {
@@ -32,13 +30,9 @@ std::shared_ptr<UBODescriptor> UniformAllocator::fetchUBODescriptor()
     return nullptr;
 }
 
-size_t UniformAllocator::allocateBuffer()
+size_t BufferShaderResource::allocateBuffer()
 {
-    m_buffers.emplace_back(m_device,
-        handles::BufferCreateInfo{}
-            .size(m_alignment * m_chunkObjectCount)
-            .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-            .sharingMode(VK_SHARING_MODE_EXCLUSIVE));
+    m_buffers.emplace_back(m_device, bufferCreateInfo());
     m_buffers.back().allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT).lock()->map();
     m_freeDescriptors.push_back(std::unordered_set<uint64_t>{});
     auto& freeSet = m_freeDescriptors.back();
@@ -51,13 +45,14 @@ size_t UniformAllocator::allocateBuffer()
     return m_buffers.size() - 1;
 }
 
-std::shared_ptr<UBODescriptor> UniformAllocator::tryFetchDescriptor(size_t bufferId)
+std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::tryFetchDescriptor(
+    size_t bufferId)
 {
     if (auto& freeSet = m_freeDescriptors[bufferId]; !freeSet.empty())
     {
         uint64_t freeDescriptorId = freeSet.extract(freeSet.begin()).value();
 
-        auto descriptor = UniformResource::fetchUBODescriptor();
+        auto descriptor = ShaderResource::fetchDescriptor();
 
         descriptor->id.descriptorId = freeDescriptorId;
         descriptor->id.bufferId = bufferId;
@@ -77,9 +72,36 @@ std::shared_ptr<UBODescriptor> UniformAllocator::tryFetchDescriptor(size_t buffe
     return nullptr;
 }
 
-void UniformAllocator::freeUBODescriptor(const UBODescriptor& descriptor)
+void BufferShaderResource::freeDescriptor(const ShaderResource::Descriptor& descriptor)
 {
     m_freeDescriptors[descriptor.id.bufferId].insert(descriptor.id.descriptorId);
+}
+
+handles::BufferCreateInfo UniformBufferShaderResource::bufferCreateInfo() const
+{
+    return handles::BufferCreateInfo{}
+        .size(m_alignment * m_chunkObjectCount)
+        .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+        .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+}
+
+VkMemoryPropertyFlags UniformBufferShaderResource::memoryProperties() const
+{
+    return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+}
+
+handles::BufferCreateInfo StorageBufferShaderResource::bufferCreateInfo() const
+{
+    return handles::BufferCreateInfo{}
+        .size(m_alignment * m_chunkObjectCount)
+        .usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+        .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+}
+
+VkMemoryPropertyFlags StorageBufferShaderResource::memoryProperties() const
+{
+    return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
 
 

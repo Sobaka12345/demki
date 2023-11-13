@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ipipeline.hpp"
-#include "uniform.hpp"
+#include "shader_interface.hpp"
 #include "uniform_value.hpp"
 
 #include <glm/glm.hpp>
@@ -15,28 +15,28 @@ struct ViewProjection
     glm::mat4 projection;
 };
 
-class Camera : public SIUniformContainer<Camera>
+class Camera : public SIShaderInterfaceContainer<Camera>
 {
 public:
-    static constexpr std::array<UniformBinding, 1> s_layout = { UniformBinding{
-        .id = UniformID::CAMERA,
-        .type = UniformType::DYNAMIC,
-        .stage = UniformStage::VERTEX,
+    static constexpr ShaderInterfaceLayout<1> s_layout = { ShaderInterfaceBinding{
+        .id = InterfaceBlockID::IBLOCK_ID_0,
+        .type = ShaderBlockType::UNIFORM_DYNAMIC,
+        .stage = ShaderStage::VERTEX,
     } };
 
 public:
-    Camera(IUniformProvider& provider);
+    Camera(IShaderResourceProvider& provider);
 
     void setView(glm::mat4 view);
     void setProjection(glm::mat4 projection);
     void setViewProjection(ViewProjection viewProjection);
 
     virtual void bind(RenderContext& context) override;
-    virtual std::span<const UniformDescriptor> uniforms() const override;
-    virtual std::span<const UniformDescriptor> dynamicUniforms() const override;
+    virtual std::span<const InterfaceDescriptor> uniforms() const override;
+    virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override;
 
 private:
     std::weak_ptr<IPipeline::IBindContext> m_bindContext;
     UniformValue<ViewProjection> m_viewProjection;
-    std::array<UniformDescriptor, s_layout.size()> m_descriptors;
+    std::array<InterfaceDescriptor, s_layout.size()> m_descriptors;
 };

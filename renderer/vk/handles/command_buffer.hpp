@@ -27,7 +27,7 @@ END_DECLARE_VKSTRUCT()
 class Device;
 class CommandPool;
 class DescriptorSet;
-class GraphicsPipeline;
+class Pipeline;
 class PipelineLayout;
 
 class CommandBuffer : public Handle<VkCommandBuffer>
@@ -59,7 +59,7 @@ public:
         const VkBuffer* pBuffers,
         const VkDeviceSize* pOffsets) const;
     void bindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const;
-    void bindPipeline(const GraphicsPipeline& pipeline,
+    void bindPipeline(const Pipeline& pipeline,
         VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) const;
     void bindDescriptorSet(const PipelineLayout& layout,
         uint32_t firstSet,

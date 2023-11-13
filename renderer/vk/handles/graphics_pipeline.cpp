@@ -16,16 +16,12 @@ HandleVector<GraphicsPipeline> GraphicsPipeline::create(const Device& device,
 }
 
 GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other)
-	: Handle(std::move(other))
-	, m_device(other.m_device)
-	, m_cache(other.m_cache)
+    : Pipeline(std::move(other))
 {}
 
 GraphicsPipeline::GraphicsPipeline(
     const Device& device, VkPipelineCache cache, VkHandleType* handlePtr)
-	: Handle(handlePtr)
-	, m_device(device)
-	, m_cache(cache)
+    : Pipeline(device, cache, handlePtr)
 {}
 
 GraphicsPipeline::GraphicsPipeline(const Device& device,
@@ -36,11 +32,6 @@ GraphicsPipeline::GraphicsPipeline(const Device& device,
 {
     ASSERT(Handle::create(vkCreateGraphicsPipelines, device, cache, 1, &createInfo, nullptr) ==
         VK_SUCCESS);
-}
-
-GraphicsPipeline::~GraphicsPipeline()
-{
-	destroy(vkDestroyPipeline, m_device, handle(), nullptr);
 }
 
 }}    //  namespace vk::handles

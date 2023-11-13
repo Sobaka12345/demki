@@ -51,8 +51,8 @@ Tetris::Tetris()
                 .type = IPipeline::ShaderType::FRAGMENT,
                 .path = "./shaders/shader.frag.spv",
             })
-            .addUniformContainer<Camera>()
-            .addUniformContainer<Renderable>());
+            .addShaderInterfaceContainer<Camera>()
+            .addShaderInterfaceContainer<Renderable>());
 
     m_renderer = context().createRenderer({ .multisampling = Multisampling::MSA_1X });
 

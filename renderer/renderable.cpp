@@ -5,17 +5,18 @@
 #include <itexture.hpp>
 #include <iresource_manager.hpp>
 
-Renderable::Renderable(IUniformProvider& provider)
-    : m_uniformProvider(provider)
-    , m_position(provider.uniformHandle(m_position.s_layoutSize))
+Renderable::Renderable(IShaderResourceProvider& provider)
+    : m_shaderResourceProvider(provider)
+    , m_position(provider.fetchHandle(ShaderBlockType::UNIFORM_DYNAMIC, m_position.s_layoutSize))
 {
     m_uniformDescriptors[0].handle = m_position.handle();
     m_uniformDescriptors[0].binding = s_layout[0];
 }
 
 Renderable::Renderable(const Renderable& other) noexcept
-    : m_uniformProvider(other.m_uniformProvider)
-    , m_position(other.m_uniformProvider.uniformHandle(m_position.s_layoutSize))
+    : m_shaderResourceProvider(other.m_shaderResourceProvider)
+    , m_position(other.m_shaderResourceProvider.fetchHandle(ShaderBlockType::UNIFORM_DYNAMIC,
+          m_position.s_layoutSize))
     , m_model(other.m_model)
     , m_texture(other.m_texture)
 {
@@ -29,7 +30,7 @@ Renderable::Renderable(const Renderable& other) noexcept
 }
 
 Renderable::Renderable(Renderable&& other) noexcept
-    : m_uniformProvider(other.m_uniformProvider)
+    : m_shaderResourceProvider(other.m_shaderResourceProvider)
     , m_model(other.m_model)
     , m_texture(other.m_texture)
     , m_position(std::move(other.m_position))
@@ -62,12 +63,12 @@ void Renderable::bind(RenderContext& context)
     context.pipeline().bindContext(*this).lock()->bind(context, *this);
 }
 
-std::span<const IUniformContainer::UniformDescriptor> Renderable::uniforms() const
+std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Renderable::uniforms() const
 {
     return m_uniformDescriptors;
 }
 
-std::span<const IUniformContainer::UniformDescriptor> Renderable::dynamicUniforms() const
+std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Renderable::dynamicUniforms() const
 {
     return std::span{ m_uniformDescriptors.begin(), 1 };
 }

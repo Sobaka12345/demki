@@ -2,7 +2,7 @@
 
 #include "graphics_context.hpp"
 #include "types.hpp"
-#include "uniform_handle.hpp"
+#include "shader_interface_handle.hpp"
 
 #include "handles/buffer.hpp"
 #include "handles/image.hpp"
@@ -123,9 +123,9 @@ Texture::~Texture()
 
 void Texture::bind(::RenderContext &context) {}
 
-std::shared_ptr<UBODescriptor> Texture::fetchUBODescriptor()
+std::shared_ptr<ShaderResource::Descriptor> Texture::fetchDescriptor()
 {
-    auto result = UniformResource::fetchUBODescriptor();
+    auto result = ShaderResource::fetchDescriptor();
     result->descriptorImageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         .imageView(*m_imageView)
         .sampler(*m_sampler);
@@ -133,13 +133,13 @@ std::shared_ptr<UBODescriptor> Texture::fetchUBODescriptor()
     return result;
 }
 
-void Texture::freeUBODescriptor(const UBODescriptor &descriptor) {}
+void Texture::freeDescriptor(const ShaderResource::Descriptor &descriptor) {}
 
-std::shared_ptr<IUniformHandle> Texture::uniformHandle()
+std::shared_ptr<IShaderInterfaceHandle> Texture::uniformHandle()
 {
     if (!m_handle)
     {
-        auto handle = UniformHandle::create(*this);
+        auto handle = ShaderInterfaceHandle::create(*this);
         m_handle = handle;
     }
 

@@ -2,7 +2,7 @@
 
 #include "pipeline.hpp"
 
-#include <uniform.hpp>
+#include <shader_interface.hpp>
 #include <types.hpp>
 
 #include <unordered_map>
