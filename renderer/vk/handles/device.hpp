@@ -85,6 +85,8 @@ public:
 
     QueueFamilies queueFamilies() const { return m_queueFamilies; };
 
+    VkMemoryType memoryType(uint32_t index) const;
+
     std::weak_ptr<Queue> queue(QueueFamilyType type, uint32_t idx = 0) const;
     std::weak_ptr<CommandPool> commandPool(QueueFamilyType type) const;
     OneTimeCommand oneTimeCommand(QueueFamilyType type, uint32_t queueIdx = 0) const;
@@ -115,6 +117,7 @@ private:
     VkPhysicalDevice m_physicalDevice;
     VkPhysicalDeviceFeatures m_physicalDeviceFeatures;
     VkPhysicalDeviceProperties m_physicalDeviceProperties;
+    VkPhysicalDeviceMemoryProperties m_physicalDeviceMemoryProperties;
 };
 
 }}    //  namespace vk::handles

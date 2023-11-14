@@ -112,6 +112,7 @@ add_library(${PROJECT_NAME} STATIC
     renderable_pack.hpp
     renderable_pack.cpp
     render_context.hpp
+	storage_buffer_value.hpp
     types.hpp
     update_timer.hpp
     utils.hpp

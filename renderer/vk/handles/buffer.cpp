@@ -40,7 +40,14 @@ Buffer::~Buffer()
 bool Buffer::bindMemory(uint32_t bindingOffset)
 {
     DASSERT(m_memory);
-    return vkBindBufferMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
+    if (auto result =
+            vkBindBufferMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
+        result)
+    {
+        m_memory->bindedBuffer = this;
+        return true;
+    }
+    return false;
 }
 
 void Buffer::copyTo(const Buffer& dst, VkBufferCopy copyRegion) const

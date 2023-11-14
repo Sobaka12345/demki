@@ -125,6 +125,13 @@ void Device::waitIdle() const
     vkDeviceWaitIdle(handle());
 }
 
+VkMemoryType Device::memoryType(uint32_t index) const
+{
+    DASSERT(index < m_physicalDeviceMemoryProperties.memoryTypeCount, "wrong memory type index");
+
+    return m_physicalDeviceMemoryProperties.memoryTypes[index];
+}
+
 void Device::pickPhysicalDevice()
 {
     uint32_t physicalDeviceCount = 0;
@@ -145,6 +152,7 @@ void Device::pickPhysicalDevice()
         m_physicalDevice = *iter;
         vkGetPhysicalDeviceFeatures(m_physicalDevice, &m_physicalDeviceFeatures);
         vkGetPhysicalDeviceProperties(m_physicalDevice, &m_physicalDeviceProperties);
+        vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_physicalDeviceMemoryProperties);
     }
 }
 

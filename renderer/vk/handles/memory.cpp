@@ -1,30 +1,75 @@
 #include "memory.hpp"
 
+#include "buffer.hpp"
 #include "device.hpp"
 
 #include <cstring>
 
 namespace vk { namespace handles {
 
-Memory::Mapped::Mapped(const Memory& memory, VkMemoryMapFlags flags, VkDeviceSize offset)
+Memory::Mapped::Mapped(const Memory& memory)
     : memory(memory)
+{}
+
+Memory::Mapped::~Mapped() {}
+
+void Memory::Mapped::writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset)
+{
+    write(src, size, offset);
+    sync(size, offset);
+}
+
+Memory::DeviceLocalMapped::DeviceLocalMapped(const Memory& memory, VkDeviceSize offset)
+    : Mapped(memory)
     , offset(offset)
+{
+    stagingBuffer = std::make_unique<Buffer>(memory.device, Buffer::staging().size(memory.size));
+    stagingBuffer
+        ->allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+        .lock()
+        ->map();
+}
+
+Memory::DeviceLocalMapped::~DeviceLocalMapped() {}
+
+void Memory::DeviceLocalMapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
+{
+    stagingBuffer->memory().lock()->map().lock()->writeAndSync(src, size, offset);
+}
+
+//  why ptrdiff?
+void Memory::DeviceLocalMapped::sync(VkDeviceSize size, ptrdiff_t offset)
+{
+    ASSERT(memory.bindedBuffer, "memory is not binded to any device local buffer");
+
+    VkBufferCopy copy = {
+        .srcOffset = static_cast<VkDeviceSize>(offset),
+        .dstOffset = this->offset + static_cast<VkDeviceSize>(offset),
+        .size = size,
+    };
+    stagingBuffer->copyTo(*memory.bindedBuffer, copy);
+}
+
+Memory::HostVisibleMapped::HostVisibleMapped(
+    const Memory& memory, VkMemoryMapFlags flags, VkDeviceSize offset)
+    : Mapped(memory)
 {
     ASSERT(vkMapMemory(memory.device, memory, offset, memory.size, flags, &data) == VK_SUCCESS);
 }
 
-Memory::Mapped::~Mapped()
+Memory::HostVisibleMapped::~HostVisibleMapped()
 {
     vkUnmapMemory(memory.device, memory);
 }
 
-void Memory::Mapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
+void Memory::HostVisibleMapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
 {
     std::memcpy(reinterpret_cast<void*>(reinterpret_cast<ptrdiff_t>(data) + offset), src,
         static_cast<size_t>(size));
 }
 
-void Memory::Mapped::sync(VkDeviceSize size, ptrdiff_t offset)
+void Memory::HostVisibleMapped::sync(VkDeviceSize size, ptrdiff_t offset)
 {
     const auto atomSize = memory.device.physicalDeviceProperties().limits.nonCoherentAtomSize;
 
@@ -42,17 +87,11 @@ void Memory::Mapped::sync(VkDeviceSize size, ptrdiff_t offset)
     vkFlushMappedMemoryRanges(memory.device, 1, &range);
 }
 
-void Memory::Mapped::writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset)
-{
-    write(src, size, offset);
-    sync(size, offset);
-}
-
 Memory::Memory(const Device& device, MemoryAllocateInfo allocInfo, VkHandleType* handlePtr)
     : Handle(handlePtr)
     , device(device)
     , size(allocInfo.allocationSize())
-    , memoryType(allocInfo.memoryTypeIndex())
+    , memoryType(device.memoryType(allocInfo.memoryTypeIndex()))
 {
     ASSERT(create(vkAllocateMemory, device, &allocInfo, nullptr) == VK_SUCCESS);
 }
@@ -74,7 +113,14 @@ Memory::~Memory()
 std::weak_ptr<Memory::Mapped> Memory::map(VkMemoryMapFlags flags, VkDeviceSize offset)
 {
     DASSERT(!mapped);
-    mapped = std::make_shared<Mapped>(*this, flags, offset);
+    if (memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+    {
+        mapped = std::make_shared<HostVisibleMapped>(*this, flags, offset);
+    }
+    else
+    {
+        mapped = std::make_shared<DeviceLocalMapped>(*this, offset);
+    }
 
     return mapped;
 }
@@ -86,5 +132,6 @@ void Memory::unmap()
         mapped.reset();
     }
 }
+
 
 }}    //  namespace vk::handles

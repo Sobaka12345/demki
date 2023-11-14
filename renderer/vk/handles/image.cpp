@@ -29,7 +29,14 @@ Image::~Image()
 
 bool Image::bindMemory(uint32_t bindingOffset)
 {
-    return vkBindImageMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
+    DASSERT(m_memory);
+    if (auto result = vkBindImageMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
+        result)
+    {
+        m_memory->bindedImage = this;
+        return true;
+    }
+    return false;
 }
 
 void Image::transitionLayout(

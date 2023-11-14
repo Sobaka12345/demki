@@ -1,4 +1,4 @@
-#include "particles.hpp"
+#include "particles_application.hpp"
 
 int main()
 {

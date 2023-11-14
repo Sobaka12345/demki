@@ -1,4 +1,4 @@
-#include "particles.hpp"
+#include "particles_application.hpp"
 
 #include "camera.hpp"
 #include "particles.hpp"
@@ -11,19 +11,13 @@ ParticlesApplication::ParticlesApplication()
 
     m_pipeline = context().createPipeline(
         IPipeline::CreateInfo{}
+            .type(IPipeline::COMPUTE)
             .addInput(Vertex3DColoredTextured{})
             .addShader(IPipeline::ShaderInfo{
-                .type = IPipeline::ShaderType::VERTEX,
-                .path = "./shaders/shader.vert.spv",
+                .type = IPipeline::ShaderType::COMPUTE,
+                .path = "./shaders/shader.compute.spv",
             })
-            .addShader(IPipeline::ShaderInfo{
-                .type = IPipeline::ShaderType::FRAGMENT,
-                .path = "./shaders/shader.frag.spv",
-            })
-            .addShaderInterfaceContainer<Camera>()
-            .addShaderInterfaceContainer<Renderable>());
-
-    m_camera = std::make_unique<Camera>(context().resources());
+            .addShaderInterfaceContainer<Particles>());
 }
 
 ParticlesApplication::~ParticlesApplication() {}

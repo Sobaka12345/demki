@@ -1,8 +1,9 @@
 declare_project()
 
 set(PARTICLES_SHADER_SOURCES
-    ${SHARED_SHADERS_DIR}/shader.frag
-    ${SHARED_SHADERS_DIR}/shader.vert)
+   #${CMAKE_CURRENT_SOURCE_DIR}/shader.frag
+   #${CMAKE_CURRENT_SOURCE_DIR}/shader.vert
+    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.comp)
 
 set(PARTICLES_TEXTURES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/textures)
 
@@ -10,8 +11,8 @@ set(PARTICLES_MODELS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/models)
 
 add_executable(${PROJECT_NAME}
     main.cpp
-	particles.cpp
-	particles.hpp
+	particles_application.cpp
+	particles_application.hpp
 	${PARTICLES_SHADER_SOURCES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
