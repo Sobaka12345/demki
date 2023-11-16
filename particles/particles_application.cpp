@@ -8,6 +8,7 @@ ParticlesApplication::ParticlesApplication()
 {
     m_timer.setIntervalMS(100);
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
+    m_computer = context().createComputer({});
 
     m_pipeline = context().createPipeline(
         IPipeline::CreateInfo{}
@@ -24,4 +25,4 @@ ParticlesApplication::~ParticlesApplication() {}
 
 void ParticlesApplication::update(int64_t dt) {}
 
-void ParticlesApplication::draw(IRenderTarget &renderTarget) {}
+void ParticlesApplication::perform() {}

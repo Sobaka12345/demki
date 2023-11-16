@@ -39,7 +39,7 @@ Renderable::Renderable(Renderable&& other) noexcept
 
 Renderable::~Renderable() {}
 
-void Renderable::draw(const RenderContext& context) const
+void Renderable::draw(const OperationContext& context) const
 {
     if (!m_model.expired() && !m_texture.expired())
     {
@@ -47,7 +47,7 @@ void Renderable::draw(const RenderContext& context) const
     }
 }
 
-void Renderable::bind(RenderContext& context)
+void Renderable::bind(OperationContext& context)
 {
     if (m_model.expired() || m_texture.expired()) return;
 

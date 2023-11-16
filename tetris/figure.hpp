@@ -12,7 +12,7 @@ class Block
 public:
     Block(Renderable renderable);
 
-    void draw(RenderContext& context);
+    void draw(OperationContext& context);
 
     bool canMove(int32_t dx, int32_t dy);
     bool canSetPosition(Position position);
@@ -38,7 +38,7 @@ public:
 public:
     Figure(const Field& field);
 
-    void draw(RenderContext& context);
+    void draw(OperationContext& context);
     const std::array<std::shared_ptr<Block>, s_blocksCount>& blocks() const;
     bool hitTest(Position pos) const;
 

@@ -121,7 +121,7 @@ Texture::~Texture()
     m_image.reset();
 }
 
-void Texture::bind(::RenderContext &context) {}
+void Texture::bind(::OperationContext &context) {}
 
 std::shared_ptr<ShaderResource::Descriptor> Texture::fetchDescriptor()
 {

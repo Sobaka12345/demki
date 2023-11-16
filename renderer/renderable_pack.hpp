@@ -8,7 +8,7 @@
 
 class IModel;
 class IRenderable;
-class RenderContext;
+class OperationContext;
 
 class RenderablePack
 {
@@ -27,7 +27,7 @@ class RenderablePack
 
 public:
     RenderablePack() = default;
-    void draw(const RenderContext& context) const;
+    void draw(const OperationContext& context) const;
     RenderableHandler pushObject(std::weak_ptr<IRenderable> object);
     void removeObject(RenderableHandler iter);
 

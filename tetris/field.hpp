@@ -8,7 +8,7 @@
 
 class Block;
 class Figure;
-class RenderContext;
+class OperationContext;
 
 class IModel;
 class ITexture;
@@ -38,7 +38,7 @@ public:
 
     bool isBlocksOverflow() const;
 
-    void draw(RenderContext& context) const;
+    void draw(OperationContext& context) const;
 
 private:
     int flushRows(int32_t topRowBound, int32_t bottomRowBound);

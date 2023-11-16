@@ -10,8 +10,6 @@ GraphicalApplication::GraphicalApplication()
     m_graphicsContext = std::make_unique<vk::GraphicsContext>(*m_window);
 
     m_swapchain = m_graphicsContext->createSwapchain({ .framesInFlight = 2 });
-    m_swapchain->setDrawCallback(
-        std::bind(&GraphicalApplication::draw, this, std::placeholders::_1));
 }
 
 GraphicalApplication::~GraphicalApplication()
@@ -56,9 +54,8 @@ int GraphicalApplication::mainLoop()
             std::chrono::duration_cast<std::chrono::duration<int64_t, TimeResolution>>(end - start)
                 .count());
         start = end;
-
         glfwPollEvents();
-        m_swapchain->present();
+        perform();
     }
 
     m_graphicsContext->waitIdle();

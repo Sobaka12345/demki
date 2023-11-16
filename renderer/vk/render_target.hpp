@@ -4,6 +4,8 @@
 
 namespace vk {
 
+class OperationContext;
+
 class RenderTarget : public IRenderTarget
 {
 public:

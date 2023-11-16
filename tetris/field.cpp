@@ -151,7 +151,7 @@ void Field::tryRotateFigure()
     }
 }
 
-void Field::draw(RenderContext& context) const
+void Field::draw(OperationContext& context) const
 {
     if (m_figure)
     {

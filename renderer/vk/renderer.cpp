@@ -5,13 +5,13 @@
 
 #include "handles/render_pass.hpp"
 
-#include <render_context.hpp>
+#include <operation_context.hpp>
 
 namespace vk {
 
 struct RenderInfoVisitor : public ::RenderInfoVisitor
 {
-    virtual void populateRenderInfo(const vk::Swapchain& swapchain)
+    virtual void populateRenderInfo(const vk::Swapchain& swapchain) override
     {
         depthFormat = swapchain.depthFormat();
         imageFormat = swapchain.imageFormat();
@@ -26,13 +26,20 @@ Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createI
     , m_multisampling(toVkSampleFlagBits(createInfo.multisampling))
 {}
 
-::RenderContext Renderer::start(IRenderTarget& target)
+::OperationContext Renderer::start(IRenderTarget& target)
 {
-    ::RenderContext result =
-        vk::RenderContext{ .renderer = this, .renderPass = &renderPass(target) };
+    ::OperationContext result;
+    result.emplace<vk::OperationContext>(this);
 
-    target.populateRenderContext(result);
-    const auto& kek = get(result);
+    auto& kek = get(result);
+    kek.renderPass = &renderPass(target);
+
+    if (!target.prepare(result))
+    {
+        result.emplace<vk::OperationContext>();
+        return result;
+    }
+
 
     const std::array<VkClearValue, 2> clearValues{ VkClearValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
         VkClearValue{ { 1.0f, 0 } } };
@@ -48,7 +55,15 @@ Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createI
 
     vkCmdBeginRenderPass(*kek.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+
     return result;
+}
+
+void Renderer::finish(::OperationContext& context)
+{
+    auto& specContext = get(context);
+    vkCmdEndRenderPass(*specContext.commandBuffer);
+    specContext.renderTarget->present(context);
 }
 
 IRenderer& Renderer::addRenderTarget(IRenderTarget& target)

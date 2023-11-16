@@ -38,6 +38,8 @@ public:
     virtual ~GraphicsContext();
 
 public:
+    virtual std::shared_ptr<IComputer> createComputer(
+        IComputer::CreateInfo createInfo) const override;
     virtual std::shared_ptr<IPipeline> createPipeline(
         IPipeline::CreateInfo createInfo) const override;
     virtual std::shared_ptr<IRenderer> createRenderer(

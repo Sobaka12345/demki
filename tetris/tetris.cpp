@@ -132,9 +132,9 @@ void Tetris::update(int64_t dt)
     }
 }
 
-void Tetris::draw(IRenderTarget& target)
+void Tetris::perform()
 {
-    auto context = m_renderer->start(target);
+    auto context = m_renderer->start(*m_swapchain);
     context.setViewport({
         .x = 0,
         .y = 0,
@@ -154,4 +154,5 @@ void Tetris::draw(IRenderTarget& target)
     m_pipeline->bind(context);
     m_camera->bind(context);
     m_field->draw(context);
+    context.submit();
 }

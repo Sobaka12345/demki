@@ -1,7 +1,7 @@
 #pragma once
 
 #include "assert.hpp"
-#include "render_context.hpp"
+#include "operation_context.hpp"
 
 #include <cstdint>
 
@@ -40,7 +40,8 @@ public:
 
 public:
     virtual IRenderer& addRenderTarget(IRenderTarget& target) = 0;
-    virtual RenderContext start(IRenderTarget& target) = 0;
+    virtual OperationContext start(IRenderTarget& target) = 0;
+    virtual void finish(OperationContext& context) = 0;
 
     virtual ~IRenderer(){};
 };

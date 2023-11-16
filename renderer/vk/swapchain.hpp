@@ -17,6 +17,7 @@ class Window;
 namespace vk {
 
 class GraphicsContext;
+class OperationContext;
 
 namespace handles {
 class Surface;
@@ -46,12 +47,12 @@ public:
     Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo createInfo);
     ~Swapchain();
 
-    virtual void setDrawCallback(std::function<void(IRenderTarget&)> callback) override;
-    virtual void present() override;
+    virtual bool prepare(::OperationContext& context) override;
+    virtual void present(::OperationContext& context) override;
 
     virtual void accept(RenderInfoVisitor& visitor) const override;
-    virtual void populateRenderContext(::RenderContext& context) override;
 
+    virtual uint32_t framesInFlight() const override;
     virtual uint32_t width() const override;
     virtual uint32_t height() const override;
 
@@ -64,6 +65,7 @@ private:
     void recreate();
     void destroy();
     void create();
+    void populateOperationContext(OperationContext& context);
 
     handles::Framebuffer& currentFramebuffer();
     handles::CommandBuffer& currentCommandBuffer();

@@ -42,7 +42,7 @@ struct ShaderInterfaceBinding
     ShaderStage stage = ShaderStage::INVALID;
 };
 
-class RenderContext;
+class OperationContext;
 class IShaderInterfaceHandle;
 
 class IShaderInterfaceContainer
@@ -57,7 +57,7 @@ public:
 public:
     ~IShaderInterfaceContainer(){};
 
-    virtual void bind(::RenderContext& context) = 0;
+    virtual void bind(::OperationContext& context) = 0;
     virtual uint32_t id() const = 0;
     virtual std::span<const ShaderInterfaceBinding> layout() const = 0;
 

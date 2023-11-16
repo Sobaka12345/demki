@@ -32,7 +32,7 @@ public:
 
     void setParticles(glm::mat4 view);
 
-    virtual void bind(RenderContext& context) override;
+    virtual void bind(OperationContext& context) override;
     virtual std::span<const InterfaceDescriptor> uniforms() const override;
     virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override;
 

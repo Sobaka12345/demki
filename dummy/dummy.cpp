@@ -72,14 +72,14 @@ void Dummy::update(int64_t dt)
     }
 }
 
-void Dummy::draw(IRenderTarget &renderTarget)
+void Dummy::perform()
 {
-    auto context = m_renderer->start(renderTarget);
+    auto context = m_renderer->start(*m_swapchain);
     context.setViewport({
         .x = 0,
         .y = 0,
-        .width = static_cast<float>(renderTarget.width()),
-        .height = static_cast<float>(renderTarget.height()),
+        .width = static_cast<float>(m_swapchain->width()),
+        .height = static_cast<float>(m_swapchain->height()),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
@@ -87,8 +87,8 @@ void Dummy::draw(IRenderTarget &renderTarget)
     context.setScissors({
         .x = 0,
         .y = 0,
-        .width = renderTarget.width(),
-        .height = renderTarget.height(),
+        .width = m_swapchain->width(),
+        .height = m_swapchain->height(),
     });
 
     m_pipeline->bind(context);

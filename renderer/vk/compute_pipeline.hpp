@@ -16,7 +16,7 @@ public:
     ~ComputePipeline();
 
 private:
-    const handles::Pipeline& pipeline(const vk::RenderContext& context);
+    const handles::Pipeline& pipeline(const vk::OperationContext& context);
 
 private:
     std::map<const handles::RenderPass*, handles::ComputePipeline> m_pipelines;

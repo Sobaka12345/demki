@@ -14,7 +14,7 @@ Particles::Particles(IShaderResourceProvider &provider)
 
 void Particles::setParticles(glm::mat4 view) {}
 
-void Particles::bind(RenderContext &context) {}
+void Particles::bind(OperationContext &context) {}
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::uniforms() const
 {

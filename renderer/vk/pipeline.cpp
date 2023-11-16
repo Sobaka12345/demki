@@ -2,6 +2,7 @@
 
 #include "graphics_context.hpp"
 #include "renderer.hpp"
+#include "computer.hpp"
 
 #include "handles/command_buffer.hpp"
 #include "handles/descriptor_pool.hpp"
@@ -39,7 +40,7 @@ VkFormat attrubuteFormat(const T& attribute)
     return VK_FORMAT_UNDEFINED;
 }
 
-void Pipeline::BindContext::bind(::RenderContext& context,
+void Pipeline::BindContext::bind(::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
     auto& specContext = get(context);
@@ -63,7 +64,10 @@ void Pipeline::BindContext::bind(::RenderContext& context,
     //  TO DO: RETURN DYNAMIC OFFSETS
 
     specContext.commandBuffer->bindDescriptorSet(specContext.pipeline->layout(), setId, *set,
-        offsets);
+        offsets,
+        specContext.renderer == nullptr ?
+            VK_PIPELINE_BIND_POINT_COMPUTE :
+            VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo createInfo)
@@ -153,11 +157,11 @@ Pipeline::Pipeline(const GraphicsContext& _context, IPipeline::CreateInfo create
 
 Pipeline::~Pipeline()
 {
-	m_bindContexts.clear();
-	m_pool.reset();
+    m_bindContexts.clear();
+    m_pool.reset();
 }
 
-void Pipeline::bind(::RenderContext& context)
+void Pipeline::bind(::OperationContext& context)
 {
     auto& specContext = get(context);
     specContext.commandBuffer->bindPipeline(pipeline(specContext));

@@ -16,7 +16,7 @@ public:
 
 private:
     virtual void update(int64_t dt) override;
-    virtual void draw(IRenderTarget &renderTarget) override;
+    virtual void perform() override;
 
 private:
     UpdateTimer<TimeResolution> m_timer;

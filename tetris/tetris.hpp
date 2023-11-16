@@ -21,7 +21,7 @@ public:
     void onKeyPressed(int key, int scancode, int action, int mods);
 
     virtual void update(int64_t dt) override;
-    virtual void draw(IRenderTarget &renderTarget) override;
+    virtual void perform() override;
 
 private:
     std::shared_ptr<Camera> m_camera;

@@ -5,6 +5,7 @@
 
 class IModel;
 class ITexture;
+class IComputer;
 class Camera;
 class Renderable;
 
@@ -16,11 +17,12 @@ public:
 
 private:
     virtual void update(int64_t dt) override;
-    virtual void draw(IRenderTarget &renderTarget) override;
+    virtual void perform() override;
 
 private:
     UpdateTimer<TimeResolution> m_timer;
 
+    std::shared_ptr<IComputer> m_computer;
     std::shared_ptr<IRenderer> m_renderer;
     std::shared_ptr<IPipeline> m_pipeline;
 

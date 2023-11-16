@@ -31,7 +31,7 @@ public:
     void setProjection(glm::mat4 projection);
     void setViewProjection(ViewProjection viewProjection);
 
-    virtual void bind(RenderContext& context) override;
+    virtual void bind(OperationContext& context) override;
     virtual std::span<const InterfaceDescriptor> uniforms() const override;
     virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override;
 

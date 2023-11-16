@@ -1,8 +1,8 @@
 declare_project()
 
 add_library(${PROJECT_NAME} STATIC
-    ogl/render_context.hpp
-    ogl/render_context.cpp
+	ogl/operation_context.hpp
+	ogl/operation_context.cpp
 	ogl/shader_interface_handle.hpp
     vk/handles/buffer.hpp
     vk/handles/buffer.cpp
@@ -25,7 +25,7 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/device.hpp
     vk/handles/device.cpp
     vk/handles/fence.hpp
-    vk/handles/fence.cpp
+	vk/handles/fence.cpp
     vk/handles/framebuffer.cpp
     vk/handles/framebuffer.hpp
     vk/handles/graphics_pipeline.hpp
@@ -64,8 +64,11 @@ add_library(${PROJECT_NAME} STATIC
     vk/graphics_context.cpp
     vk/model.hpp
     vk/model.cpp
+	vk/computer.hpp
+	vk/computer.cpp
 	vk/compute_pipeline.hpp
 	vk/compute_pipeline.cpp
+	vk/compute_target.hpp
 	vk/graphics_pipeline.hpp
 	vk/graphics_pipeline.cpp
 	vk/pipeline.hpp
@@ -73,8 +76,8 @@ add_library(${PROJECT_NAME} STATIC
     vk/render_target.hpp
     vk/renderer.hpp
     vk/renderer.cpp
-    vk/render_context.hpp
-    vk/render_context.cpp
+	vk/operation_context.hpp
+	vk/operation_context.cpp
     vk/resource_manager.hpp
     vk/resource_manager.cpp
     vk/swapchain.hpp
@@ -90,16 +93,18 @@ add_library(${PROJECT_NAME} STATIC
 	vk/buffer_shader_resource.cpp
     vk/utils.hpp
     assert.hpp
-    camera.hpp
-    camera.cpp
+	camera.hpp
+	camera.cpp
     graphical_application.hpp
     graphical_application.cpp
+	icomputer.hpp
     igraphics_context.hpp
     imodel.hpp
     ipipeline.hpp
     irenderable.hpp
     irenderer.hpp
-    irender_target.hpp
+	irender_target.hpp
+	icompute_target.hpp
     iresource.hpp
     iresource_manager.hpp
     iswapchain.hpp
@@ -111,7 +116,7 @@ add_library(${PROJECT_NAME} STATIC
     renderable.cpp
     renderable_pack.hpp
     renderable_pack.cpp
-    render_context.hpp
+	operation_context.hpp
 	storage_buffer_value.hpp
     types.hpp
     update_timer.hpp

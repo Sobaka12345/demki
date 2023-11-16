@@ -11,7 +11,8 @@
 #include <span>
 
 
-class RenderContext;
+class OperationContext;
+class OperationContext;
 class IShaderInterfaceContainer;
 class IShaderInterfaceHandle;
 
@@ -108,13 +109,14 @@ public:
 
     struct IBindContext
     {
-        virtual void bind(RenderContext& context, const IShaderInterfaceContainer& container) = 0;
+        virtual void bind(OperationContext& context,
+            const IShaderInterfaceContainer& container) = 0;
 
         ~IBindContext() {}
     };
 
 public:
-    virtual void bind(RenderContext& context) = 0;
+    virtual void bind(OperationContext& context) = 0;
     virtual std::weak_ptr<IBindContext> bindContext(const IShaderInterfaceContainer& container) = 0;
 
     virtual ~IPipeline() {}

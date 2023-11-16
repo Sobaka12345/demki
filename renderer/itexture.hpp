@@ -4,7 +4,7 @@
 
 #include <filesystem>
 
-class RenderContext;
+class OperationContext;
 class IShaderInterfaceHandle;
 
 class ITexture : virtual public IResource
@@ -18,6 +18,6 @@ public:
 public:
     virtual ~ITexture() {}
 
-    virtual void bind(RenderContext& context) = 0;
+    virtual void bind(OperationContext& context) = 0;
     virtual std::shared_ptr<IShaderInterfaceHandle> uniformHandle() = 0;
 };

@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <memory>
 
-class RenderContext;
+class OperationContext;
 
 namespace ogl {
 class ShaderInterfaceHandle;

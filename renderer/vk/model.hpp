@@ -4,7 +4,7 @@
 #include "vk/handles/buffer.hpp"
 
 #include <imodel.hpp>
-#include <render_context.hpp>
+#include <operation_context.hpp>
 
 #include <span>
 #include <memory>
@@ -28,8 +28,8 @@ public:
 public:
     Model(Descriptor descriptor);
 
-    virtual void draw(const ::RenderContext& context) override;
-    virtual void bind(const ::RenderContext& context) override;
+    virtual void draw(const ::OperationContext& context) override;
+    virtual void bind(const ::OperationContext& context) override;
 
 private:
     Descriptor m_descriptor;

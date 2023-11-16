@@ -28,9 +28,12 @@ protected:
     uint32_t clientHeight() const;
     Window& window();
 
+protected:
+    std::shared_ptr<ISwapchain> m_swapchain;
+
 private:
     virtual void update(int64_t dt) = 0;
-    virtual void draw(IRenderTarget& renderTarget) = 0;
+    virtual void perform() = 0;
 
 private:
     int mainLoop();
@@ -38,5 +41,4 @@ private:
 private:
     std::unique_ptr<Window> m_window;
     std::unique_ptr<IGraphicsContext> m_graphicsContext;
-    std::shared_ptr<ISwapchain> m_swapchain;
 };

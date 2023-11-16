@@ -14,7 +14,7 @@
 namespace vk {
 
 class Renderer;
-class RenderContext;
+class OperationContext;
 class GraphicsContext;
 
 class ShaderInterfaceHandle;
@@ -46,7 +46,7 @@ class Pipeline : public IPipeline
 
     struct BindContext : public IPipeline::IBindContext
     {
-        virtual void bind(::RenderContext& context,
+        virtual void bind(::OperationContext& context,
             const IShaderInterfaceContainer& container) override;
         std::shared_ptr<handles::DescriptorSet> set;
         uint32_t setId;
@@ -56,14 +56,14 @@ public:
     Pipeline(const GraphicsContext& context, IPipeline::CreateInfo createInfo);
     ~Pipeline();
 
-    virtual void bind(::RenderContext& context) override;
+    virtual void bind(::OperationContext& context) override;
     virtual std::weak_ptr<IBindContext> bindContext(
         const IShaderInterfaceContainer& container) override;
 
     const handles::PipelineLayout& layout() const { return *m_pipelineLayout; }
 
 private:
-    virtual const handles::Pipeline& pipeline(const vk::RenderContext& context) = 0;
+    virtual const handles::Pipeline& pipeline(const vk::OperationContext& context) = 0;
 
 protected:
     const GraphicsContext& m_context;

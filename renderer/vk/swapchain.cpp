@@ -177,91 +177,10 @@ Swapchain::~Swapchain()
     m_renderFinishedSemaphores.clear();
 }
 
-void Swapchain::setDrawCallback(std::function<void(IRenderTarget&)> callback)
+void Swapchain::populateOperationContext(OperationContext& context)
 {
-    m_drawCallback = callback;
-}
-
-void Swapchain::present()
-{
-    vkWaitForFences(m_context.device(), 1, m_inFlightFences[m_currentFrame].handlePtr(), VK_TRUE,
-        UINT64_MAX);
-
-    VkResult result = vkAcquireNextImageKHR(m_context.device(), *m_swapchain, UINT64_MAX,
-        m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_currentImage);
-
-    ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR,
-        "failed to acquire swap chain image!");
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-        recreate();
-        return;
-    }
-
-    vkResetFences(m_context.device(), 1, m_inFlightFences[m_currentFrame].handlePtr());
-
-    const auto& commandBuffer = m_commandBuffers[m_currentFrame];
-
-    commandBuffer.reset();
-    ASSERT(commandBuffer.begin() == VK_SUCCESS, "failed to begin recording command buffer!");
-    m_drawCallback(*this);
-
-    ASSERT(commandBuffer.end() == VK_SUCCESS, "failed to record command buffer!");
-
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    const auto submitInfo =
-        handles::SubmitInfo{}
-            .waitSemaphoreCount(1)
-            .pWaitSemaphores(m_imageAvailableSemaphores[m_currentFrame].handlePtr())
-            .pWaitDstStageMask(waitStages)
-            .commandBufferCount(1)
-            .pCommandBuffers(commandBuffer.handlePtr())
-            .signalSemaphoreCount(1)
-            .pSignalSemaphores(m_renderFinishedSemaphores[m_currentFrame].handlePtr());
-
-    ASSERT(m_context.device()
-                .queue(handles::GRAPHICS)
-                .lock()
-                ->submit(1, &submitInfo, m_inFlightFences[m_currentFrame]) == VK_SUCCESS,
-        "failed to submit draw command buffer!");
-
-    result =
-        m_context.device()
-            .queue(handles::PRESENT)
-            .lock()
-            ->presentKHR(
-                handles::PresentInfoKHR{}
-                    .waitSemaphoreCount(1)
-                    .pWaitSemaphores(m_renderFinishedSemaphores[m_currentFrame].handlePtr())
-                    .swapchainCount(1)
-                    .pSwapchains(m_swapchain->handlePtr())
-                    .pImageIndices(&m_currentImage));
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_needRecreate ||
-        m_context.window().iconified())
-    {
-        recreate();
-        m_needRecreate = false;
-    }
-    else if (result != VK_SUCCESS)
-    {
-        ASSERT(false, "failed to present swap chain image!");
-    }
-
-    m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;
-}
-
-void Swapchain::accept(RenderInfoVisitor& visitor) const
-{
-    visitor.populateRenderInfo(*this);
-}
-
-void Swapchain::populateRenderContext(::RenderContext& context)
-{
-    auto& specContext = get(context);
-
-    specContext.renderTarget = this;
+    context.renderTarget = this;
+    context.commandBuffer = &currentCommandBuffer();
 
     if (!m_swapChainFramebuffers.size())
     {
@@ -269,8 +188,8 @@ void Swapchain::populateRenderContext(::RenderContext& context)
         {
             //  TO DO: remove this cringe
             std::vector<VkImageView> attachments;
-            attachments.reserve(specContext.renderPass->attachments().size());
-            for (auto attachment : specContext.renderPass->attachments())
+            attachments.reserve(context.renderPass->attachments().size());
+            for (auto attachment : context.renderPass->attachments())
             {
                 if (attachment.finalLayout() == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
                 {
@@ -322,7 +241,7 @@ void Swapchain::populateRenderContext(::RenderContext& context)
 
             const auto framebufferInfo =
                 handles::FramebufferCreateInfo{}
-                    .renderPass(*specContext.renderPass)
+                    .renderPass(*context.renderPass)
                     .attachmentCount(attachments.size())
                     .pAttachments(attachments.data())
                     .width(m_swapchainCreateInfo.imageExtent().width)
@@ -333,8 +252,98 @@ void Swapchain::populateRenderContext(::RenderContext& context)
         }
     }
 
-    specContext.framebuffer = &currentFramebuffer();
-    specContext.commandBuffer = &currentCommandBuffer();
+    context.framebuffer = &currentFramebuffer();
+}
+
+bool Swapchain::prepare(::OperationContext& context)
+{
+    auto& specContext = get(context);
+
+
+    vkWaitForFences(m_context.device(), 1, m_inFlightFences[m_currentFrame].handlePtr(), VK_TRUE,
+        UINT64_MAX);
+
+    VkResult result = vkAcquireNextImageKHR(m_context.device(), *m_swapchain, UINT64_MAX,
+        m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_currentImage);
+
+    ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR,
+        "failed to acquire swap chain image!");
+
+
+    populateOperationContext(specContext);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        recreate();
+        return false;
+    }
+
+    vkResetFences(m_context.device(), 1, m_inFlightFences[m_currentFrame].handlePtr());
+
+    const auto& commandBuffer = *specContext.commandBuffer;
+
+    commandBuffer.reset();
+    ASSERT(commandBuffer.begin() == VK_SUCCESS, "failed to begin recording command buffer!");
+
+    return true;
+}
+
+void Swapchain::present(::OperationContext& context)
+{
+    const auto& commandBuffer = *get(context).commandBuffer;
+    ASSERT(commandBuffer.end() == VK_SUCCESS, "failed to record command buffer!");
+
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    const auto submitInfo =
+        handles::SubmitInfo{}
+            .waitSemaphoreCount(1)
+            .pWaitSemaphores(m_imageAvailableSemaphores[m_currentFrame].handlePtr())
+            .pWaitDstStageMask(waitStages)
+            .commandBufferCount(1)
+            .pCommandBuffers(commandBuffer.handlePtr())
+            .signalSemaphoreCount(1)
+            .pSignalSemaphores(m_renderFinishedSemaphores[m_currentFrame].handlePtr());
+
+    ASSERT(m_context.device()
+                .queue(handles::GRAPHICS)
+                .lock()
+                ->submit(1, &submitInfo, m_inFlightFences[m_currentFrame]) == VK_SUCCESS,
+        "failed to submit draw command buffer!");
+
+    VkResult result =
+        m_context.device()
+            .queue(handles::PRESENT)
+            .lock()
+            ->presentKHR(
+                handles::PresentInfoKHR{}
+                    .waitSemaphoreCount(1)
+                    .pWaitSemaphores(m_renderFinishedSemaphores[m_currentFrame].handlePtr())
+                    .swapchainCount(1)
+                    .pSwapchains(m_swapchain->handlePtr())
+                    .pImageIndices(&m_currentImage));
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_needRecreate ||
+        m_context.window().iconified())
+    {
+        recreate();
+        m_needRecreate = false;
+    }
+    else if (result != VK_SUCCESS)
+    {
+        ASSERT(false, "failed to present swap chain image!");
+    }
+
+    m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;
+}
+
+void Swapchain::accept(RenderInfoVisitor& visitor) const
+{
+    visitor.populateRenderInfo(*this);
+}
+
+uint32_t Swapchain::framesInFlight() const
+{
+    return m_maxFramesInFlight;
 }
 
 uint32_t Swapchain::width() const

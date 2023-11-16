@@ -18,7 +18,8 @@ class Renderer : public IRenderer
 {
 public:
     Renderer(const GraphicsContext& context, IRenderer::CreateInfo createInfo);
-    virtual ::RenderContext start(IRenderTarget& target) override;
+    virtual ::OperationContext start(IRenderTarget& target) override;
+    virtual void finish(::OperationContext& context) override;
     virtual IRenderer& addRenderTarget(IRenderTarget& target) override;
 
     const handles::Device& device() const;

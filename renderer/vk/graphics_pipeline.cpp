@@ -101,7 +101,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsContext& context, CreateInfo cr
 
 GraphicsPipeline::~GraphicsPipeline() {}
 
-const handles::Pipeline& GraphicsPipeline::pipeline(const RenderContext& context)
+const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& context)
 {
     if (auto el = m_pipelines.find(context.renderPass); el != m_pipelines.end())
     {

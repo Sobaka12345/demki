@@ -27,7 +27,7 @@ void Camera::setViewProjection(ViewProjection viewProjection)
     m_viewProjection.set(std::move(viewProjection));
 }
 
-void Camera::bind(RenderContext &context)
+void Camera::bind(OperationContext &context)
 {
     //    if (m_bindContext.expired())
     //    {

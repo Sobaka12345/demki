@@ -3,7 +3,7 @@
 #include <imodel.hpp>
 #include <irenderable.hpp>
 
-void RenderablePack::draw(const RenderContext& context) const
+void RenderablePack::draw(const OperationContext& context) const
 {
     for (auto modelQueueIter = m_renderQueues.begin(); modelQueueIter != m_renderQueues.end();)
     {

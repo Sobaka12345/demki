@@ -6,7 +6,7 @@ Block::Block(Renderable renderable)
     : m_renderable(std::move(renderable))
 {}
 
-void Block::draw(RenderContext& context)
+void Block::draw(OperationContext& context)
 {
     m_renderable.bind(context);
     m_renderable.draw(context);
@@ -96,7 +96,7 @@ bool Figure::tryRotate()
     return true;
 }
 
-void Figure::draw(RenderContext& commandBuffer)
+void Figure::draw(OperationContext& commandBuffer)
 {
     for (auto& block : m_blocks)
     {

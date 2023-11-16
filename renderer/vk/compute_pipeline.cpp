@@ -24,7 +24,7 @@ ComputePipeline::ComputePipeline(const GraphicsContext& context, CreateInfo crea
 
 ComputePipeline::~ComputePipeline() {}
 
-const handles::Pipeline& ComputePipeline::pipeline(const RenderContext& context)
+const handles::Pipeline& ComputePipeline::pipeline(const OperationContext& context)
 {
     if (auto el = m_pipelines.find(context.renderPass); el != m_pipelines.end())
     {

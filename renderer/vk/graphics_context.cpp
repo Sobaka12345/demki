@@ -6,10 +6,11 @@
 
 #include "compute_pipeline.hpp"
 #include "graphics_pipeline.hpp"
+#include "computer.hpp"
 #include "renderer.hpp"
 #include "swapchain.hpp"
 
-#include <render_context.hpp>
+#include <operation_context.hpp>
 #include <window.hpp>
 
 #include <cstring>
@@ -243,6 +244,11 @@ const handles::Device& GraphicsContext::device() const
 const Window& GraphicsContext::window() const
 {
     return m_window;
+}
+
+std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo createInfo) const
+{
+    return std::make_shared<Computer>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<IPipeline> GraphicsContext::createPipeline(IPipeline::CreateInfo createInfo) const
