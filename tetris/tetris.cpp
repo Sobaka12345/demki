@@ -40,8 +40,8 @@ Tetris::Tetris()
         m_camera->setViewProjection(viewProjection);
     }
 
-    m_pipeline = context().createPipeline(
-        IPipeline::CreateInfo{}
+    m_pipeline = context().createGraphicsPipeline(
+        IGraphicsPipeline::CreateInfo{}
             .addInput(Vertex3DColoredTextured{})
             .addShader(IPipeline::ShaderInfo{
                 .type = IPipeline::ShaderType::VERTEX,

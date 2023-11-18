@@ -119,7 +119,7 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
 
     m_commandBuffers =
         m_context.device()
-            .commandPool(handles::GRAPHICS)
+            .commandPool(handles::GRAPHICS_COMPUTE)
             .lock()
             ->allocateBuffers(m_maxFramesInFlight);
 
@@ -139,11 +139,11 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
     static std::vector<uint32_t> queueFamilyIndices = {};
     VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (m_context.device().queueFamilies()[handles::GRAPHICS] !=
+    if (m_context.device().queueFamilies()[handles::GRAPHICS_COMPUTE] !=
         m_context.device().queueFamilies()[handles::PRESENT])
     {
         sharingMode = VK_SHARING_MODE_CONCURRENT;
-        queueFamilyIndices = { m_context.device().queueFamilies()[handles::GRAPHICS],
+        queueFamilyIndices = { m_context.device().queueFamilies()[handles::GRAPHICS_COMPUTE],
             m_context.device().queueFamilies()[handles::PRESENT] };
     }
 
@@ -259,7 +259,6 @@ bool Swapchain::prepare(::OperationContext& context)
 {
     auto& specContext = get(context);
 
-
     vkWaitForFences(m_context.device(), 1, m_inFlightFences[m_currentFrame].handlePtr(), VK_TRUE,
         UINT64_MAX);
 
@@ -305,7 +304,7 @@ void Swapchain::present(::OperationContext& context)
             .pSignalSemaphores(m_renderFinishedSemaphores[m_currentFrame].handlePtr());
 
     ASSERT(m_context.device()
-                .queue(handles::GRAPHICS)
+                .queue(handles::GRAPHICS_COMPUTE)
                 .lock()
                 ->submit(1, &submitInfo, m_inFlightFences[m_currentFrame]) == VK_SUCCESS,
         "failed to submit draw command buffer!");

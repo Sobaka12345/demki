@@ -12,4 +12,9 @@ void OperationContext::setScissors(Scissors scissors) const {}
 
 void OperationContext::setViewport(Viewport viewport) const {}
 
+IPipeline *OperationContext::pipeline()
+{
+    return nullptr;
+}
+
 }    //  namespace ogl

@@ -5,6 +5,8 @@
 #include "handles/handle.hpp"
 #include "handles/buffer.hpp"
 
+#include "shader_interface_handle.hpp"
+
 #include <iresource_manager.hpp>
 
 #include <span>
@@ -56,6 +58,8 @@ public:
     virtual std::shared_ptr<IModel> createModel(std::filesystem::path path) override;
     virtual std::shared_ptr<ITexture> createTexture(ITexture::CreateInfo createInfo) override;
 
+    std::shared_ptr<ShaderInterfaceHandle> fetchHandleSpecific(ShaderBlockType sbt,
+        uint32_t layoutSize);
     virtual std::shared_ptr<IShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt,
         uint32_t layoutSize) override;
 

@@ -63,9 +63,10 @@ QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
 
     for (int i = 0; i < queueFamilyProperties.size(); ++i)
     {
-        if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        if ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
+            (queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT))
         {
-            m_queueFamilyIndices[QueueFamilyType::GRAPHICS] = i;
+            m_queueFamilyIndices[QueueFamilyType::GRAPHICS_COMPUTE] = i;
         }
 
         VkBool32 presentSupport = false;

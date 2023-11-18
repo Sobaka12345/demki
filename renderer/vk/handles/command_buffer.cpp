@@ -159,5 +159,10 @@ void CommandBuffer::setScissor(VkRect2D scissor) const
     setScissors(0, 1, &scissor);
 }
 
+void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
+{
+    vkCmdDispatch(handle(), groupCountX, groupCountY, groupCountZ);
+}
+
 
 }}    //  namespace vk::handles

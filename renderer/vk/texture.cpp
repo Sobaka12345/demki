@@ -158,7 +158,7 @@ void Texture::generateMipmaps()
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    auto oneTimeCommand = m_context.device().oneTimeCommand(handles::GRAPHICS);
+    auto oneTimeCommand = m_context.device().oneTimeCommand(handles::GRAPHICS_COMPUTE);
 
     auto barrier =
         ImageMemoryBarrier{}

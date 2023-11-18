@@ -13,8 +13,9 @@ struct OperationContext
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;
     void setViewport(Viewport viewport) const;
+    IPipeline* pipeline();
 
-    IPipeline* pipeline = nullptr;
+    IPipeline* gpipeline = nullptr;
 };
 
 }

@@ -28,7 +28,7 @@ public:
     IPipeline& pipeline()
     {
         IPipeline* result = nullptr;
-        std::visit([&](auto& context) { result = context.pipeline; }, *this);
+        std::visit([&](auto& context) { result = context.pipeline(); }, *this);
         ASSERT(result, "pipeline is not bound");
         return *result;
     };

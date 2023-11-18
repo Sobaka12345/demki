@@ -5,22 +5,22 @@
 class IComputeTarget;
 
 namespace vk {
-class ComputeTarget;
+class StorageBuffer;
 }
 
 namespace ogl {
-class ComputeTarget;
+class StorageBuffer;
 }
 
 class ComputerInfoVisitor
 {
 public:
-    virtual void populateComputerInfo(const vk::ComputeTarget& swapchain)
+    virtual void populateComputerInfo(const vk::StorageBuffer& computeTarget)
     {
         ASSERT(false, "not implemented");
     };
 
-    virtual void populateRenderInfo(const ogl::ComputeTarget& swapchain)
+    virtual void populateComputerInfo(const ogl::StorageBuffer& computeTarget)
     {
         ASSERT(false, "not implemented");
     };

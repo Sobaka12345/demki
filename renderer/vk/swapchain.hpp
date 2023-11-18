@@ -23,9 +23,7 @@ namespace handles {
 class Surface;
 }
 
-class Swapchain
-    : public ISwapchain
-    , public RenderTarget
+class Swapchain : public ISwapchain
 {
     struct SwapChainSupportDetails
     {

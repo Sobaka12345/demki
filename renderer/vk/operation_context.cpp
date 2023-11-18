@@ -3,11 +3,14 @@
 #include "handles/command_buffer.hpp"
 #include "handles/render_pass.hpp"
 
+#include "graphics_pipeline.hpp"
 #include "renderer.hpp"
 #include "computer.hpp"
+#include "compute_pipeline.hpp"
 
 #include <vulkan/vulkan_core.h>
 #include <operation_context.hpp>
+#include <ipipeline.hpp>
 
 namespace vk {
 
@@ -20,7 +23,8 @@ OperationContext::OperationContext(Renderer* renderer)
 {}
 
 OperationContext::OperationContext(OperationContext&& other)
-    : pipeline(std::move(other.pipeline))
+    : graphicsPipeline(std::move(other.graphicsPipeline))
+    , computePipeline(std::move(other.computePipeline))
     , waitSemaphores(std::move(other.waitSemaphores))
     , finishSemaphores(std::move(other.finishSemaphores))
     , framebuffer(std::move(other.framebuffer))
@@ -36,6 +40,14 @@ OperationContext::OperationContext(OperationContext&& other)
 }
 
 OperationContext::~OperationContext() {}
+
+IPipeline* OperationContext::pipeline()
+{
+    if (graphicsPipeline) return graphicsPipeline;
+    if (computePipeline) return computePipeline;
+
+    return nullptr;
+}
 
 void OperationContext::submit(::OperationContext& context)
 {

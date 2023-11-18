@@ -9,6 +9,7 @@
 #include "computer.hpp"
 #include "renderer.hpp"
 #include "swapchain.hpp"
+#include "storage_buffer.hpp"
 
 #include <operation_context.hpp>
 #include <window.hpp>
@@ -251,20 +252,27 @@ std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo
     return std::make_shared<Computer>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<IPipeline> GraphicsContext::createPipeline(IPipeline::CreateInfo createInfo) const
+std::shared_ptr<IComputePipeline> GraphicsContext::createComputePipeline(
+    IComputePipeline::CreateInfo createInfo) const
 {
-    if (createInfo.type() == IPipeline::GRAPHICS)
-        return std::make_shared<GraphicsPipeline>(*this, std::move(createInfo));
-    else if (createInfo.type() == IPipeline::COMPUTE)
-        return std::make_shared<ComputePipeline>(*this, std::move(createInfo));
+    return std::make_shared<ComputePipeline>(*this, std::move(createInfo));
+}
 
-    ASSERT(false, "not implemented");
-    return nullptr;
+std::shared_ptr<IGraphicsPipeline> GraphicsContext::createGraphicsPipeline(
+    IGraphicsPipeline::CreateInfo createInfo) const
+{
+    return std::make_shared<GraphicsPipeline>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<IRenderer> GraphicsContext::createRenderer(IRenderer::CreateInfo createInfo) const
 {
     return std::make_shared<Renderer>(*this, std::move(createInfo));
+}
+
+std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
+    IStorageBuffer::CreateInfo createInfo) const
+{
+    return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(
@@ -273,9 +281,14 @@ std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(
     return std::make_shared<Swapchain>(*this, std::move(createInfo));
 }
 
-IResourceManager& GraphicsContext::resources() const
+ResourceManager& GraphicsContext::resourcesSpecific() const
 {
     return *m_resourceManager;
+}
+
+IResourceManager& GraphicsContext::resources() const
+{
+    return resourcesSpecific();
 }
 
 void GraphicsContext::waitIdle()

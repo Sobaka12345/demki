@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pipeline.hpp"
+#include "handles/semaphore.hpp"
 
 #include <shader_interface.hpp>
 #include <types.hpp>
@@ -10,13 +10,17 @@
 
 struct OperationContext;
 
+class IComputeTarget;
+class IRenderTarget;
+class IPipeline;
+
 namespace vk {
 
 class Computer;
 class Renderer;
 
-class ComputeTarget;
-class RenderTarget;
+class ComputePipeline;
+class GraphicsPipeline;
 
 namespace handles {
 
@@ -37,19 +41,22 @@ struct OperationContext
     OperationContext(const OperationContext& other) = delete;
     ~OperationContext();
 
+    IPipeline* pipeline();
+
     void submit(::OperationContext& context);
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;
     void setViewport(Viewport viewport) const;
 
-    Pipeline* pipeline = nullptr;
     std::vector<VkSemaphore> waitSemaphores;
     std::vector<VkSemaphore> finishSemaphores;
     handles::Framebuffer* framebuffer = nullptr;
     handles::CommandBuffer* commandBuffer = nullptr;
-    ComputeTarget* computeTarget = nullptr;
-    RenderTarget* renderTarget = nullptr;
+    IComputeTarget* computeTarget = nullptr;
+    IRenderTarget* renderTarget = nullptr;
 
+    ComputePipeline* computePipeline = nullptr;
+    GraphicsPipeline* graphicsPipeline = nullptr;
     Renderer* renderer = nullptr;
     Computer* computer = nullptr;
     handles::RenderPass* renderPass = nullptr;

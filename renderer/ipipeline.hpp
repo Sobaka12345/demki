@@ -44,69 +44,6 @@ public:
         std::filesystem::path path;
     };
 
-    class CreateInfo
-    {
-    public:
-        template <IsShaderInterfaceContainer T>
-        CreateInfo& addShaderInterfaceContainer()
-        {
-            m_uniformContainers.push_back({ T::sId(), T::sLayout() });
-            return *this;
-        }
-
-        const auto& uniformContainers() const { return m_uniformContainers; }
-
-        auto& uniformContainers() { return m_uniformContainers; }
-
-        CreateInfo& addShader(ShaderInfo shaderInfo)
-        {
-            m_shaders.push_back(shaderInfo);
-            return *this;
-        }
-
-        const auto& shaders() const { return m_shaders; }
-
-        auto& shaders() { return m_shaders; }
-
-        CreateInfo& addInput(InputType input)
-        {
-            m_inputs.push_back(input);
-            return *this;
-        }
-
-        const auto& inputs() const { return m_inputs; }
-
-        auto& inputs() { return m_inputs; }
-
-        CreateInfo& sampleShading(SampleShading value)
-        {
-            m_sampleShading = value;
-            return *this;
-        }
-
-        const auto& sampleShading() const { return m_sampleShading; }
-
-        auto& sampleShading() { return m_sampleShading; }
-
-        CreateInfo& type(Type value)
-        {
-            m_type = value;
-            return *this;
-        }
-
-        const auto& type() const { return m_type; }
-
-        auto& type() { return m_type; }
-
-    private:
-        Type m_type = GRAPHICS;
-        SampleShading m_sampleShading = SampleShading::SS_0_PERCENT;
-        std::vector<InputType> m_inputs;
-        std::vector<ShaderInfo> m_shaders;
-        std::vector<std::pair<uint32_t, std::span<const ShaderInterfaceBinding>>>
-            m_uniformContainers;
-    };
-
     struct IBindContext
     {
         virtual void bind(OperationContext& context,
@@ -114,6 +51,42 @@ public:
 
         ~IBindContext() {}
     };
+
+protected:
+    template <typename Derived>
+    class CreateInfo
+    {
+    public:
+        template <IsShaderInterfaceContainer T>
+        Derived& addShaderInterfaceContainer()
+        {
+            m_interfaceContainers.push_back({ T::sId(), T::sLayout() });
+            return that();
+        }
+
+        const auto& interfaceContainers() const { return m_interfaceContainers; }
+
+        auto& interfaceContainers() { return m_interfaceContainers; }
+
+        Derived& addShader(ShaderInfo shaderInfo)
+        {
+            m_shaders.push_back(shaderInfo);
+            return that();
+        }
+
+        const auto& shaders() const { return m_shaders; }
+
+        auto& shaders() { return m_shaders; }
+
+    private:
+        Derived& that() { return *static_cast<Derived*>(this); }
+
+    private:
+        std::vector<ShaderInfo> m_shaders;
+        std::vector<std::pair<uint32_t, std::span<const ShaderInterfaceBinding>>>
+            m_interfaceContainers;
+    };
+
 
 public:
     virtual void bind(OperationContext& context) = 0;

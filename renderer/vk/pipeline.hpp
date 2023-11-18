@@ -26,8 +26,18 @@ class PipelineLayout;
 class RenderPass;
 }
 
-class Pipeline : public IPipeline
+class Pipeline : virtual public IPipeline
 {
+protected:
+    struct BindContext : public IPipeline::IBindContext
+    {
+        virtual void bind(::OperationContext& context,
+            const IShaderInterfaceContainer& container) override;
+        std::shared_ptr<handles::DescriptorSet> set;
+        uint32_t setId;
+    };
+
+private:
     struct SetHasher
     {
         size_t operator()(const std::set<ShaderResource::Descriptor::Id>& e) const
@@ -44,26 +54,25 @@ class Pipeline : public IPipeline
         }
     };
 
-    struct BindContext : public IPipeline::IBindContext
-    {
-        virtual void bind(::OperationContext& context,
-            const IShaderInterfaceContainer& container) override;
-        std::shared_ptr<handles::DescriptorSet> set;
-        uint32_t setId;
-    };
-
 public:
-    Pipeline(const GraphicsContext& context, IPipeline::CreateInfo createInfo);
-    ~Pipeline();
-
-    virtual void bind(::OperationContext& context) override;
     virtual std::weak_ptr<IBindContext> bindContext(
         const IShaderInterfaceContainer& container) override;
 
     const handles::PipelineLayout& layout() const { return *m_pipelineLayout; }
 
+protected:
+    Pipeline(const GraphicsContext& context, const auto& createInfo)
+        : m_context(context)
+    {
+        init(createInfo.interfaceContainers());
+    }
+
+    ~Pipeline();
+
 private:
-    virtual const handles::Pipeline& pipeline(const vk::OperationContext& context) = 0;
+    void init(const std::vector<std::pair<uint32_t, std::span<const ShaderInterfaceBinding>>>&
+            interfaceContainers);
+    virtual BindContext* newBindContext() const = 0;
 
 protected:
     const GraphicsContext& m_context;
@@ -78,8 +87,6 @@ protected:
     std::unique_ptr<handles::PipelineLayout> m_pipelineLayout;
 
     std::unordered_map<InterfaceBlockID, uint32_t> m_descriptorsCount;
-
-    IPipeline::CreateInfo m_createInfo;
 
     std::vector<VkVertexInputBindingDescription> m_bindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> m_attributeDescriptions;

@@ -26,8 +26,8 @@ Dummy::Dummy()
     m_timer.setIntervalMS(100);
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
 
-    m_pipeline = context().createPipeline(
-        IPipeline::CreateInfo{}
+    m_pipeline = context().createGraphicsPipeline(
+        IGraphicsPipeline::CreateInfo{}
             .addInput(Vertex3DColoredTextured{})
             .addShader(IPipeline::ShaderInfo{
                 .type = IPipeline::ShaderType::VERTEX,
@@ -97,4 +97,6 @@ void Dummy::perform()
 
     m_renderable->bind(context);
     m_renderable->draw(context);
+
+    context.submit();
 }

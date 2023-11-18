@@ -11,7 +11,60 @@
 #include "handles/render_pass.hpp"
 #include "handles/shader_module.hpp"
 
+#include <boost/pfr.hpp>
+
+namespace {
+template <typename T>
+VkFormat attrubuteFormat(const T& attribute)
+{
+    if constexpr (std::is_same_v<T, float>)
+    {
+        return VK_FORMAT_R32_SFLOAT;
+    }
+    else if constexpr (std::is_same_v<T, glm::vec2>)
+    {
+        return VK_FORMAT_R32G32_SFLOAT;
+    }
+    else if constexpr (std::is_same_v<T, glm::vec3>)
+    {
+        return VK_FORMAT_R32G32B32_SFLOAT;
+    }
+    else if constexpr (std::is_same_v<T, glm::vec4>)
+    {
+        return VK_FORMAT_R32G32B32A32_SFLOAT;
+    }
+    return VK_FORMAT_UNDEFINED;
+}
+}    //  namespace
+
 namespace vk {
+
+void GraphicsPipeline::BindContext::bind(::OperationContext& context,
+    const IShaderInterfaceContainer& container)
+{
+    auto& specContext = get(context);
+    const auto uniforms = container.dynamicUniforms();
+    std::vector<uint32_t> offsets(uniforms.size(), 0);
+    std::for_each(uniforms.begin(), uniforms.end(), [](auto& descriptor) {
+        DASSERT(!descriptor.handle.expired(), "handle is expired or has not been initialized");
+        struct ResourceIdVisitor : public ShaderInterfaceHandleVisitor
+        {
+            void visit(ShaderInterfaceHandle& handle) override { handle.assureDescriptorCount(2); }
+        } visitor;
+        descriptor.handle.lock()->accept(visitor);
+    });
+    //    std::vector<uint32_t> offsets(uniforms.size());
+    //    std::transform(uniforms.begin(), uniforms.end(), offsets.begin(), [](const auto&
+    //    descriptor) {
+    //        DASSERT(!descriptor.handle.expired(), "handle is expired or has not been
+    //        initialized"); return descriptor.handle.lock()->resourceOffset();
+    //    });
+
+    //  TO DO: RETURN DYNAMIC OFFSETS
+
+    specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(), setId,
+        *set, offsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
+}
 
 GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
 {
@@ -97,9 +150,43 @@ GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
 
 GraphicsPipeline::GraphicsPipeline(const GraphicsContext& context, CreateInfo createInfo)
     : Pipeline(context, createInfo)
-{}
+    , m_shaders(std::move(createInfo.shaders()))
+    , m_sampleShading(createInfo.sampleShading())
+{
+    m_bindingDescriptions.resize(createInfo.inputs().size());
+    m_attributeDescriptions.reserve(createInfo.inputs().size() * 3);
+
+    for (uint32_t i = 0; i < createInfo.inputs().size(); ++i)
+    {
+        std::visit(
+            [&](auto& val) {
+                m_bindingDescriptions[i].binding = i;
+                m_bindingDescriptions[i].stride = sizeof(decltype(val));
+                m_bindingDescriptions[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                uint32_t j = 0;
+                boost::pfr::for_each_field(val, [&](auto& subVal) {
+                    m_attributeDescriptions.push_back({
+                        .location = j++,
+                        .binding = i,
+                        .format = attrubuteFormat(subVal),
+                        .offset = static_cast<uint32_t>(
+                            reinterpret_cast<int8_t*>(&subVal) - reinterpret_cast<int8_t*>(&val)),
+                    });
+                });
+            },
+            createInfo.inputs()[i]);
+    }
+}
 
 GraphicsPipeline::~GraphicsPipeline() {}
+
+void GraphicsPipeline::bind(::OperationContext& context)
+{
+    auto& specContext = get(context);
+    specContext.commandBuffer->bindPipeline(pipeline(specContext), VK_PIPELINE_BIND_POINT_GRAPHICS);
+    specContext.graphicsPipeline = this;
+}
 
 const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& context)
 {
@@ -111,7 +198,7 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
     handles::HandleVector<handles::ShaderModule> shaders;
     std::vector<PipelineShaderStageCreateInfo> shaderStageCreateInfos;
 
-    for (const auto& shaderInfo : m_createInfo.shaders())
+    for (const auto& shaderInfo : m_shaders)
     {
         shaders.emplace_back(m_context.device(), shaderInfo.path);
         shaderStageCreateInfos.push_back(
@@ -124,9 +211,9 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
     PipelineMultisampleStateCreateInfo multisampling =
         PipelineMultisampleStateCreateInfo()
             .sampleShadingEnable(
-                m_createInfo.sampleShading() == SampleShading::SS_0_PERCENT ? VK_FALSE : VK_TRUE)
+                m_sampleShading == SampleShading::SS_0_PERCENT ? VK_FALSE : VK_TRUE)
             .rasterizationSamples(context.renderer->sampleCount())
-            .minSampleShading(toVkSampleShadingCoefficient(m_createInfo.sampleShading()))
+            .minSampleShading(toVkSampleShadingCoefficient(m_sampleShading))
             .pSampleMask(nullptr)
             .alphaToCoverageEnable(VK_FALSE)
             .alphaToOneEnable(VK_FALSE);
@@ -149,6 +236,11 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
                 .pVertexInputState(&vertexInput) });
 
     return newEl->second;
+}
+
+GraphicsPipeline::BindContext* GraphicsPipeline::newBindContext() const
+{
+    return new BindContext;
 }
 
 }    //  namespace vk

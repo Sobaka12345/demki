@@ -140,7 +140,7 @@ uint32_t ResourceManager::dynamicAlignment(uint32_t layoutSize) const
     return layoutSize;
 }
 
-std::shared_ptr<IShaderInterfaceHandle> ResourceManager::fetchHandle(ShaderBlockType sbt,
+std::shared_ptr<ShaderInterfaceHandle> ResourceManager::fetchHandleSpecific(ShaderBlockType sbt,
     uint32_t layoutSize)
 {
     const uint32_t alignment = dynamicAlignment(layoutSize);
@@ -163,6 +163,12 @@ std::shared_ptr<IShaderInterfaceHandle> ResourceManager::fetchHandle(ShaderBlock
     }
 
     return insertAndFetchSpecificHandle(m_uniformShaderResources);
+}
+
+std::shared_ptr<IShaderInterfaceHandle> ResourceManager::fetchHandle(ShaderBlockType sbt,
+    uint32_t layoutSize)
+{
+    return fetchHandleSpecific(sbt, layoutSize);
 }
 
 }    //  namespace vk

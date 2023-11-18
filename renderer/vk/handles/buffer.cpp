@@ -52,13 +52,13 @@ bool Buffer::bindMemory(uint32_t bindingOffset)
 
 void Buffer::copyTo(const Buffer& dst, VkBufferCopy copyRegion) const
 {
-    m_device.oneTimeCommand(GRAPHICS)().copyBuffer(handle(), dst, { &copyRegion, 1 });
+    m_device.oneTimeCommand(GRAPHICS_COMPUTE)().copyBuffer(handle(), dst, { &copyRegion, 1 });
 }
 
 void Buffer::copyToImage(
     const Image& dst, VkImageLayout dstLayout, VkBufferImageCopy copyRegion) const
 {
-    m_device.oneTimeCommand(GRAPHICS)().copyBufferToImage(handle(), dst, dstLayout,
+    m_device.oneTimeCommand(GRAPHICS_COMPUTE)().copyBufferToImage(handle(), dst, dstLayout,
         { &copyRegion, 1 });
 }
 

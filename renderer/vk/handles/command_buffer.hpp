@@ -92,6 +92,8 @@ public:
     void setScissors(uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const;
     void setScissor(VkRect2D scissor) const;
 
+    void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const;
+
 private:
     const Device& m_device;
     const CommandPool& m_pool;

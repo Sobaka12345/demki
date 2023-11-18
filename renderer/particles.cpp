@@ -1,20 +1,29 @@
 #include "particles.hpp"
 
-Particles::Particles(IShaderResourceProvider &provider)
-    : m_particlesBeforeArray(
-          provider.fetchHandle(ShaderBlockType::STORAGE, m_particlesBeforeArray.s_layoutSize))
-    , m_particlesNowArray(
-          provider.fetchHandle(ShaderBlockType::STORAGE, m_particlesNowArray.s_layoutSize))
+#include <igraphics_context.hpp>
+
+Particles::Particles(const IGraphicsContext& context, std::span<const Particle> initialData)
 {
+    IStorageBuffer::CreateInfo bufferInfo{
+        .elementLayoutSize = sizeof(Particle),
+        .size = initialData.size_bytes(),
+        .initialData = initialData.data(),
+    };
+
+    m_particlesIn = context.createStorageBuffer(bufferInfo);
+    m_particlesOut = context.createStorageBuffer(bufferInfo);
+
     m_descriptors[0].binding = s_layout[0];
-    m_descriptors[0].handle = m_particlesBeforeArray.handle();
+    m_descriptors[0].handle = m_particlesIn->handle();
+
     m_descriptors[1].binding = s_layout[1];
-    m_descriptors[1].handle = m_particlesNowArray.handle();
+    m_descriptors[1].handle = m_particlesOut->handle();
 }
 
-void Particles::setParticles(glm::mat4 view) {}
-
-void Particles::bind(OperationContext &context) {}
+void Particles::bind(OperationContext& context)
+{
+    context.pipeline().bindContext(*this).lock()->bind(context, *this);
+}
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::uniforms() const
 {
@@ -23,5 +32,20 @@ std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::unifo
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::dynamicUniforms() const
 {
-    return m_descriptors;
+    return {};
+}
+
+void Particles::accept(ComputerInfoVisitor& visitor) const
+{
+    m_particlesOut->accept(visitor);
+}
+
+bool Particles::prepare(OperationContext& context)
+{
+    return m_particlesOut->prepare(context);
+}
+
+void Particles::compute(OperationContext& context)
+{
+    return m_particlesOut->compute(context);
 }

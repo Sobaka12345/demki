@@ -32,7 +32,7 @@ class CommandPool;
 
 enum QueueFamilyType : uint16_t
 {
-    GRAPHICS,
+    GRAPHICS_COMPUTE,
     PRESENT,
     COUNT
 };

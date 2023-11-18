@@ -80,6 +80,8 @@ add_library(${PROJECT_NAME} STATIC
 	vk/operation_context.cpp
     vk/resource_manager.hpp
     vk/resource_manager.cpp
+	vk/storage_buffer.hpp
+	vk/storage_buffer.cpp
     vk/swapchain.hpp
     vk/swapchain.cpp
     vk/texture.hpp
@@ -98,12 +100,15 @@ add_library(${PROJECT_NAME} STATIC
     graphical_application.hpp
     graphical_application.cpp
 	icomputer.hpp
-    igraphics_context.hpp
+	igraphics_context.hpp
+	igraphics_pipeline.hpp
     imodel.hpp
     ipipeline.hpp
     irenderable.hpp
     irenderer.hpp
 	irender_target.hpp
+	istorage_buffer.hpp
+	icompute_pipeline.hpp
 	icompute_target.hpp
     iresource.hpp
     iresource_manager.hpp

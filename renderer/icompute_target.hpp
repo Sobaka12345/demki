@@ -11,7 +11,6 @@ public:
     virtual ~IComputeTarget() {}
 
     virtual void accept(ComputerInfoVisitor& visitor) const = 0;
-    virtual void populateOperationContext(OperationContext& context) = 0;
-    [[nodiscard]] virtual bool prepare(OperationContext&) = 0;
-    virtual void compute(OperationContext&) = 0;
+    [[nodiscard]] virtual bool prepare(OperationContext& context) = 0;
+    virtual void compute(OperationContext& context) = 0;
 };

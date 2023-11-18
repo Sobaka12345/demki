@@ -15,10 +15,13 @@ IComputer& Computer::addComputeTarget(IComputeTarget& target) {}
     ::OperationContext result;
     result.emplace<vk::OperationContext>(this);
 
-    target.prepare(result);
+    if (!target.prepare(result))
+    {
+        result.emplace<vk::OperationContext>();
+        return result;
+    }
 
     auto& kek = get(result);
-    target.populateOperationContext(result);
 
 
     return result;

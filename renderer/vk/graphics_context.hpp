@@ -40,13 +40,18 @@ public:
 public:
     virtual std::shared_ptr<IComputer> createComputer(
         IComputer::CreateInfo createInfo) const override;
-    virtual std::shared_ptr<IPipeline> createPipeline(
-        IPipeline::CreateInfo createInfo) const override;
+    virtual std::shared_ptr<IComputePipeline> createComputePipeline(
+        IComputePipeline::CreateInfo createInfo) const;
+    virtual std::shared_ptr<IGraphicsPipeline> createGraphicsPipeline(
+        IGraphicsPipeline::CreateInfo createInfo) const;
     virtual std::shared_ptr<IRenderer> createRenderer(
         IRenderer::CreateInfo createInfo) const override;
+    virtual std::shared_ptr<IStorageBuffer> createStorageBuffer(
+        IStorageBuffer::CreateInfo createInfo) const override;
     virtual std::shared_ptr<ISwapchain> createSwapchain(
         ISwapchain::CreateInfo createInfo) const override;
 
+    ResourceManager& resourcesSpecific() const;
     virtual IResourceManager& resources() const override;
 
     virtual void waitIdle() override;

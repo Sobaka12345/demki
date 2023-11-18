@@ -42,7 +42,7 @@ bool Image::bindMemory(uint32_t bindingOffset)
 void Image::transitionLayout(
     VkImageLayout oldLayout, VkImageLayout newLayout, ImageSubresourceRange subresourceRange)
 {
-    auto oneTimeCommand = m_device.oneTimeCommand(GRAPHICS);
+    auto oneTimeCommand = m_device.oneTimeCommand(GRAPHICS_COMPUTE);
 
     auto barrier =
         ImageMemoryBarrier{}
