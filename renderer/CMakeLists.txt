@@ -71,11 +71,12 @@ add_library(${PROJECT_NAME} STATIC
 	vk/compute_target.hpp
 	vk/graphics_pipeline.hpp
 	vk/graphics_pipeline.cpp
+	vk/ioperation_target.hpp
 	vk/pipeline.hpp
 	vk/pipeline.cpp
-    vk/render_target.hpp
-    vk/renderer.hpp
-    vk/renderer.cpp
+	vk/render_target.hpp
+	vk/renderer.hpp
+	vk/renderer.cpp
 	vk/operation_context.hpp
 	vk/operation_context.cpp
     vk/resource_manager.hpp
@@ -102,7 +103,7 @@ add_library(${PROJECT_NAME} STATIC
 	icomputer.hpp
 	igraphics_context.hpp
 	igraphics_pipeline.hpp
-    imodel.hpp
+	imodel.hpp
     ipipeline.hpp
     irenderable.hpp
     irenderer.hpp
@@ -128,6 +129,7 @@ add_library(${PROJECT_NAME} STATIC
     utils.hpp
 	shader_interface.hpp
 	shader_interface.cpp
+	type_utils.hpp
     uniform_value.hpp
     vertex.hpp
     window.hpp

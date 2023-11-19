@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-class OperationContext;
 class ComputerInfoVisitor;
+class OperationContext;
 
 class IComputeTarget
 {

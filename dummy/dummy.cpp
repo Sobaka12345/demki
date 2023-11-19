@@ -28,7 +28,7 @@ Dummy::Dummy()
 
     m_pipeline = context().createGraphicsPipeline(
         IGraphicsPipeline::CreateInfo{}
-            .addInput(Vertex3DColoredTextured{})
+            .addInput<Vertex3DColoredTextured>()
             .addShader(IPipeline::ShaderInfo{
                 .type = IPipeline::ShaderType::VERTEX,
                 .path = "./shaders/shader.vert.spv",

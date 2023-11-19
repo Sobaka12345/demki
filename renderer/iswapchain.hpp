@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <functional>
 
-class ISwapchain : public IRenderTarget
+class ISwapchain : virtual public IRenderTarget
 {
 public:
     struct CreateInfo

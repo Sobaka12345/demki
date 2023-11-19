@@ -33,6 +33,7 @@ private:
     virtual BindContext* newBindContext() const override;
 
 private:
+    VkPrimitiveTopology m_topology;
     SampleShading m_sampleShading;
     std::vector<ShaderInfo> m_shaders;
     std::map<const handles::RenderPass*, handles::GraphicsPipeline> m_pipelines;

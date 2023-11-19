@@ -8,8 +8,8 @@ class DemkiConan(ConanFile):
                 "tinyobjloader/2.0.0-rc10",
                 "vulkan-loader/1.3.204.1",
                 "glm/0.9.9.8",
-                "stb/cci.20220909",
-                "pfr/2.1.0"]
+				"stb/cci.20220909",
+				"pfr/2.1.0"]
     generators = "CMakeDeps"
 
     def generate(self):

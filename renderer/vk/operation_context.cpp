@@ -5,7 +5,9 @@
 
 #include "graphics_pipeline.hpp"
 #include "renderer.hpp"
+#include "render_target.hpp"
 #include "computer.hpp"
+#include "compute_target.hpp"
 #include "compute_pipeline.hpp"
 
 #include <vulkan/vulkan_core.h>
@@ -26,7 +28,6 @@ OperationContext::OperationContext(OperationContext&& other)
     : graphicsPipeline(std::move(other.graphicsPipeline))
     , computePipeline(std::move(other.computePipeline))
     , waitSemaphores(std::move(other.waitSemaphores))
-    , finishSemaphores(std::move(other.finishSemaphores))
     , framebuffer(std::move(other.framebuffer))
     , commandBuffer(std::move(other.commandBuffer))
     , computeTarget(std::move(other.computeTarget))
@@ -85,8 +86,8 @@ inline VkRect2D toVkScissors(const Scissors& scissors)
 
 void OperationContext::waitForOperation(OperationContext& other)
 {
-    std::copy(other.finishSemaphores.begin(), other.finishSemaphores.end(),
-        std::back_inserter(waitSemaphores));
+    other.operationTarget()->populateWaitInfo(*this);
+    operationTarget()->waitFor(*this);
 }
 
 void OperationContext::setScissors(Scissors scissors) const
@@ -97,6 +98,15 @@ void OperationContext::setScissors(Scissors scissors) const
 void OperationContext::setViewport(Viewport viewport) const
 {
     commandBuffer->setViewport(toVkViewport(viewport));
+}
+
+IOperationTarget* OperationContext::operationTarget()
+{
+    if (graphicsPipeline) return renderTarget;
+    else if (computePipeline)
+        return computeTarget;
+
+    return nullptr;
 }
 
 }    //  namespace vk

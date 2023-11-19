@@ -17,13 +17,14 @@ class Window;
 namespace vk {
 
 class GraphicsContext;
-class OperationContext;
 
 namespace handles {
 class Surface;
 }
 
-class Swapchain : public ISwapchain
+class Swapchain
+    : public ISwapchain
+    , public RenderTarget
 {
     struct SwapChainSupportDetails
     {
@@ -59,6 +60,9 @@ public:
     VkFormat depthFormat() const;
     VkSampleCountFlagBits sampleCount() const;
 
+    virtual void populateWaitInfo(OperationContext& context) override;
+    virtual void waitFor(OperationContext& context) override;
+
 private:
     void recreate();
     void destroy();
@@ -93,6 +97,8 @@ private:
     int m_maxFramesInFlight;
 
     handles::HandleVector<handles::CommandBuffer> m_commandBuffers;
+
+    std::vector<VkSemaphore> m_renderWaitSemaphores;
     handles::HandleVector<handles::Semaphore> m_imageAvailableSemaphores;
     handles::HandleVector<handles::Semaphore> m_renderFinishedSemaphores;
     handles::HandleVector<handles::Fence> m_inFlightFences;

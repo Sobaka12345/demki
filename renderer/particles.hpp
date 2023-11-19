@@ -13,7 +13,7 @@ struct Particle
 {
     glm::vec2 pos;
     glm::vec2 velocity;
-    glm::vec3 color;
+    glm::vec4 color;
 };
 
 class Particles
@@ -36,6 +36,8 @@ public:
 
 public:
     Particles(const IGraphicsContext& context, std::span<const Particle> initialData);
+
+    void draw(OperationContext& context);
 
     virtual void bind(OperationContext& context) override;
     virtual std::span<const InterfaceDescriptor> uniforms() const override;

@@ -292,16 +292,29 @@ void Swapchain::present(::OperationContext& context)
     const auto& commandBuffer = *get(context).commandBuffer;
     ASSERT(commandBuffer.end() == VK_SUCCESS, "failed to record command buffer!");
 
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    const auto submitInfo =
+    std::vector<VkPipelineStageFlags> waitStages = {
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+    };
+    auto submitInfo =
         handles::SubmitInfo{}
-            .waitSemaphoreCount(1)
-            .pWaitSemaphores(m_imageAvailableSemaphores[m_currentFrame].handlePtr())
-            .pWaitDstStageMask(waitStages)
             .commandBufferCount(1)
             .pCommandBuffers(commandBuffer.handlePtr())
             .signalSemaphoreCount(1)
             .pSignalSemaphores(m_renderFinishedSemaphores[m_currentFrame].handlePtr());
+
+    std::vector<VkSemaphore> waitSemaphores{ m_imageAvailableSemaphores[m_currentFrame].handle() };
+
+    if (!m_renderWaitSemaphores.empty())
+    {
+        std::copy(m_renderWaitSemaphores.begin(), m_renderWaitSemaphores.end(),
+            std::back_inserter(waitSemaphores));
+        waitStages.push_back(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+        m_renderWaitSemaphores.clear();
+    }
+
+    submitInfo.waitSemaphoreCount(waitSemaphores.size())
+        .pWaitSemaphores(waitSemaphores.data())
+        .pWaitDstStageMask(waitStages.data());
 
     ASSERT(m_context.device()
                 .queue(handles::GRAPHICS_COMPUTE)
@@ -368,6 +381,17 @@ VkFormat Swapchain::imageFormat() const
 VkFormat Swapchain::depthFormat() const
 {
     return m_depthFormat;
+}
+
+void Swapchain::populateWaitInfo(OperationContext& context)
+{
+    context.waitSemaphores.push_back(m_renderFinishedSemaphores[m_currentFrame].handle());
+}
+
+void Swapchain::waitFor(OperationContext& context)
+{
+    std::copy(context.waitSemaphores.begin(), context.waitSemaphores.end(),
+        std::back_inserter(m_renderWaitSemaphores));
 }
 
 handles::Framebuffer& Swapchain::currentFramebuffer()

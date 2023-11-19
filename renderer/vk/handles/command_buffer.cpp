@@ -60,6 +60,14 @@ void CommandBuffer::free() const
     vkFreeCommandBuffers(m_device, m_pool, 1, handlePtr());
 }
 
+void CommandBuffer::draw(uint32_t vertexCount,
+    uint32_t instanceCount,
+    uint32_t firstVertex,
+    uint32_t firstInstance) const
+{
+    vkCmdDraw(handle(), vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
 void CommandBuffer::drawIndexed(uint32_t indexCount,
     uint32_t instanceCount,
     uint32_t firstIndex,

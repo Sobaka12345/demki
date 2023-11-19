@@ -35,7 +35,7 @@ Memory::DeviceLocalMapped::~DeviceLocalMapped() {}
 
 void Memory::DeviceLocalMapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
 {
-    stagingBuffer->memory().lock()->map().lock()->writeAndSync(src, size, offset);
+    stagingBuffer->memory().lock()->mapped->writeAndSync(src, size, offset);
 }
 
 //  why ptrdiff?
@@ -73,6 +73,8 @@ void Memory::HostVisibleMapped::sync(VkDeviceSize size, ptrdiff_t offset)
 {
     const auto atomSize = memory.device.physicalDeviceProperties().limits.nonCoherentAtomSize;
 
+    if (auto rem = offset % atomSize; rem != 0) offset = offset - rem;
+
     //  TO DO: reorganize memory flushing
     if (size < atomSize) size = atomSize;
     else if (auto rem = size % atomSize; size > atomSize && size < memory.size && rem != 0)
@@ -80,7 +82,7 @@ void Memory::HostVisibleMapped::sync(VkDeviceSize size, ptrdiff_t offset)
         size = size - rem + atomSize;
     }
 
-    if (auto rem = offset % atomSize; rem != 0) offset = offset - rem;
+    if (size + offset > memory.size) size = memory.size - offset;
 
     const auto range = MappedMemoryRange{}.memory(memory).offset(offset).size(size);
 

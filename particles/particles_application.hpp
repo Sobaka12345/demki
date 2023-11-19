@@ -26,7 +26,8 @@ private:
 
     std::shared_ptr<IComputer> m_computer;
     std::shared_ptr<IRenderer> m_renderer;
-    std::shared_ptr<IPipeline> m_pipeline;
+    std::shared_ptr<IPipeline> m_computePipeline;
+    std::shared_ptr<IPipeline> m_graphicsPipeline;
 
     std::unique_ptr<DeltaTime> m_deltaTime;
     std::unique_ptr<Particles> m_particles;

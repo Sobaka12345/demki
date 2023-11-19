@@ -4,9 +4,8 @@
 #include "renderer.hpp"
 
 #include "handles/command_buffer.hpp"
-#include "handles/descriptor_pool.hpp"
 #include "handles/descriptor_set.hpp"
-#include "handles/descriptor_set_layout.hpp"
+#include "handles/descriptor_pool.hpp"
 #include "handles/pipeline_layout.hpp"
 #include "handles/render_pass.hpp"
 #include "handles/shader_module.hpp"
@@ -14,26 +13,35 @@
 #include <boost/pfr.hpp>
 
 namespace {
-template <typename T>
-VkFormat attrubuteFormat(const T& attribute)
+
+VkPrimitiveTopology primitiveTopology(IGraphicsPipeline::CreateInfo::PrimitiveTopology pt)
 {
-    if constexpr (std::is_same_v<T, float>)
+    switch (pt)
     {
-        return VK_FORMAT_R32_SFLOAT;
+        case IGraphicsPipeline::CreateInfo::POINT: return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        case IGraphicsPipeline::CreateInfo::LINE: return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        case IGraphicsPipeline::CreateInfo::TRIANGLE: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     }
-    else if constexpr (std::is_same_v<T, glm::vec2>)
+    return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+}
+
+VkVertexInputRate inputRate(IGraphicsPipeline::CreateInfo::Binding::Rate rate)
+{
+    if (rate == IGraphicsPipeline::CreateInfo::Binding::VERTEX) return VK_VERTEX_INPUT_RATE_VERTEX;
+    ASSERT(false, "not implemented");
+    return VK_VERTEX_INPUT_RATE_MAX_ENUM;
+}
+
+VkFormat attrubuteFormat(IGraphicsPipeline::CreateInfo::Attribute::Format attribute)
+{
+    switch (attribute)
     {
-        return VK_FORMAT_R32G32_SFLOAT;
-    }
-    else if constexpr (std::is_same_v<T, glm::vec3>)
-    {
-        return VK_FORMAT_R32G32B32_SFLOAT;
-    }
-    else if constexpr (std::is_same_v<T, glm::vec4>)
-    {
-        return VK_FORMAT_R32G32B32A32_SFLOAT;
-    }
-    return VK_FORMAT_UNDEFINED;
+        case IGraphicsPipeline::CreateInfo::Attribute::FLOAT: return VK_FORMAT_R32_SFLOAT;
+        case IGraphicsPipeline::CreateInfo::Attribute::VEC2: return VK_FORMAT_R32G32_SFLOAT;
+        case IGraphicsPipeline::CreateInfo::Attribute::VEC3: return VK_FORMAT_R32G32B32_SFLOAT;
+        case IGraphicsPipeline::CreateInfo::Attribute::VEC4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+        default: return VK_FORMAT_UNDEFINED;
+    };
 }
 }    //  namespace
 
@@ -54,13 +62,14 @@ void GraphicsPipeline::BindContext::bind(::OperationContext& context,
         descriptor.handle.lock()->accept(visitor);
     });
     //    std::vector<uint32_t> offsets(uniforms.size());
-    //    std::transform(uniforms.begin(), uniforms.end(), offsets.begin(), [](const auto&
-    //    descriptor) {
-    //        DASSERT(!descriptor.handle.expired(), "handle is expired or has not been
-    //        initialized"); return descriptor.handle.lock()->resourceOffset();
+    //    std::transform(uniforms.begin(), uniforms.end(), offsets.begin(),
+    //    [](const auto& descriptor) {
+    //        DASSERT(!descriptor.handle.expired(), "handle is expired or has not
+    //        been initialized"); return
+    //        descriptor.handle.lock()->resourceOffset();
     //    });
 
-    //  TO DO: RETURN DYNAMIC OFFSETS
+	//  TO DO: RETURN DYNAMIC OFFSETS
 
     specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(), setId,
         *set, offsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -80,6 +89,7 @@ GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
 
     static constexpr PipelineViewportStateCreateInfo viewportState =
         PipelineViewportStateCreateInfo().viewportCount(1).scissorCount(1);
+
 
     static constexpr PipelineInputAssemblyStateCreateInfo inputAssembly =
         PipelineInputAssemblyStateCreateInfo()
@@ -150,32 +160,30 @@ GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
 
 GraphicsPipeline::GraphicsPipeline(const GraphicsContext& context, CreateInfo createInfo)
     : Pipeline(context, createInfo)
+    , m_topology(primitiveTopology(createInfo.primitiveTopology()))
     , m_shaders(std::move(createInfo.shaders()))
     , m_sampleShading(createInfo.sampleShading())
 {
-    m_bindingDescriptions.resize(createInfo.inputs().size());
-    m_attributeDescriptions.reserve(createInfo.inputs().size() * 3);
+    m_bindingDescriptions.reserve(createInfo.bindings().size());
+    m_attributeDescriptions.reserve(createInfo.attributes().size());
 
-    for (uint32_t i = 0; i < createInfo.inputs().size(); ++i)
+    for (const auto& bindingDesc : createInfo.bindings())
     {
-        std::visit(
-            [&](auto& val) {
-                m_bindingDescriptions[i].binding = i;
-                m_bindingDescriptions[i].stride = sizeof(decltype(val));
-                m_bindingDescriptions[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        m_bindingDescriptions.push_back({
+            .binding = bindingDesc.binding,
+            .stride = bindingDesc.stride,
+            .inputRate = inputRate(bindingDesc.inputRate),
+        });
+    }
 
-                uint32_t j = 0;
-                boost::pfr::for_each_field(val, [&](auto& subVal) {
-                    m_attributeDescriptions.push_back({
-                        .location = j++,
-                        .binding = i,
-                        .format = attrubuteFormat(subVal),
-                        .offset = static_cast<uint32_t>(
-                            reinterpret_cast<int8_t*>(&subVal) - reinterpret_cast<int8_t*>(&val)),
-                    });
-                });
-            },
-            createInfo.inputs()[i]);
+    for (const auto& attributeDesc : createInfo.attributes())
+    {
+        m_attributeDescriptions.push_back({
+            .location = attributeDesc.location,
+            .binding = attributeDesc.binding,
+            .format = attrubuteFormat(attributeDesc.format),
+            .offset = attributeDesc.offset,
+        });
     }
 }
 
@@ -208,6 +216,11 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
                 .pName("main"));
     }
 
+    PipelineInputAssemblyStateCreateInfo inputAssembly =
+        PipelineInputAssemblyStateCreateInfo()
+            .topology(m_topology)
+            .primitiveRestartEnable(VK_FALSE);
+
     PipelineMultisampleStateCreateInfo multisampling =
         PipelineMultisampleStateCreateInfo()
             .sampleShadingEnable(
@@ -230,6 +243,7 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
             defaultPipeline()
                 .pMultisampleState(&multisampling)
                 .renderPass(*context.renderPass)
+                .pInputAssemblyState(&inputAssembly)
                 .layout(*m_pipelineLayout)
                 .stageCount(shaderStageCreateInfos.size())
                 .pStages(shaderStageCreateInfos.data())

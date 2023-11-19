@@ -4,6 +4,7 @@
 #include <types.hpp>
 
 struct OperationContext;
+struct IOperationTarget;
 
 namespace ogl {
 
@@ -14,6 +15,7 @@ struct OperationContext
     void setScissors(Scissors scissors) const;
     void setViewport(Viewport viewport) const;
     IPipeline* pipeline();
+    IOperationTarget* operationTarget();
 
     IPipeline* gpipeline = nullptr;
 };

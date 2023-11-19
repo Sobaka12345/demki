@@ -8,12 +8,14 @@
 #include "handles/queue.hpp"
 
 #include "compute_pipeline.hpp"
+#include "compute_target.hpp"
 #include "resource_manager.hpp"
 
 namespace vk {
 
 StorageBuffer::StorageBuffer(const GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
+    , m_emitWait(false)
     , m_elementCount(createInfo.size / createInfo.elementLayoutSize)
     , m_commandBuffer(std::make_unique<handles::CommandBuffer>(
           context.device().commandPool(handles::GRAPHICS_COMPUTE).lock()->allocateBuffer()))
@@ -60,12 +62,22 @@ void StorageBuffer::compute(::OperationContext& context)
 
     ASSERT(m_commandBuffer->end() == VK_SUCCESS, "failed to end command buffer");
 
-    const auto submitInfo =
-        handles::SubmitInfo{}
-            .commandBufferCount(1)
-            .pCommandBuffers(m_commandBuffer->handlePtr())
-            .signalSemaphoreCount(1)
-            .pSignalSemaphores(m_computeFinishedSemaphore->handlePtr());
+    auto submitInfo =
+        handles::SubmitInfo{}.commandBufferCount(1).pCommandBuffers(m_commandBuffer->handlePtr());
+
+    if (!m_computeWaitSemaphores.empty())
+    {
+        submitInfo.waitSemaphoreCount(m_computeWaitSemaphores.size())
+            .pWaitSemaphores(m_computeWaitSemaphores.data());
+        m_computeWaitSemaphores.clear();
+    }
+
+    if (m_emitWait)
+    {
+        submitInfo.signalSemaphoreCount(1).pSignalSemaphores(
+            m_computeFinishedSemaphore->handlePtr());
+        m_emitWait = false;
+    }
 
     ASSERT(m_context.device()
                 .queue(handles::GRAPHICS_COMPUTE)
@@ -81,9 +93,27 @@ void StorageBuffer::bind(::OperationContext& context) const
     get(context).commandBuffer->bindVertexBuffer(0, 1, &buf, &offset);
 }
 
+void StorageBuffer::draw(::OperationContext& context) const
+{
+    get(context).commandBuffer->draw(m_elementCount, 1, 0, 0);
+}
+
 std::weak_ptr<IShaderInterfaceHandle> StorageBuffer::handle() const
 {
     return m_handle;
+}
+
+void StorageBuffer::waitFor(OperationContext& context)
+{
+    std::copy(context.waitSemaphores.begin(),
+        context.waitSemaphores.end(),
+        std::back_inserter(m_computeWaitSemaphores));
+}
+
+void StorageBuffer::populateWaitInfo(OperationContext& context)
+{
+    m_emitWait = true;
+    context.waitSemaphores.push_back(*m_computeFinishedSemaphore);
 }
 
 }    //  namespace vk

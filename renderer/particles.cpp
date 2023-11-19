@@ -20,6 +20,12 @@ Particles::Particles(const IGraphicsContext& context, std::span<const Particle> 
     m_descriptors[1].handle = m_particlesOut->handle();
 }
 
+void Particles::draw(OperationContext& context)
+{
+    m_particlesOut->bind(context);
+    m_particlesOut->draw(context);
+}
+
 void Particles::bind(OperationContext& context)
 {
     context.pipeline().bindContext(*this).lock()->bind(context, *this);

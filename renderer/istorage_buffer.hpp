@@ -7,7 +7,7 @@
 
 class IShaderInterfaceHandle;
 
-class IStorageBuffer : public IComputeTarget
+class IStorageBuffer : virtual public IComputeTarget
 {
 public:
     struct CreateInfo
@@ -32,4 +32,5 @@ public:
 
     virtual std::weak_ptr<IShaderInterfaceHandle> handle() const = 0;
     virtual void bind(::OperationContext& context) const = 0;
+    virtual void draw(::OperationContext& context) const = 0;
 };

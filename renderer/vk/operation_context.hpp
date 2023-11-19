@@ -10,12 +10,13 @@
 
 struct OperationContext;
 
-class IComputeTarget;
-class IRenderTarget;
 class IPipeline;
 
 namespace vk {
 
+class IOperationTarget;
+class ComputeTarget;
+class RenderTarget;
 class Computer;
 class Renderer;
 
@@ -49,17 +50,19 @@ struct OperationContext
     void setViewport(Viewport viewport) const;
 
     std::vector<VkSemaphore> waitSemaphores;
-    std::vector<VkSemaphore> finishSemaphores;
     handles::Framebuffer* framebuffer = nullptr;
     handles::CommandBuffer* commandBuffer = nullptr;
-    IComputeTarget* computeTarget = nullptr;
-    IRenderTarget* renderTarget = nullptr;
+    ComputeTarget* computeTarget = nullptr;
+    RenderTarget* renderTarget = nullptr;
 
     ComputePipeline* computePipeline = nullptr;
     GraphicsPipeline* graphicsPipeline = nullptr;
     Renderer* renderer = nullptr;
     Computer* computer = nullptr;
     handles::RenderPass* renderPass = nullptr;
+
+private:
+    IOperationTarget* operationTarget();
 };
 
 }    //  namespace vk

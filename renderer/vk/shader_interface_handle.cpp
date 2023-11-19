@@ -20,7 +20,7 @@ void ShaderInterfaceHandle::write(const void* src, uint32_t layoutSize)
     if (!currentDescriptor()->memory.expired())
     {
         nextDescriptor();
-        currentDescriptor()->memory.lock()->mapped->write(src, layoutSize,
+        currentDescriptor()->memory.lock()->mapped->writeAndSync(src, layoutSize,
             currentDescriptor()->descriptorBufferInfo.offset());
     }
 }

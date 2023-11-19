@@ -5,6 +5,7 @@
 #include "renderable.hpp"
 
 #include <icompute_pipeline.hpp>
+#include <igraphics_pipeline.hpp>
 
 #include <random>
 
@@ -45,7 +46,7 @@ public:
     std::array<InterfaceDescriptor, s_layout.size()> m_descriptors;
 };
 
-static size_t s_particleCount = 4096;
+static uint64_t s_particleCount = 4096;
 
 ParticlesApplication::ParticlesApplication()
 {
@@ -72,28 +73,63 @@ ParticlesApplication::ParticlesApplication()
     m_particles = std::make_unique<Particles>(context(), particles);
     m_deltaTime = std::make_unique<DeltaTime>(context().resources());
 
-    m_pipeline = context().createComputePipeline(
+    m_computePipeline = context().createComputePipeline(
         IComputePipeline::CreateInfo{}
             .addShader(IPipeline::ShaderInfo{
                 .type = IPipeline::ShaderType::COMPUTE,
                 .path = "./shaders/shader.comp.spv",
             })
             .addShaderInterfaceContainer<DeltaTime>()
-            .addShaderInterfaceContainer<Particles>());
+            .addShaderInterfaceContainer<Particles>()
+            .setComputeDimensions({ .x = 256 }));
+
+    m_graphicsPipeline = context().createGraphicsPipeline(
+        IGraphicsPipeline::CreateInfo{}
+            .primitiveTopology(IGraphicsPipeline::CreateInfo::POINT)
+            .addInput<Particle>()
+            .addShader(IPipeline::ShaderInfo{
+                .type = IPipeline::ShaderType::VERTEX, .path = "./shaders/shader.vert.spv" })
+            .addShader(IPipeline::ShaderInfo{
+                .type = IPipeline::ShaderType::FRAGMENT, .path = "./shaders/shader.frag.spv" }));
 }
 
 ParticlesApplication::~ParticlesApplication() {}
 
 void ParticlesApplication::update(int64_t dt)
 {
-    m_deltaTime->set(float(dt));
+    m_deltaTime->set(static_cast<glm::float32>(dt / 1000));
 }
 
 void ParticlesApplication::perform()
 {
-    auto context = m_computer->start(*m_particles);
-    m_pipeline->bind(context);
-    m_deltaTime->bind(context);
-    m_particles->bind(context);
-    context.submit();
+    auto computeContext = m_computer->start(*m_particles);
+    m_computePipeline->bind(computeContext);
+    m_deltaTime->bind(computeContext);
+    m_particles->bind(computeContext);
+
+
+    auto renderContext = m_renderer->start(*m_swapchain);
+    renderContext.setViewport({
+        .x = 0,
+        .y = 0,
+        .width = static_cast<float>(m_swapchain->width()),
+        .height = static_cast<float>(m_swapchain->height()),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    });
+
+    renderContext.setScissors({
+        .x = 0,
+        .y = 0,
+        .width = m_swapchain->width(),
+        .height = m_swapchain->height(),
+    });
+
+    m_graphicsPipeline->bind(renderContext);
+    m_particles->draw(renderContext);
+
+    renderContext.waitForOperation(computeContext);
+
+    computeContext.submit();
+    renderContext.submit();
 }

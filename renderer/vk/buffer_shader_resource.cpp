@@ -33,7 +33,7 @@ std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::fetchDescripto
 size_t BufferShaderResource::allocateBuffer()
 {
     m_buffers.emplace_back(m_device, bufferCreateInfo());
-    m_buffers.back().allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT).lock()->map();
+    m_buffers.back().allocateAndBindMemory(memoryProperties()).lock()->map();
     m_freeDescriptors.push_back(std::unordered_set<uint64_t>{});
     auto& freeSet = m_freeDescriptors.back();
 
