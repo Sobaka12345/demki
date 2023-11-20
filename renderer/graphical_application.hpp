@@ -17,7 +17,8 @@ protected:
     using TimeResolution = std::nano;
 
 public:
-    GraphicalApplication();
+    GraphicalApplication(
+        std::string name = "demki", uint32_t windowWidth = 640, uint32_t windowHeight = 480);
     ~GraphicalApplication();
 
     int exec();

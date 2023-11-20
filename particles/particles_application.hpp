@@ -14,7 +14,7 @@ struct DeltaTime;
 class ParticlesApplication : public GraphicalApplication
 {
 public:
-    ParticlesApplication();
+    ParticlesApplication(uint32_t windowWidth = 640, uint32_t windowHeight = 480);
     ~ParticlesApplication();
 
 private:
@@ -22,8 +22,6 @@ private:
     virtual void perform() override;
 
 private:
-    UpdateTimer<TimeResolution> m_timer;
-
     std::shared_ptr<IComputer> m_computer;
     std::shared_ptr<IRenderer> m_renderer;
     std::shared_ptr<IPipeline> m_computePipeline;

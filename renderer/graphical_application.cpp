@@ -4,9 +4,10 @@
 
 #include <GLFW/glfw3.h>
 
-GraphicalApplication::GraphicalApplication()
+GraphicalApplication::GraphicalApplication(
+    std::string name, uint32_t windowWidth, uint32_t windowHeight)
 {
-    m_window = std::make_unique<Window>(640, 480, "demki");
+    m_window = std::make_unique<Window>(windowWidth, windowHeight, name);
     m_graphicsContext = std::make_unique<vk::GraphicsContext>(*m_window);
 
     m_swapchain = m_graphicsContext->createSwapchain({ .framesInFlight = 2 });

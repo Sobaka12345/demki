@@ -48,9 +48,9 @@ public:
 
 static uint64_t s_particleCount = 4096;
 
-ParticlesApplication::ParticlesApplication()
+ParticlesApplication::ParticlesApplication(uint32_t windowWidth, uint32_t windowHeight)
+    : GraphicalApplication("Particles", windowWidth, windowHeight)
 {
-    m_timer.setIntervalMS(100);
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
     m_computer = context().createComputer({});
 

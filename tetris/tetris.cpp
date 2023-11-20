@@ -10,8 +10,9 @@
 
 #include <GLFW/glfw3.h>
 
-Tetris::Tetris()
-    : m_dx(0)
+Tetris::Tetris(uint32_t windowWidth, uint32_t windowHeight)
+    : GraphicalApplication("Tetris", windowWidth, windowHeight)
+    , m_dx(0)
     , m_rotate(false)
     , m_flushedTotal(0)
 {

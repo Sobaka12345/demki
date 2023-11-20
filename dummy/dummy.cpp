@@ -21,7 +21,8 @@ static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
 static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
     2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
 
-Dummy::Dummy()
+Dummy::Dummy(uint32_t windowWidth, uint32_t windowHeight)
+    : GraphicalApplication("Dummy", windowWidth, windowHeight)
 {
     m_timer.setIntervalMS(100);
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
