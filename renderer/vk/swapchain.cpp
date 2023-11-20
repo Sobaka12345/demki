@@ -394,6 +394,11 @@ void Swapchain::waitFor(OperationContext& context)
         std::back_inserter(m_renderWaitSemaphores));
 }
 
+uint32_t Swapchain::descriptorsRequired() const
+{
+    return m_maxFramesInFlight;
+}
+
 handles::Framebuffer& Swapchain::currentFramebuffer()
 {
     return m_swapChainFramebuffers[m_currentImage];

@@ -62,6 +62,7 @@ public:
 
     virtual void populateWaitInfo(OperationContext& context) override;
     virtual void waitFor(OperationContext& context) override;
+    virtual uint32_t descriptorsRequired() const override;
 
 private:
     void recreate();

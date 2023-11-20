@@ -29,6 +29,7 @@ public:
 
     virtual void waitFor(OperationContext& context) override;
     virtual void populateWaitInfo(OperationContext& context) override;
+    virtual uint32_t descriptorsRequired() const override;
 
 private:
     const GraphicsContext& m_context;

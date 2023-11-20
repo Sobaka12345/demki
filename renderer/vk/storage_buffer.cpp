@@ -116,4 +116,9 @@ void StorageBuffer::populateWaitInfo(OperationContext& context)
     context.waitSemaphores.push_back(*m_computeFinishedSemaphore);
 }
 
+uint32_t StorageBuffer::descriptorsRequired() const
+{
+    return 1;
+}
+
 }    //  namespace vk

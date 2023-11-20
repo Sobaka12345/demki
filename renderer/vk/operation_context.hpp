@@ -44,6 +44,8 @@ struct OperationContext
 
     IPipeline* pipeline();
 
+    IOperationTarget* operationTarget();
+
     void submit(::OperationContext& context);
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;
@@ -60,9 +62,6 @@ struct OperationContext
     Renderer* renderer = nullptr;
     Computer* computer = nullptr;
     handles::RenderPass* renderPass = nullptr;
-
-private:
-    IOperationTarget* operationTarget();
 };
 
 }    //  namespace vk

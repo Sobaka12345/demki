@@ -1,9 +1,5 @@
 #include "pipeline.hpp"
 
-#include "graphics_context.hpp"
-#include "renderer.hpp"
-#include "computer.hpp"
-
 #include "handles/command_buffer.hpp"
 #include "handles/descriptor_pool.hpp"
 #include "handles/descriptor_set.hpp"
@@ -12,6 +8,11 @@
 #include "handles/render_pass.hpp"
 #include "handles/shader_module.hpp"
 
+#include "graphics_context.hpp"
+#include "renderer.hpp"
+#include "computer.hpp"
+#include "ioperation_target.hpp"
+
 #include <algorithm>
 
 namespace vk {
@@ -19,13 +20,26 @@ namespace vk {
 void Pipeline::BindContext::bind(::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
-    ASSERT(false, "not implemented");
+    struct AssureDescriptorsVisitor : public ShaderInterfaceHandleVisitor
+    {
+        AssureDescriptorsVisitor(uint32_t count)
+            : count(count){};
+
+        void visit(ShaderInterfaceHandle& handle) override { handle.assureDescriptorCount(count); }
+
+        uint32_t count = 1;
+    } visitor(get(context).operationTarget()->descriptorsRequired());
+
+    for (auto& uniform : container.uniforms())
+    {
+        uniform.handle.lock()->accept(visitor);
+    }
 }
 
 void Pipeline::init(const std::vector<std::pair<uint32_t, std::span<const ShaderInterfaceBinding>>>&
         interfaceContainers)
 {
-    //  TO DO: remove this cringe
+    //  TO DO: remove this cringe magic constant
     constexpr int poolMultiplier = 10000;
 
     std::vector<VkDescriptorSetLayout> layouts;

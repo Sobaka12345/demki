@@ -16,17 +16,9 @@ namespace vk {
 void ComputePipeline::BindContext::bind(::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
+    Pipeline::BindContext::bind(context, container);
     auto& specContext = get(context);
-    const auto uniforms = container.dynamicUniforms();
-    std::vector<uint32_t> offsets(uniforms.size(), 0);
-    std::for_each(uniforms.begin(), uniforms.end(), [](auto& descriptor) {
-        DASSERT(!descriptor.handle.expired(), "handle is expired or has not been initialized");
-        struct ResourceIdVisitor : public ShaderInterfaceHandleVisitor
-        {
-            void visit(ShaderInterfaceHandle& handle) override { handle.assureDescriptorCount(2); }
-        } visitor;
-        descriptor.handle.lock()->accept(visitor);
-    });
+
     //    std::vector<uint32_t> offsets(uniforms.size());
     //    std::transform(uniforms.begin(), uniforms.end(), offsets.begin(), [](const auto&
     //    descriptor) {
@@ -36,6 +28,8 @@ void ComputePipeline::BindContext::bind(::OperationContext& context,
 
     //  TO DO: RETURN DYNAMIC OFFSETS
 
+    const auto uniforms = container.dynamicUniforms();
+    std::vector<uint32_t> offsets(uniforms.size(), 0);
     specContext.commandBuffer->bindDescriptorSet(specContext.computePipeline->layout(), setId, *set,
         offsets, VK_PIPELINE_BIND_POINT_COMPUTE);
 }
