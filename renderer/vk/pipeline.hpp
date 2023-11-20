@@ -38,9 +38,9 @@ protected:
     };
 
 private:
-    struct SetHasher
+    struct VectorHasher
     {
-        size_t operator()(const std::set<ShaderResource::Descriptor::Id>& e) const
+        size_t operator()(const std::vector<ShaderResource::Descriptor::Id>& e) const
         {
             size_t result = 0;
             uint64_t pow = 1;
@@ -78,9 +78,9 @@ protected:
     const GraphicsContext& m_context;
 
     std::unique_ptr<handles::DescriptorPool> m_pool;
-    std::unordered_map<std::set<ShaderResource::Descriptor::Id>,
+    std::unordered_map<std::vector<ShaderResource::Descriptor::Id>,
         std::shared_ptr<BindContext>,
-        SetHasher>
+        VectorHasher>
         m_bindContexts;
     std::unordered_map<uint32_t, std::pair<uint32_t, handles::DescriptorSetLayout>> m_setLayouts;
 

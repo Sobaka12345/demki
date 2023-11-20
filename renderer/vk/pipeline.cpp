@@ -101,15 +101,16 @@ std::weak_ptr<IPipeline::IBindContext> Pipeline::bindContext(
     } resourceIdVisitor;
 
     std::span descriptors = container.uniforms();
-    std::set<ShaderResource::Descriptor::Id> keySet;
-    std::transform(descriptors.begin(), descriptors.end(), std::inserter(keySet, keySet.begin()),
+    std::vector<ShaderResource::Descriptor::Id> keyVector;
+    keyVector.reserve(descriptors.size());
+    std::transform(descriptors.begin(), descriptors.end(), std::back_inserter(keyVector),
         [&resourceIdVisitor](const auto& x) {
             DASSERT(!x.handle.expired(), "descriptor handle is expired or was not initialized");
             x.handle.lock()->accept(resourceIdVisitor);
             return *resourceIdVisitor.result;
         });
 
-    if (auto iter = m_bindContexts.find(keySet); iter != m_bindContexts.end())
+    if (auto iter = m_bindContexts.find(keyVector); iter != m_bindContexts.end())
     {
         return iter->second;
     }
@@ -161,7 +162,7 @@ std::weak_ptr<IPipeline::IBindContext> Pipeline::bindContext(
     result->set = m_pool->allocateSet(layout);
 	result->set->write(writes);
     result->setId = layoutId;
-	m_bindContexts.emplace(keySet, result);
+    m_bindContexts.emplace(keyVector, result);
 
     return result;
 }

@@ -14,6 +14,7 @@ IComputer& Computer::addComputeTarget(IComputeTarget& target) {}
 {
     ::OperationContext result;
     result.emplace<vk::OperationContext>(this);
+    m_targets.emplace(std::pair<size_t, IComputeTarget&>{ result.id(), target });
 
     if (!target.prepare(result))
     {
@@ -21,15 +22,14 @@ IComputer& Computer::addComputeTarget(IComputeTarget& target) {}
         return result;
     }
 
-    auto& kek = get(result);
-
-
     return result;
 }
 
 void Computer::finish(::OperationContext& context)
 {
-    get(context).computeTarget->compute(context);
+    auto iter = m_targets.find(context.id());
+    iter->second.compute(context);
+    m_targets.erase(iter);
 }
 
 }    //  namespace vk

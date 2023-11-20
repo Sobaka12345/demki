@@ -10,6 +10,8 @@ class OperationContext : public std::variant<vk::OperationContext, ogl::Operatio
 public:
     using variant::variant;
 
+    size_t id() { return m_id; }
+
     void submit()
     {
         std::visit([&](auto& context) { context.submit(*this); }, *this);
@@ -42,6 +44,16 @@ public:
     {
         std::visit([&](auto& context) { context.setViewport(std::move(viewport)); }, *this);
     };
+
+private:
+    static size_t createId()
+    {
+        static size_t s_currentId = 0;
+        return s_currentId++;
+    }
+
+private:
+    size_t m_id = createId();
 };
 
 namespace vk {

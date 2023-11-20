@@ -40,6 +40,7 @@ Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createI
         return result;
     }
 
+    m_targets.emplace(std::pair<size_t, IRenderTarget&>{ result.id(), target });
 
     const std::array<VkClearValue, 2> clearValues{ VkClearValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
         VkClearValue{ { 1.0f, 0 } } };
@@ -55,7 +56,6 @@ Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createI
 
     vkCmdBeginRenderPass(*kek.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-
     return result;
 }
 
@@ -63,7 +63,10 @@ void Renderer::finish(::OperationContext& context)
 {
     auto& specContext = get(context);
     vkCmdEndRenderPass(*specContext.commandBuffer);
-    specContext.renderTarget->present(context);
+
+    auto iter = m_targets.find(context.id());
+    iter->second.present(context);
+    m_targets.erase(iter);
 }
 
 IRenderer& Renderer::addRenderTarget(IRenderTarget& target)

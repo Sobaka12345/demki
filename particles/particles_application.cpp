@@ -97,7 +97,7 @@ ParticlesApplication::~ParticlesApplication() {}
 
 void ParticlesApplication::update(int64_t dt)
 {
-    m_deltaTime->set(static_cast<glm::float32>(dt / 1000));
+    m_deltaTime->set(dt / 1000000.0f);
 }
 
 void ParticlesApplication::perform()
@@ -106,7 +106,6 @@ void ParticlesApplication::perform()
     m_computePipeline->bind(computeContext);
     m_deltaTime->bind(computeContext);
     m_particles->bind(computeContext);
-
 
     auto renderContext = m_renderer->start(*m_swapchain);
     renderContext.setViewport({

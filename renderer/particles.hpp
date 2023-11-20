@@ -48,8 +48,9 @@ public:
     virtual void compute(OperationContext& context) override;
 
 private:
+    size_t m_currentIndex;
     std::weak_ptr<IPipeline::IBindContext> m_bindContext;
-    std::shared_ptr<IStorageBuffer> m_particlesIn;
-    std::shared_ptr<IStorageBuffer> m_particlesOut;
+    std::array<std::shared_ptr<IStorageBuffer>, 2> m_particlesBuffers;
     std::array<InterfaceDescriptor, s_layout.size()> m_descriptors;
+    std::array<InterfaceDescriptor, s_layout.size()> m_descriptorsReverse;
 };

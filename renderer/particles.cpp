@@ -3,6 +3,7 @@
 #include <igraphics_context.hpp>
 
 Particles::Particles(const IGraphicsContext& context, std::span<const Particle> initialData)
+    : m_currentIndex(0)
 {
     IStorageBuffer::CreateInfo bufferInfo{
         .elementLayoutSize = sizeof(Particle),
@@ -10,20 +11,26 @@ Particles::Particles(const IGraphicsContext& context, std::span<const Particle> 
         .initialData = initialData.data(),
     };
 
-    m_particlesIn = context.createStorageBuffer(bufferInfo);
-    m_particlesOut = context.createStorageBuffer(bufferInfo);
+    m_particlesBuffers[0] = context.createStorageBuffer(bufferInfo);
+    m_particlesBuffers[1] = context.createStorageBuffer(bufferInfo);
 
     m_descriptors[0].binding = s_layout[0];
-    m_descriptors[0].handle = m_particlesIn->handle();
+    m_descriptors[0].handle = m_particlesBuffers[0]->handle();
 
     m_descriptors[1].binding = s_layout[1];
-    m_descriptors[1].handle = m_particlesOut->handle();
+    m_descriptors[1].handle = m_particlesBuffers[1]->handle();
+
+    m_descriptorsReverse[0].binding = s_layout[0];
+    m_descriptorsReverse[0].handle = m_descriptors[1].handle;
+
+    m_descriptorsReverse[1].binding = s_layout[1];
+    m_descriptorsReverse[1].handle = m_descriptors[0].handle;
 }
 
 void Particles::draw(OperationContext& context)
 {
-    m_particlesOut->bind(context);
-    m_particlesOut->draw(context);
+    m_particlesBuffers[m_currentIndex]->bind(context);
+    m_particlesBuffers[m_currentIndex]->draw(context);
 }
 
 void Particles::bind(OperationContext& context)
@@ -33,7 +40,8 @@ void Particles::bind(OperationContext& context)
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::uniforms() const
 {
-    return m_descriptors;
+    if (m_currentIndex == 1) return m_descriptors;
+    return m_descriptorsReverse;
 }
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::dynamicUniforms() const
@@ -43,15 +51,17 @@ std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::dynam
 
 void Particles::accept(ComputerInfoVisitor& visitor) const
 {
-    m_particlesOut->accept(visitor);
+    m_particlesBuffers[m_currentIndex]->accept(visitor);
 }
 
 bool Particles::prepare(OperationContext& context)
 {
-    return m_particlesOut->prepare(context);
+    return m_particlesBuffers[m_currentIndex]->prepare(context);
 }
 
 void Particles::compute(OperationContext& context)
 {
-    return m_particlesOut->compute(context);
+    m_particlesBuffers[m_currentIndex]->compute(context);
+
+    m_currentIndex = (m_currentIndex + 1) % m_particlesBuffers.size();
 }
