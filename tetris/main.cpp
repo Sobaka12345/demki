@@ -2,5 +2,5 @@
 
 int main()
 {
-    return Tetris{}.exec();
+    return Tetris{ 1280, 960 }.exec();
 }

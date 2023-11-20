@@ -97,6 +97,7 @@ void Tetris::onKeyPressed(int key, int scancode, int action, int mods)
     {
         while (m_field->tryMoveFigure(0, 1))
             ;
+        m_gameTimer.reset();
     }
 }
 
