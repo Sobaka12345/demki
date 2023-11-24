@@ -20,12 +20,12 @@ public:
     Renderer(const GraphicsContext& context, IRenderer::CreateInfo createInfo);
     virtual ::OperationContext start(IRenderTarget& target) override;
     virtual void finish(::OperationContext& context) override;
-    virtual IRenderer& addRenderTarget(IRenderTarget& target) override;
 
     const handles::Device& device() const;
     VkSampleCountFlagBits sampleCount() const;
 
 private:
+    IRenderer& addRenderTarget(IRenderTarget& target);
     handles::RenderPass& renderPass(IRenderTarget& target);
 
 private:

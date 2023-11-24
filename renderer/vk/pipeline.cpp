@@ -40,7 +40,7 @@ void Pipeline::init(const std::vector<std::pair<uint32_t, std::span<const Shader
         interfaceContainers)
 {
     //  TO DO: remove this cringe magic constant
-    constexpr int poolMultiplier = 10000;
+    constexpr int poolMultiplier = 1000;
 
     std::vector<VkDescriptorSetLayout> layouts;
     std::vector<handles::DescriptorPoolSize> poolSizes;

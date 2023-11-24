@@ -33,7 +33,6 @@ public:
     {};
 
 public:
-    virtual IComputer& addComputeTarget(IComputeTarget& target) = 0;
     virtual OperationContext start(IComputeTarget& target) = 0;
     virtual void finish(OperationContext& target) = 0;
 

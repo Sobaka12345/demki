@@ -39,7 +39,6 @@ public:
     };
 
 public:
-    virtual IRenderer& addRenderTarget(IRenderTarget& target) = 0;
     virtual OperationContext start(IRenderTarget& target) = 0;
     virtual void finish(OperationContext& context) = 0;
 

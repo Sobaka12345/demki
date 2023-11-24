@@ -8,8 +8,6 @@ Computer::Computer(const GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
 {}
 
-IComputer& Computer::addComputeTarget(IComputeTarget& target) {}
-
 ::OperationContext Computer::start(IComputeTarget& target)
 {
     ::OperationContext result;
