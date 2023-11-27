@@ -23,7 +23,6 @@ public:
 
     int exec();
 
-protected:
     const IGraphicsContext& context() const;
     uint32_t clientWidth() const;
     uint32_t clientHeight() const;

@@ -2,32 +2,42 @@
 
 #include "GLFW/glfw3.h"
 
-void Window::framebufferResizeCallback(GLFWwindow *window, int width, int height)
+void Window::cursorPosCallback(GLFWwindow* window, double xPos, double yPos)
 {
-    auto obj = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+    auto obj = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 
-    for (auto &callback : obj->m_framebufferResizeCallbacks)
+    for (auto& callback : obj->m_cursorPosCallback)
+    {
+        callback(xPos, yPos);
+    }
+}
+
+void Window::framebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+    auto obj = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+
+    for (auto& callback : obj->m_framebufferResizeCallbacks)
     {
         callback(width, height);
     }
 }
 
-void Window::windowIconifyCallback(GLFWwindow *window, int flag)
+void Window::windowIconifyCallback(GLFWwindow* window, int flag)
 {
-    auto obj = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+    auto obj = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
     obj->m_iconified = flag;
 
-    for (auto &callback : obj->m_windowIconifiedCallbacks)
+    for (auto& callback : obj->m_windowIconifiedCallbacks)
     {
         callback(flag);
     }
 }
 
-void Window::onKeyPressedCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void Window::onKeyPressedCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    auto obj = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+    auto obj = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 
-    for (auto &callback : obj->m_onKeyPressedCallback)
+    for (auto& callback : obj->m_onKeyPressedCallback)
     {
         callback(key, scancode, action, mods);
     }
@@ -44,6 +54,7 @@ Window::Window(int width, int height, std::string name)
     m_window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
 
     glfwSetWindowUserPointer(m_window, this);
+    glfwSetCursorPosCallback(m_window, cursorPosCallback);
     glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
     glfwSetKeyCallback(m_window, onKeyPressedCallback);
     glfwSetWindowIconifyCallback(m_window, windowIconifyCallback);
@@ -71,6 +82,11 @@ std::pair<int, int> Window::framebufferSize() const
     glfwGetFramebufferSize(m_window, &width, &height);
 
     return { width, height };
+}
+
+void Window::registerCursorPosCallback(std::function<void(double, double)> callback) const
+{
+    m_cursorPosCallback.push_back(callback);
 }
 
 void Window::registerFramebufferResizeCallback(std::function<void(int, int)> callback) const

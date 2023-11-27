@@ -9,6 +9,7 @@ class GLFWwindow;
 class Window
 {
 private:
+    static void cursorPosCallback(GLFWwindow* window, double xPos, double yPos);
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     static void windowIconifyCallback(GLFWwindow* window, int flag);
     static void onKeyPressedCallback(
@@ -29,6 +30,7 @@ public:
     bool shouldClose() const;
     std::pair<int, int> framebufferSize() const;
 
+    void registerCursorPosCallback(std::function<void(double, double)> callback) const;
     void registerFramebufferResizeCallback(std::function<void(int, int)> callback) const;
     void registerWindowIconifiedCallback(std::function<void(bool)> callback) const;
     void registerOnKeyPressedCallback(
@@ -37,6 +39,7 @@ public:
 private:
     bool m_iconified;
 
+    mutable std::vector<std::function<void(double xPos, double yPos)>> m_cursorPosCallback;
     mutable std::vector<std::function<void(int, int)>> m_framebufferResizeCallbacks;
     mutable std::vector<std::function<void(bool)>> m_windowIconifiedCallbacks;
     mutable std::vector<std::function<void(int key, int scancode, int action, int mods)>>
