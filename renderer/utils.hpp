@@ -74,6 +74,9 @@ constexpr bool is_iterable_v = is_iterable<T>::value;
 template <typename T>
 class FragileSharedPtr
 {
+    template <typename>
+    friend class FragileSharedPtr;
+
 public:
     struct ReferenceBlock
     {
@@ -89,7 +92,7 @@ public:
     template <typename DT>
         requires std::is_base_of_v<T, DT>
     FragileSharedPtr(const FragileSharedPtr<DT>& other)
-        : m_referenceBlock(reinterpret_cast<const FragileSharedPtr<T>&>(other).m_referenceBlock)
+        : m_referenceBlock(reinterpret_cast<ReferenceBlock*>(other.m_referenceBlock))
     {
         m_referenceBlock->count++;
     }
@@ -97,9 +100,9 @@ public:
     template <typename DT>
         requires std::is_base_of_v<T, DT>
     FragileSharedPtr(FragileSharedPtr<DT>&& other)
-        : m_referenceBlock(reinterpret_cast<FragileSharedPtr<T>&&>(other).m_referenceBlock)
+        : m_referenceBlock(reinterpret_cast<ReferenceBlock*>(other.m_referenceBlock))
     {
-        reinterpret_cast<FragileSharedPtr<T>&&>(other).m_referenceBlock = nullptr;
+        other.m_referenceBlock = nullptr;
     }
 
     bool isAlive() const { return m_referenceBlock->obj != nullptr; }
