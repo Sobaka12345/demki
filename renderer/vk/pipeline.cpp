@@ -8,6 +8,7 @@
 #include "handles/render_pass.hpp"
 #include "handles/shader_module.hpp"
 
+#include "descriptor_set_provider.hpp"
 #include "graphics_context.hpp"
 #include "renderer.hpp"
 #include "computer.hpp"
@@ -17,61 +18,138 @@
 
 namespace vk {
 
+struct ResourceIdVisitor : public ShaderInterfaceHandleVisitor
+{
+    void visit(ShaderInterfaceHandle& handle) override { result = &handle.currentDescriptor()->id; }
+
+    ShaderResource::Descriptor::Id* result = nullptr;
+};
+
+struct BufferInfoVisitor : public ShaderInterfaceHandleVisitor
+{
+    void visit(ShaderInterfaceHandle& handle) override
+    {
+        result = &handle.currentDescriptor()->descriptorBufferInfo;
+    }
+
+    DescriptorBufferInfo* result = nullptr;
+};
+
+struct ImageInfoVisitor : public ShaderInterfaceHandleVisitor
+{
+    void visit(ShaderInterfaceHandle& handle) override
+    {
+        result = &handle.currentDescriptor()->descriptorImageInfo;
+    }
+
+    DescriptorImageInfo* result = nullptr;
+};
+
+struct AssureDescriptorsVisitor : public ShaderInterfaceHandleVisitor
+{
+    AssureDescriptorsVisitor(uint32_t count)
+        : count(count){};
+
+    void visit(ShaderInterfaceHandle& handle) override { handle.assureDescriptorCount(count); }
+
+    uint32_t count = 1;
+};
+
+Pipeline::BindContext::BindContext(DescriptorSetInfo descriptorSetInfo)
+    : descriptorSetInfo(descriptorSetInfo)
+{}
+
 void Pipeline::BindContext::bind(::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
-    struct AssureDescriptorsVisitor : public ShaderInterfaceHandleVisitor
+    static BufferInfoVisitor bufferInfoVisitor;
+    static ImageInfoVisitor imageInfoVisitor;
+    static ResourceIdVisitor resourceIdVisitor;
+
+    AssureDescriptorsVisitor assureDescriptorsVisitor(
+        get(context).operationTarget()->descriptorsRequired());
+
+    std::span descriptors = container.uniforms();
+    std::vector<ShaderResource::Descriptor::Id> keyVector;
+    keyVector.reserve(descriptors.size());
+    std::transform(descriptors.begin(), descriptors.end(), std::back_inserter(keyVector),
+        [&assureDescriptorsVisitor](const auto& x) {
+            DASSERT(!x.handle.expired(), "descriptor handle is expired or was not initialized");
+            x.handle.lock()->accept(resourceIdVisitor);
+            x.handle.lock()->accept(assureDescriptorsVisitor);
+            return *resourceIdVisitor.result;
+        });
+
+    if (auto iter = sets.find(keyVector); iter != sets.end())
     {
-        AssureDescriptorsVisitor(uint32_t count)
-            : count(count){};
-
-        void visit(ShaderInterfaceHandle& handle) override { handle.assureDescriptorCount(count); }
-
-        uint32_t count = 1;
-    } visitor(get(context).operationTarget()->descriptorsRequired());
-
-    for (auto& uniform : container.uniforms())
+        currentSet = iter->second;
+    }
+    else
     {
-        uniform.handle.lock()->accept(visitor);
+        std::vector<handles::DescriptorSet::Write> writes;
+        for (uint32_t i = 0; i < descriptors.size(); ++i)
+        {
+            if (descriptors[i].binding.type == ShaderBlockType::SAMPLER)
+            {
+                descriptors[i].handle.lock()->accept(imageInfoVisitor);
+                writes.push_back(handles::DescriptorSet::Write{
+                    .imageInfo = *imageInfoVisitor.result,
+                    .layoutBinding = descriptorSetInfo.descriptorSetLayout.binding(
+                        descriptorSetInfo.bindingIndices[i]),
+                });
+            }
+            else
+            {
+                descriptors[i].handle.lock()->accept(bufferInfoVisitor);
+                writes.push_back(handles::DescriptorSet::Write{
+                    .bufferInfo = *bufferInfoVisitor.result,
+                    .layoutBinding = descriptorSetInfo.descriptorSetLayout.binding(
+                        descriptorSetInfo.bindingIndices[i]),
+                });
+            }
+        }
+
+        auto [newEl, _] = sets.emplace(keyVector,
+            descriptorSetInfo.descriptorSetProvider.set(descriptorSetInfo.descriptorSetLayout));
+        newEl->second->write(writes);
+        currentSet = newEl->second;
     }
 }
 
-void Pipeline::init(const std::vector<std::pair<uint32_t, std::span<const ShaderInterfaceBinding>>>&
-        interfaceContainers)
+void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContainers)
 {
-    //  TO DO: remove this cringe magic constant
-    constexpr int poolMultiplier = 1000;
-
     std::vector<VkDescriptorSetLayout> layouts;
-    std::vector<handles::DescriptorPoolSize> poolSizes;
-    for (auto& set : interfaceContainers)
+    uint32_t bindingId = 0;
+    for (auto& containerInfo : interfaceContainers)
     {
+        std::vector<handles::DescriptorPoolSize> poolSizes;
         std::vector<handles::DescriptorSetLayoutBinding> setLayoutBindings;
-        auto span = set.second;
-        for (auto& uniform : span)
+        for (auto& uniform : containerInfo.layout)
         {
             const auto type = toDescriptorType(uniform.type);
             setLayoutBindings.push_back(
                 handles::DescriptorSetLayoutBinding{}
                     .descriptorCount(uniform.count)
-                    .binding(static_cast<uint32_t>(uniform.id))
+                    .binding(bindingId)
                     .descriptorType(type)
                     .stageFlags(toShaderStageFlags(uniform.stage)));
 
-            if (auto iter = std::find_if(poolSizes.begin(), poolSizes.end(),
-                    [&](auto& x) { return x.type() == type; });
-                iter != poolSizes.end())
-            {
-                iter->descriptorCount((iter->descriptorCount() + 1) * poolMultiplier);
-            }
-            else
-            {
-                poolSizes.push_back(handles::DescriptorPoolSize{}.type(type).descriptorCount(
-                    uniform.count * poolMultiplier));
-            }
+            m_bindingIndices[containerInfo.id].push_back(bindingId++);
+
+            poolSizes.push_back(
+                handles::DescriptorPoolSize{}.type(type).descriptorCount(containerInfo.batchSize));
         }
 
-        const auto& [iter, _] = m_setLayouts.emplace(set.first,
+        m_descriptorSetProviders.emplace(std::piecewise_construct,
+            std::forward_as_tuple(containerInfo.id),
+            std::forward_as_tuple(m_context,
+                handles::DescriptorPoolCreateInfo{}
+                    .maxSets(containerInfo.batchSize)
+                    .poolSizeCount(poolSizes.size())
+                    .pPoolSizes(poolSizes.data())
+                    .flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)));
+
+        const auto& [iter, _] = m_setLayouts.emplace(containerInfo.id,
             std::pair{ layouts.size(),
                 handles::DescriptorSetLayout(m_context.device(),
                     handles::DescriptorSetLayoutCreateInfo{}
@@ -86,99 +164,25 @@ void Pipeline::init(const std::vector<std::pair<uint32_t, std::span<const Shader
             .pSetLayouts(layouts.data())
             //  TO DO: push constants impl
             .pushConstantRangeCount(0));
-
-    m_pool = std::make_unique<handles::DescriptorPool>(m_context.device(),
-        handles::DescriptorPoolCreateInfo{}
-            .maxSets(poolMultiplier)
-            .poolSizeCount(poolSizes.size())
-            .pPoolSizes(poolSizes.data())
-            .flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT));
 }
 
 Pipeline::~Pipeline()
 {
     m_bindContexts.clear();
-    m_pool.reset();
+    m_descriptorSetProviders.clear();
 }
 
-std::weak_ptr<IPipeline::IBindContext> Pipeline::bindContext(
+FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
     const IShaderInterfaceContainer& container)
 {
-    struct ResourceIdVisitor : public ShaderInterfaceHandleVisitor
-    {
-        void visit(ShaderInterfaceHandle& handle) override
-        {
-            result = &handle.currentDescriptor()->id;
-        }
+    auto& [setId, layout] = m_setLayouts.at(container.id());
 
-        ShaderResource::Descriptor::Id* result = nullptr;
-    } resourceIdVisitor;
-
-    std::span descriptors = container.uniforms();
-    std::vector<ShaderResource::Descriptor::Id> keyVector;
-    keyVector.reserve(descriptors.size());
-    std::transform(descriptors.begin(), descriptors.end(), std::back_inserter(keyVector),
-        [&resourceIdVisitor](const auto& x) {
-            DASSERT(!x.handle.expired(), "descriptor handle is expired or was not initialized");
-            x.handle.lock()->accept(resourceIdVisitor);
-            return *resourceIdVisitor.result;
-        });
-
-    if (auto iter = m_bindContexts.find(keyVector); iter != m_bindContexts.end())
-    {
-        return iter->second;
-    }
-
-    struct BufferInfoVisitor : public ShaderInterfaceHandleVisitor
-    {
-        void visit(ShaderInterfaceHandle& handle) override
-        {
-            result = &handle.currentDescriptor()->descriptorBufferInfo;
-        }
-
-        DescriptorBufferInfo* result = nullptr;
-    } bufferInfoVisitor;
-
-    struct ImageInfoVisitor : public ShaderInterfaceHandleVisitor
-    {
-        void visit(ShaderInterfaceHandle& handle) override
-        {
-            result = &handle.currentDescriptor()->descriptorImageInfo;
-        }
-
-        DescriptorImageInfo* result = nullptr;
-    } imageInfoVisitor;
-
-    auto& [layoutId, layout] = m_setLayouts.at(container.id());
-
-    std::vector<handles::DescriptorSet::Write> writes;
-    for (const auto& descriptor : descriptors)
-    {
-        if (descriptor.binding.type == ShaderBlockType::SAMPLER)
-        {
-            descriptor.handle.lock()->accept(imageInfoVisitor);
-            writes.push_back(handles::DescriptorSet::Write{
-                .imageInfo = *imageInfoVisitor.result,
-                .layoutBinding = layout.binding(static_cast<int32_t>(descriptor.binding.id)),
-            });
-        }
-        else
-        {
-            descriptor.handle.lock()->accept(bufferInfoVisitor);
-            writes.push_back(handles::DescriptorSet::Write{
-                .bufferInfo = *bufferInfoVisitor.result,
-                .layoutBinding = layout.binding(static_cast<int32_t>(descriptor.binding.id)),
-            });
-        }
-    }
-
-    auto result = std::shared_ptr<BindContext>(newBindContext());
-    result->set = m_pool->allocateSet(layout);
-	result->set->write(writes);
-    result->setId = layoutId;
-    m_bindContexts.emplace(keyVector, result);
-
-    return result;
+    return m_bindContexts.emplace_back(newBindContext({
+        .setId = setId,
+        .bindingIndices = m_bindingIndices.at(container.id()),
+        .descriptorSetProvider = m_descriptorSetProviders.at(setId),
+        .descriptorSetLayout = layout,
+    }));
 }
 
 }    //  namespace vk

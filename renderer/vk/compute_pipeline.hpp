@@ -14,6 +14,8 @@ class ComputePipeline
 {
     struct BindContext : public Pipeline::BindContext
     {
+        using Pipeline::BindContext::BindContext;
+
         virtual void bind(::OperationContext& context,
             const IShaderInterfaceContainer& container) override;
     };
@@ -32,7 +34,8 @@ public:
 private:
     const handles::Pipeline& pipeline(const vk::OperationContext& context);
 
-    virtual Pipeline::BindContext* newBindContext() const override;
+    virtual Pipeline::BindContext* newBindContext(
+        BindContext::DescriptorSetInfo descriptorSetInfo) const override;
 
 private:
     std::vector<ShaderInfo> m_shaders;

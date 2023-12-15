@@ -19,7 +19,6 @@ class Camera : public SIShaderInterfaceContainer<Camera>
 {
 public:
     static constexpr ShaderInterfaceLayout<1> s_layout = { ShaderInterfaceBinding{
-        .id = InterfaceBlockID::IBLOCK_ID_0,
         .type = ShaderBlockType::UNIFORM_DYNAMIC,
         .stage = ShaderStage::VERTEX,
     } };
@@ -37,7 +36,7 @@ public:
     virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override;
 
 private:
-    std::weak_ptr<IPipeline::IBindContext> m_bindContext;
+    std::weak_ptr<IPipelineBindContext> m_bindContext;
     UniformValue<ViewProjection> m_viewProjection;
     std::array<InterfaceDescriptor, s_layout.size()> m_descriptors;
 };

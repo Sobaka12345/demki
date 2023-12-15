@@ -14,7 +14,6 @@ struct DeltaTime : public SIShaderInterfaceContainer<DeltaTime>
 public:
     static constexpr ShaderInterfaceLayout<1> s_layout = {
         ShaderInterfaceBinding{
-            .id = InterfaceBlockID::IBLOCK_ID_0,
             .type = ShaderBlockType::UNIFORM_DYNAMIC,
             .stage = ShaderStage::COMPUTE,
         },
@@ -30,7 +29,7 @@ public:
 
     virtual void bind(OperationContext& context) override
     {
-        context.pipeline().bindContext(*this).lock()->bind(context, *this);
+        IShaderInterfaceContainer::bind(context);
     }
 
     void set(float value) { m_value.set(value); }

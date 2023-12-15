@@ -9,14 +9,15 @@ namespace vk { namespace handles {
 DescriptorPool::DescriptorPool(DescriptorPool&& other)
     : Handle(std::move(other))
     , m_device(other.m_device)
+    , m_maxSetCount(other.m_maxSetCount)
 {}
 
 DescriptorPool::DescriptorPool(
     const Device& device, DescriptorPoolCreateInfo createInfo, VkHandleType* handlePtr)
     : Handle(handlePtr)
+    , m_maxSetCount(createInfo.maxSets())
     , m_device(device)
 {
-    m_sets.resize(createInfo.maxSets());
     ASSERT(create(vkCreateDescriptorPool, m_device, &createInfo, nullptr) == VK_SUCCESS,
         "failed to create descriptor pool");
 }
@@ -34,17 +35,31 @@ std::shared_ptr<DescriptorSet> DescriptorPool::allocateSet(const DescriptorSetLa
             .pSetLayouts(layout.handlePtr())
             .descriptorSetCount(1);
 
-    auto iter = std::find_if(m_sets.begin(), m_sets.end(), [](const auto& x) {
-        return x.expired();
-    });
+    auto set = std::shared_ptr<DescriptorSet>(new DescriptorSet(m_device, allocInfo),
+        [this](DescriptorSet* set) {
+            std::default_delete<DescriptorSet>{}(set);
+            m_allocatedSets.erase(set);
+        });
+    m_allocatedSets.insert(set.get());
 
-    //  TO DO
-    ASSERT(iter != m_sets.end(), "pool reached max number of sets");
+    return set;
+}
 
-    auto result = std::make_shared<DescriptorSet>(m_device, allocInfo);
-    *iter = result;
+std::vector<std::shared_ptr<DescriptorSets>> DescriptorPool::allocateSets(
+    std::span<const DescriptorSetLayout> layouts)
+{
+    ASSERT(false, "not implemented");
+    return {};
+}
 
-    return result;
+bool DescriptorPool::isFull() const
+{
+    return m_maxSetCount == m_allocatedSets.size();
+}
+
+bool DescriptorPool::isEmpty() const
+{
+    return m_allocatedSets.empty();
 }
 
 }}    //  namespace vk::handles

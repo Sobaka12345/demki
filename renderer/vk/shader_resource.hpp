@@ -6,7 +6,10 @@
 
 #include "iresource.hpp"
 
+#include <utils.hpp>
+
 #include <memory>
+#include <type_traits>
 
 namespace vk {
 
@@ -17,6 +20,25 @@ public:
     {
         struct Id
         {
+            template <template <class...> typename T, typename El = ShaderResource::Descriptor::Id>
+                requires std::is_iterable_v<T<El>>
+            struct ContainerHasher
+            {
+                size_t operator()(const T<El>& e) const
+                {
+                    size_t result = 0;
+                    uint64_t pow = 1;
+                    for (ShaderResource::Descriptor::Id el : e)
+                    {
+                        result +=
+                            el.resourceId * pow + el.descriptorId * pow * 2 + el.bufferId * pow * 3;
+                        pow *= 10;
+                    }
+
+                    return result;
+                }
+            };
+
             uint64_t descriptorId = 0;
             uint64_t bufferId = 0;
             uint64_t resourceId = 0;

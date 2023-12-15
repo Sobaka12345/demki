@@ -69,6 +69,8 @@ add_library(${PROJECT_NAME} STATIC
 	vk/compute_pipeline.hpp
 	vk/compute_pipeline.cpp
 	vk/compute_target.hpp
+	vk/descriptor_set_provider.hpp
+	vk/descriptor_set_provider.cpp
 	vk/graphics_pipeline.hpp
 	vk/graphics_pipeline.cpp
 	vk/ioperation_target.hpp

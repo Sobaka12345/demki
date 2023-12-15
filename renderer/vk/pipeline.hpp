@@ -8,6 +8,7 @@
 
 #include <ipipeline.hpp>
 
+#include <vector>
 #include <map>
 #include <set>
 
@@ -16,11 +17,11 @@ namespace vk {
 class Renderer;
 class OperationContext;
 class GraphicsContext;
+class DescriptorSetProvider;
 
 class ShaderInterfaceHandle;
 
 namespace handles {
-class DescriptorPool;
 class Pipeline;
 class PipelineLayout;
 class RenderPass;
@@ -28,17 +29,7 @@ class RenderPass;
 
 class Pipeline : virtual public IPipeline
 {
-protected:
-    struct BindContext : public IPipeline::IBindContext
-    {
-        virtual void bind(::OperationContext& context,
-            const IShaderInterfaceContainer& container) override;
-        std::shared_ptr<handles::DescriptorSet> set;
-        uint32_t setId;
-    };
-
-private:
-    struct VectorHasher
+    struct IdVectorHasher
     {
         size_t operator()(const std::vector<ShaderResource::Descriptor::Id>& e) const
         {
@@ -54,8 +45,33 @@ private:
         }
     };
 
+protected:
+    struct BindContext : public IPipelineBindContext
+    {
+        struct DescriptorSetInfo
+        {
+            uint32_t setId = 0;
+            std::vector<uint32_t>& bindingIndices;
+            DescriptorSetProvider& descriptorSetProvider;
+            handles::DescriptorSetLayout& descriptorSetLayout;
+        };
+
+        BindContext(DescriptorSetInfo descriptorSetInfo);
+
+        virtual void bind(::OperationContext& context,
+            const IShaderInterfaceContainer& container) override;
+
+    protected:
+        DescriptorSetInfo descriptorSetInfo;
+        std::weak_ptr<handles::DescriptorSet> currentSet;
+        std::unordered_map<std::vector<ShaderResource::Descriptor::Id>,
+            std::shared_ptr<handles::DescriptorSet>,
+            ShaderResource::Descriptor::Id::ContainerHasher<std::vector>>
+            sets;
+    };
+
 public:
-    virtual std::weak_ptr<IBindContext> bindContext(
+    virtual FragileSharedPtr<IPipelineBindContext> bindContext(
         const IShaderInterfaceContainer& container) override;
 
     const handles::PipelineLayout& layout() const { return *m_pipelineLayout; }
@@ -70,23 +86,20 @@ protected:
     ~Pipeline();
 
 private:
-    void init(const std::vector<std::pair<uint32_t, std::span<const ShaderInterfaceBinding>>>&
-            interfaceContainers);
-    virtual BindContext* newBindContext() const = 0;
+    void init(const std::vector<InterfaceContainerInfo>& interfaceContainers);
+    virtual BindContext* newBindContext(BindContext::DescriptorSetInfo descriptorSetInfo) const = 0;
 
 protected:
     const GraphicsContext& m_context;
 
-    std::unique_ptr<handles::DescriptorPool> m_pool;
-    std::unordered_map<std::vector<ShaderResource::Descriptor::Id>,
-        std::shared_ptr<BindContext>,
-        VectorHasher>
-        m_bindContexts;
+    std::unordered_map<uint32_t, DescriptorSetProvider> m_descriptorSetProviders;
+    std::list<FragileSharedPtr<BindContext>> m_bindContexts;
     std::unordered_map<uint32_t, std::pair<uint32_t, handles::DescriptorSetLayout>> m_setLayouts;
 
     std::unique_ptr<handles::PipelineLayout> m_pipelineLayout;
 
-    std::unordered_map<InterfaceBlockID, uint32_t> m_descriptorsCount;
+    std::unordered_map<uint32_t, std::vector<uint32_t>> m_bindingIndices;
+    std::unordered_map<uint32_t, uint32_t> m_descriptorsCount;
 
     std::vector<VkVertexInputBindingDescription> m_bindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> m_attributeDescriptions;
