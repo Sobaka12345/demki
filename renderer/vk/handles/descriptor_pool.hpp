@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <unordered_set>
 #include <span>
+#include <memory>
 
 namespace vk { namespace handles {
 

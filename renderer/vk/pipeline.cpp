@@ -175,14 +175,16 @@ Pipeline::~Pipeline()
 FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
     const IShaderInterfaceContainer& container)
 {
-    auto& [setId, layout] = m_setLayouts.at(container.id());
+	auto& [setId, layout] = m_setLayouts.at(container.id());
 
-    return m_bindContexts.emplace_back(newBindContext({
-        .setId = setId,
-        .bindingIndices = m_bindingIndices.at(container.id()),
-        .descriptorSetProvider = m_descriptorSetProviders.at(setId),
-        .descriptorSetLayout = layout,
-    }));
+    Pipeline::BindContext* context = newBindContext({
+		.setId = setId,
+		.bindingIndices = m_bindingIndices.at(container.id()),
+		.descriptorSetProvider = m_descriptorSetProviders.at(container.id()),
+		.descriptorSetLayout = layout,
+	});
+
+    return m_bindContexts.emplace_back(context);
 }
 
 }    //  namespace vk

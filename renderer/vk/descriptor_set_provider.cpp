@@ -34,11 +34,12 @@ std::shared_ptr<handles::DescriptorSet> DescriptorSetProvider::set(
         {
             ++iter;
             continue;
-        }
+        } 
 
         if (iter->isEmpty() && m_poolList.size() > m_pivotPoolCount)
         {
             iter = m_poolList.erase(iter);
+			continue;
         }
 
         return iter->allocateSet(layout);

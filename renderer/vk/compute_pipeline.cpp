@@ -86,7 +86,7 @@ const handles::Pipeline& ComputePipeline::pipeline(const OperationContext& conte
     return newEl->second;
 }
 
-Pipeline::BindContext* ComputePipeline::newBindContext(
+ComputePipeline::BindContext* ComputePipeline::newBindContext(
     BindContext::DescriptorSetInfo descriptorSetInfo) const
 {
     return new BindContext(std::move(descriptorSetInfo));

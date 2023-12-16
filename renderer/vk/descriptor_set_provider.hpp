@@ -3,6 +3,7 @@
 #include "handles/descriptor_pool.hpp"
 
 #include <list>
+#include <memory>
 
 namespace vk {
 
