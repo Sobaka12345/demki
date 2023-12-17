@@ -168,6 +168,8 @@ void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContaine
 
 Pipeline::~Pipeline()
 {
+    m_isInDestruction = true;
+
     m_bindContexts.clear();
     m_descriptorSetProviders.clear();
 }
@@ -177,14 +179,20 @@ FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
 {
 	auto& [setId, layout] = m_setLayouts.at(container.id());
 
-    Pipeline::BindContext* context = newBindContext({
+    BindContext* context = newBindContext({
 		.setId = setId,
 		.bindingIndices = m_bindingIndices.at(container.id()),
 		.descriptorSetProvider = m_descriptorSetProviders.at(container.id()),
 		.descriptorSetLayout = layout,
 	});
 
-    return m_bindContexts.emplace_back(context);
+    auto contextIter = m_bindContexts.emplace(m_bindContexts.end(), context);
+
+    contextIter->registerDeleteCallback([&, contextIter](BindContext* context) {
+        if (!m_isInDestruction) m_bindContexts.erase(contextIter);
+    });
+
+    return *contextIter;
 }
 
 }    //  namespace vk

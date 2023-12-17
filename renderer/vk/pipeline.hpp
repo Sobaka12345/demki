@@ -79,6 +79,7 @@ public:
 protected:
     Pipeline(const GraphicsContext& context, const auto& createInfo)
         : m_context(context)
+        , m_isInDestruction(false)
     {
         init(createInfo.interfaceContainers());
     }
@@ -92,6 +93,7 @@ private:
 protected:
     const GraphicsContext& m_context;
 
+    bool m_isInDestruction;
     std::unordered_map<uint32_t, DescriptorSetProvider> m_descriptorSetProviders;
     std::list<FragileSharedPtr<BindContext>> m_bindContexts;
     std::unordered_map<uint32_t, std::pair<uint32_t, handles::DescriptorSetLayout>> m_setLayouts;

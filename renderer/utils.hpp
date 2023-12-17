@@ -71,6 +71,13 @@ constexpr bool is_iterable_v = is_iterable<T>::value;
 
 }
 
+struct ReferenceBlock
+{
+    void* obj = nullptr;
+    size_t count = 1;
+    std::vector<std::function<void(void*)>> deleteCallbacks;
+};
+
 template <typename T>
 class FragileSharedPtr
 {
@@ -78,13 +85,6 @@ class FragileSharedPtr
     friend class FragileSharedPtr;
 
 public:
-    struct ReferenceBlock
-    {
-        T* obj = nullptr;
-        size_t count = 1;
-        std::vector<std::function<void(T*)>> deleteCallbacks;
-    };
-
     explicit FragileSharedPtr(T* obj = nullptr)
         : m_referenceBlock(new ReferenceBlock{ .obj = obj })
     {}
@@ -92,7 +92,7 @@ public:
     template <typename DT>
         requires std::is_base_of_v<T, DT>
     FragileSharedPtr(const FragileSharedPtr<DT>& other)
-        : m_referenceBlock(reinterpret_cast<ReferenceBlock*>(other.m_referenceBlock))
+        : m_referenceBlock(other.m_referenceBlock)
     {
         m_referenceBlock->count++;
     }
@@ -100,7 +100,7 @@ public:
     template <typename DT>
         requires std::is_base_of_v<T, DT>
     FragileSharedPtr(FragileSharedPtr<DT>&& other)
-        : m_referenceBlock(reinterpret_cast<ReferenceBlock*>(other.m_referenceBlock))
+        : m_referenceBlock(other.m_referenceBlock)
     {
         other.m_referenceBlock = nullptr;
     }
@@ -111,10 +111,14 @@ public:
 
     void registerDeleteCallback(std::function<void(T*)> callback)
     {
-        m_referenceBlock->deleteCallbacks.push_back(callback);
+        m_referenceBlock->deleteCallbacks.push_back([callback](void* obj) {
+            callback(static_cast<T*>(obj));
+        });
     }
 
-    T* operator->() { return m_referenceBlock->obj; }
+    T* operator->() { return static_cast<T*>(m_referenceBlock->obj); }
+
+    const T* operator->() const { return static_cast<const T*>(m_referenceBlock->obj); }
 
     ~FragileSharedPtr()
     {
@@ -122,13 +126,15 @@ public:
 
         if (m_referenceBlock->obj)
         {
+            T* obj = static_cast<T*>(m_referenceBlock->obj);
+            m_referenceBlock->obj = nullptr;
+
             for (auto& callback : m_referenceBlock->deleteCallbacks)
             {
-                callback(m_referenceBlock->obj);
+                callback(obj);
             }
 
-            std::default_delete<T>{}(m_referenceBlock->obj);
-            m_referenceBlock->obj = nullptr;
+            std::default_delete<T>{}(obj);
         }
 
         if (!--m_referenceBlock->count) delete m_referenceBlock;
