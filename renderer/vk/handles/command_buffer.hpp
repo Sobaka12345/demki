@@ -33,6 +33,12 @@ class PipelineLayout;
 class CommandBuffer : public Handle<VkCommandBuffer>
 {
 public:
+    struct Resources
+    {
+        std::vector<std::shared_ptr<DescriptorSet>> sets;
+    };
+
+public:
     CommandBuffer(const CommandBuffer& other) = delete;
     CommandBuffer(CommandBuffer&& other) noexcept;
     CommandBuffer(const Device& device, const CommandPool& pool, VkHandleType* handlePtr = nullptr);
@@ -67,7 +73,7 @@ public:
         VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) const;
     void bindDescriptorSet(const PipelineLayout& layout,
         uint32_t firstSet,
-        const DescriptorSet& set,
+        std::shared_ptr<DescriptorSet> set,
         std::span<const uint32_t> dynamicOffsets,
         VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) const;
 
@@ -98,9 +104,13 @@ public:
 
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const;
 
+    Resources& resourcesInUse() const;
+
 private:
     const Device& m_device;
     const CommandPool& m_pool;
+
+    mutable Resources m_resourcesInUse;
 };
 
 }}    //  namespace vk::handles

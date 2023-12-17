@@ -67,7 +67,7 @@ void GraphicsPipeline::BindContext::bind(::OperationContext& context,
     const auto uniforms = container.dynamicUniforms();
     std::vector<uint32_t> offsets(uniforms.size(), 0);
     specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(),
-        descriptorSetInfo.setId, *currentSet.lock(), offsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        descriptorSetInfo.setId, currentSet, offsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()

@@ -99,6 +99,8 @@ private:
 
     handles::HandleVector<handles::CommandBuffer> m_commandBuffers;
 
+    std::vector<handles::CommandBuffer::Resources> m_resourcesInUse;
+
     std::vector<VkSemaphore> m_renderWaitSemaphores;
     handles::HandleVector<handles::Semaphore> m_imageAvailableSemaphores;
     handles::HandleVector<handles::Semaphore> m_renderFinishedSemaphores;

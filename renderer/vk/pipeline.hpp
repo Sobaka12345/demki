@@ -63,7 +63,7 @@ protected:
 
     protected:
         DescriptorSetInfo descriptorSetInfo;
-        std::weak_ptr<handles::DescriptorSet> currentSet;
+        std::shared_ptr<handles::DescriptorSet> currentSet;
         std::unordered_map<std::vector<ShaderResource::Descriptor::Id>,
             std::shared_ptr<handles::DescriptorSet>,
             ShaderResource::Descriptor::Id::ContainerHasher<std::vector>>

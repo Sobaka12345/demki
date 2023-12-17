@@ -24,6 +24,9 @@ DescriptorPool::DescriptorPool(
 
 DescriptorPool::~DescriptorPool()
 {
+    std::for_each(m_allocatedSets.begin(), m_allocatedSets.end(), [](DescriptorSet* set) {
+        set->setOwner(false);
+    });
     destroy(vkDestroyDescriptorPool, m_device, handle(), nullptr);
 }
 

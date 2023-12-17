@@ -98,11 +98,13 @@ void CommandBuffer::bindPipeline(const Pipeline& pipeline, VkPipelineBindPoint b
 
 void CommandBuffer::bindDescriptorSet(const PipelineLayout& layout,
     uint32_t firstSet,
-    const DescriptorSet& set,
+    std::shared_ptr<DescriptorSet> set,
     std::span<const uint32_t> dynamicOffsets,
     VkPipelineBindPoint bindPoint) const
 {
-    vkCmdBindDescriptorSets(handle(), bindPoint, layout, firstSet, 1, set.handlePtr(),
+    m_resourcesInUse.sets.push_back(set);
+
+    vkCmdBindDescriptorSets(handle(), bindPoint, layout, firstSet, 1, set->handlePtr(),
         dynamicOffsets.size(), dynamicOffsets.data());
 }
 
@@ -170,6 +172,11 @@ void CommandBuffer::setScissor(VkRect2D scissor) const
 void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
 {
     vkCmdDispatch(handle(), groupCountX, groupCountY, groupCountZ);
+}
+
+CommandBuffer::Resources& CommandBuffer::resourcesInUse() const
+{
+    return m_resourcesInUse;
 }
 
 
