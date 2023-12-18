@@ -13,7 +13,8 @@ struct Watcher
 {
     virtual void notify() = 0;
 
-    virtual ~Watcher() {}
+protected:
+    ~Watcher() {}
 };
 
 template <typename HandleType>
