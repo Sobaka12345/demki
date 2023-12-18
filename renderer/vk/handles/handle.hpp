@@ -3,15 +3,73 @@
 #include "assert.hpp"
 
 #include <vector>
+#include <unordered_set>
 
 #include <vulkan/vulkan_core.h>
 
 namespace vk { namespace handles {
 
+struct Watcher
+{
+    virtual void notify() = 0;
+
+    virtual ~Watcher() {}
+};
+
+template <typename HandleType>
+class HandlePtr : private Watcher
+{
+public:
+    HandlePtr(HandleType* handlePtr);
+
+    HandlePtr(const HandlePtr& other);
+    HandlePtr(HandlePtr&& other);
+
+    template <typename DT>
+        requires std::is_base_of_v<HandleType, DT>
+    HandlePtr(const HandlePtr<DT>& other);
+
+    ~HandlePtr();
+
+    bool operator==(const HandlePtr& other) const { return m_ptr == other.m_ptr; }
+
+    bool isAlive() const { return m_ptr; }
+
+    bool isDead() const { return !m_ptr; }
+
+    HandleType* operator->() { return m_ptr; }
+
+    const HandleType* operator->() const { return m_ptr; }
+
+    HandleType* ptr() { return m_ptr; }
+
+    const HandleType* ptr() const { return m_ptr; }
+
+    virtual void notify() { m_ptr = nullptr; }
+
+private:
+    mutable HandleType* m_ptr;
+
+    template <typename>
+    friend class Handle;
+
+    template <typename>
+    friend class HandlePtr;
+};
+
+template <typename T>
+struct HandlePtrHasher
+{
+    std::size_t operator()(const vk::handles::HandlePtr<T>& s) const noexcept
+    {
+        return reinterpret_cast<size_t>(s.ptr());
+    }
+};
+
 template <typename HandleType>
 class Handle
 {
-protected:
+public:
     using VkHandleType = HandleType;
 
 public:
@@ -24,6 +82,11 @@ public:
     virtual ~Handle()
     {
         if (!m_externalPtr && m_handlePtr) delete m_handlePtr;
+
+        for (auto watcher : m_deleteWatchers)
+        {
+            watcher->notify();
+        }
     }
 
     Handle(Handle&& other) noexcept
@@ -79,13 +142,58 @@ protected:
     }
 
 private:
+    void addDeleteWatcher(Watcher* watcherPtr) { m_deleteWatchers.insert(watcherPtr); }
+
+    void removeDeleteWatcher(Watcher* watcherPtr) { m_deleteWatchers.erase(watcherPtr); }
+
+private:
     bool m_owner;
     bool m_externalPtr;
     HandleType* m_handlePtr;
+    std::unordered_set<Watcher*> m_deleteWatchers;
 
-    template <typename T>
+    template <typename>
     friend class HandleVector;
+
+    template <typename>
+    friend class HandlePtr;
 };
+
+template <typename HandleType>
+inline HandlePtr<HandleType>::HandlePtr(HandleType* handlePtr)
+    : m_ptr(handlePtr)
+{
+    handlePtr->addDeleteWatcher(this);
+}
+
+template <typename HandleType>
+inline HandlePtr<HandleType>::HandlePtr(const HandlePtr& other)
+    : m_ptr(other.m_ptr)
+{
+    if (isAlive()) m_ptr->addDeleteWatcher(this);
+}
+
+template <typename HandleType>
+inline HandlePtr<HandleType>::HandlePtr(HandlePtr&& other)
+    : m_ptr(other.m_ptr)
+{
+    if (isAlive()) m_ptr->addDeleteWatcher(this);
+}
+
+template <typename HandleType>
+template <typename DT>
+    requires std::is_base_of_v<HandleType, DT>
+inline HandlePtr<HandleType>::HandlePtr(const HandlePtr<DT>& other)
+    : m_ptr(other.m_ptr)
+{
+    if (isAlive()) m_ptr->addDeleteWatcher(this);
+}
+
+template <typename HandleType>
+inline HandlePtr<HandleType>::~HandlePtr()
+{
+    if (isAlive()) m_ptr->removeDeleteWatcher(this);
+}
 
 template <typename T>
 class HandleVector

@@ -48,7 +48,7 @@ public:
 private:
     const Device& m_device;
     const uint32_t m_maxSetCount;
-    std::unordered_set<DescriptorSet*> m_allocatedSets;
+    uint32_t m_currentSetCount;
 };
 
 }}    //  namespace vk::handles

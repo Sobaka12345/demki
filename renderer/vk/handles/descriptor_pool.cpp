@@ -10,6 +10,7 @@ DescriptorPool::DescriptorPool(DescriptorPool&& other)
     : Handle(std::move(other))
     , m_device(other.m_device)
     , m_maxSetCount(other.m_maxSetCount)
+    , m_currentSetCount(other.m_currentSetCount)
 {}
 
 DescriptorPool::DescriptorPool(
@@ -17,6 +18,7 @@ DescriptorPool::DescriptorPool(
     : Handle(handlePtr)
     , m_maxSetCount(createInfo.maxSets())
     , m_device(device)
+    , m_currentSetCount(0)
 {
     ASSERT(create(vkCreateDescriptorPool, m_device, &createInfo, nullptr) == VK_SUCCESS,
         "failed to create descriptor pool");
@@ -24,26 +26,18 @@ DescriptorPool::DescriptorPool(
 
 DescriptorPool::~DescriptorPool()
 {
-    std::for_each(m_allocatedSets.begin(), m_allocatedSets.end(), [](DescriptorSet* set) {
-        set->setOwner(false);
-    });
     destroy(vkDestroyDescriptorPool, m_device, handle(), nullptr);
 }
 
 std::shared_ptr<DescriptorSet> DescriptorPool::allocateSet(const DescriptorSetLayout& layout)
 {
-    const auto allocInfo =
-        DescriptorSetAllocateInfo{}
-            .descriptorPool(handle())
-            .pSetLayouts(layout.handlePtr())
-            .descriptorSetCount(1);
+    auto set = std::shared_ptr<DescriptorSet>(
+        new DescriptorSet(m_device, this, { layout.handlePtr(), 1 }), [this](DescriptorSet* set) {
+            if (set->m_pool.isAlive()) --m_currentSetCount;
 
-    auto set = std::shared_ptr<DescriptorSet>(new DescriptorSet(m_device, allocInfo),
-        [this](DescriptorSet* set) {
             std::default_delete<DescriptorSet>{}(set);
-            m_allocatedSets.erase(set);
         });
-    m_allocatedSets.insert(set.get());
+    ++m_currentSetCount;
 
     return set;
 }
@@ -57,12 +51,12 @@ std::vector<std::shared_ptr<DescriptorSets>> DescriptorPool::allocateSets(
 
 bool DescriptorPool::isFull() const
 {
-    return m_maxSetCount == m_allocatedSets.size();
+    return m_maxSetCount == m_currentSetCount;
 }
 
 bool DescriptorPool::isEmpty() const
 {
-    return m_allocatedSets.empty();
+    return !m_currentSetCount;
 }
 
 }}    //  namespace vk::handles
