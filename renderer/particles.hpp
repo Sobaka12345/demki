@@ -23,12 +23,10 @@ class Particles
 public:
     static constexpr ShaderInterfaceLayout<2> s_layout = {
         ShaderInterfaceBinding{
-            .id = InterfaceBlockID::IBLOCK_ID_1,
             .type = ShaderBlockType::STORAGE,
             .stage = ShaderStage::COMPUTE,
         },
         ShaderInterfaceBinding{
-            .id = InterfaceBlockID::IBLOCK_ID_2,
             .type = ShaderBlockType::STORAGE,
             .stage = ShaderStage::COMPUTE,
         }
@@ -49,7 +47,7 @@ public:
 
 private:
     size_t m_currentIndex;
-    std::weak_ptr<IPipeline::IBindContext> m_bindContext;
+    std::weak_ptr<IPipelineBindContext> m_bindContext;
     std::array<std::shared_ptr<IStorageBuffer>, 2> m_particlesBuffers;
     std::array<InterfaceDescriptor, s_layout.size()> m_descriptors;
     std::array<InterfaceDescriptor, s_layout.size()> m_descriptorsReverse;

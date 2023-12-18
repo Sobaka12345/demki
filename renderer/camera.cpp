@@ -1,6 +1,6 @@
 #include "camera.hpp"
 
-Camera::Camera(IShaderResourceProvider &provider)
+Camera::Camera(IShaderResourceProvider& provider)
     : m_viewProjection(
           provider.fetchHandle(ShaderBlockType::UNIFORM_DYNAMIC, m_viewProjection.s_layoutSize))
 {
@@ -32,7 +32,7 @@ ViewProjection Camera::viewProjection() const
     return m_viewProjection.get();
 }
 
-void Camera::bind(OperationContext &context)
+void Camera::bind(OperationContext& context)
 {
     //    if (m_bindContext.expired())
     //    {
@@ -41,7 +41,9 @@ void Camera::bind(OperationContext &context)
 
     //    m_bindContext.lock()->bind(context, *this);
 
-    context.pipeline().bindContext(*this).lock()->bind(context, *this);
+    IShaderInterfaceContainer::bind(context);
+
+    //  context.pipeline().bindContext(*this)->bind(context, *this);
 }
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Camera::uniforms() const

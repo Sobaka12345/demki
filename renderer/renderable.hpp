@@ -16,12 +16,10 @@ class Renderable
 public:
     static constexpr ShaderInterfaceLayout<2> s_layout = {
         ShaderInterfaceBinding{
-            .id = InterfaceBlockID::IBLOCK_ID_1,
             .type = ShaderBlockType::UNIFORM_DYNAMIC,
             .stage = ShaderStage::VERTEX,
         },
         ShaderInterfaceBinding{
-            .id = InterfaceBlockID::IBLOCK_ID_2,
             .type = ShaderBlockType::SAMPLER,
             .stage = ShaderStage::FRAGMENT,
         },
@@ -55,6 +53,5 @@ private:
     std::weak_ptr<ITexture> m_texture;
     UniformValue<glm::mat4> m_position;
 
-    std::weak_ptr<IPipeline::IBindContext> m_bindContext;
     std::array<InterfaceDescriptor, s_layout.size()> m_uniformDescriptors;
 };

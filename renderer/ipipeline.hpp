@@ -4,17 +4,25 @@
 #include "shader_interface.hpp"
 #include "vertex.hpp"
 
+#include <utils.hpp>
+
 #include <filesystem>
 #include <memory>
 #include <variant>
 #include <vector>
 #include <span>
 
-
 class OperationContext;
 class OperationContext;
 class IShaderInterfaceContainer;
 class IShaderInterfaceHandle;
+
+struct IPipelineBindContext
+{
+    virtual void bind(OperationContext& context, const IShaderInterfaceContainer& container) = 0;
+
+    virtual ~IPipelineBindContext() {}
+};
 
 class IPipeline
 {
@@ -44,23 +52,22 @@ public:
         std::filesystem::path path;
     };
 
-    struct IBindContext
+protected:
+    struct InterfaceContainerInfo
     {
-        virtual void bind(OperationContext& context,
-            const IShaderInterfaceContainer& container) = 0;
-
-        ~IBindContext() {}
+        uint32_t id = 0;
+        uint32_t batchSize = 1;
+        std::span<const ShaderInterfaceBinding> layout;
     };
 
-protected:
     template <typename Derived>
     class CreateInfo
     {
     public:
         template <IsShaderInterfaceContainer T>
-        Derived& addShaderInterfaceContainer()
+        Derived& addShaderInterfaceContainer(uint32_t batchSize = 1)
         {
-            m_interfaceContainers.push_back({ T::sId(), T::sLayout() });
+            m_interfaceContainers.push_back({ T::sId(), batchSize, T::sLayout() });
             return that();
         }
 
@@ -83,14 +90,14 @@ protected:
 
     private:
         std::vector<ShaderInfo> m_shaders;
-        std::vector<std::pair<uint32_t, std::span<const ShaderInterfaceBinding>>>
-            m_interfaceContainers;
+        std::vector<InterfaceContainerInfo> m_interfaceContainers;
     };
 
 
 public:
     virtual void bind(OperationContext& context) = 0;
-    virtual std::weak_ptr<IBindContext> bindContext(const IShaderInterfaceContainer& container) = 0;
+    virtual FragileSharedPtr<IPipelineBindContext> bindContext(
+        const IShaderInterfaceContainer& container) = 0;
 
     virtual ~IPipeline() {}
 };

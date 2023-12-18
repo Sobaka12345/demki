@@ -29,6 +29,7 @@ BEGIN_DECLARE_VKSTRUCT(WriteDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SE
 END_DECLARE_VKSTRUCT()
 
 class Device;
+class DescriptorPool;
 
 class DescriptorSet : public Handle<VkDescriptorSet>
 {
@@ -44,19 +45,22 @@ public:
 
     DescriptorSet(const DescriptorSet& other) = delete;
     DescriptorSet(DescriptorSet&& other);
-
-    DescriptorSet(const Device& device,
-        DescriptorSetAllocateInfo allocInfo,
-        VkHandleType* handlePtr = nullptr);
-
     ~DescriptorSet();
 
     void write(std::span<const Write> writes);
     void write(std::span<const WriteDescriptorSet> writes);
 
+private:
+    DescriptorSet(const Device& device,
+        HandlePtr<DescriptorPool> pool,
+        std::span<const VkDescriptorSetLayout> setLayouts,
+        VkHandleType* handlePtr = nullptr);
+
+    friend class DescriptorPool;
+
 protected:
     const Device& m_device;
-    VkDescriptorPool m_pool;
+    HandlePtr<DescriptorPool> m_pool;
 };
 
 class DescriptorSets : public HandleVector<DescriptorSet>

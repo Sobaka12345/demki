@@ -106,6 +106,8 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
         m_needRecreate = true;
     });
 
+    m_resourcesInUse.resize(m_maxFramesInFlight);
+
     constexpr handles::FenceCreateInfo fenceInfo =
         handles::FenceCreateInfo{}.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
@@ -262,6 +264,8 @@ bool Swapchain::prepare(::OperationContext& context)
     vkWaitForFences(m_context.device(), 1, m_inFlightFences[m_currentFrame].handlePtr(), VK_TRUE,
         UINT64_MAX);
 
+    m_resourcesInUse[m_currentFrame].sets.clear();
+
     VkResult result = vkAcquireNextImageKHR(m_context.device(), *m_swapchain, UINT64_MAX,
         m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_currentImage);
 
@@ -291,6 +295,8 @@ void Swapchain::present(::OperationContext& context)
 {
     const auto& commandBuffer = *get(context).commandBuffer;
     ASSERT(commandBuffer.end() == VK_SUCCESS, "failed to record command buffer!");
+
+    m_resourcesInUse[m_currentFrame] = std::move(commandBuffer.resourcesInUse());
 
     std::vector<VkPipelineStageFlags> waitStages = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT

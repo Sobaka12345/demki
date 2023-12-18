@@ -4,7 +4,9 @@
 #include "descriptor_set.hpp"
 
 #include <cstdint>
+#include <unordered_set>
 #include <span>
+#include <memory>
 
 namespace vk { namespace handles {
 
@@ -37,11 +39,16 @@ public:
     ~DescriptorPool();
 
     std::shared_ptr<DescriptorSet> allocateSet(const DescriptorSetLayout& layout);
-    //  DescriptorSets allocateSets(const DescriptorSetLayout& layout, uint32_t count);
+    std::vector<std::shared_ptr<DescriptorSets>> allocateSets(
+        std::span<const DescriptorSetLayout> layouts);
+
+    bool isFull() const;
+    bool isEmpty() const;
 
 private:
     const Device& m_device;
-    std::vector<std::weak_ptr<DescriptorSet>> m_sets;
+    const uint32_t m_maxSetCount;
+    uint32_t m_currentSetCount;
 };
 
 }}    //  namespace vk::handles

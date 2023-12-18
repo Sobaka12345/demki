@@ -60,7 +60,7 @@ void Renderable::bind(OperationContext& context)
     //    }
     //  m_bindContext.lock()->bind(context, *this);
 
-    context.pipeline().bindContext(*this).lock()->bind(context, *this);
+    IShaderInterfaceContainer::bind(context);
 }
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Renderable::uniforms() const

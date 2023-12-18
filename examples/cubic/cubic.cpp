@@ -98,7 +98,7 @@ struct Map
             for (size_t y = 0; y < (*this)[x].size(); ++y)
                 for (size_t z = 0; z < (*this)[x][y].size(); ++z)
                 {
-                    if (auto& block = (*this)[x][y][z]; block.has_value())
+                    if (auto& block = (*this)[x][y].at(z); block.has_value())
                     {
                         block->bind(context);
                         block->draw(context);
@@ -235,7 +235,7 @@ public:
             glm::vec<3, size_t> idx = m_map.toBlockIndices(m_currentPosition + m_direction * i);
             if (idx.x == -1) continue;
 
-            if (auto block = m_map[idx.x][idx.y][idx.z]; block.has_value())
+            if (auto block = m_map[idx.x][idx.y].at(idx.z); block.has_value())
             {
                 float j = i;
                 while (j > 2.f && idx.x != -1 && m_map[idx.x][idx.y][idx.z].has_value())
@@ -244,7 +244,7 @@ public:
                     idx = m_map.toBlockIndices(m_currentPosition + m_direction * j);
                 }
 
-                if (idx.x != -1)
+                if (idx.x != -1 && !m_map[idx.x][idx.y][idx.z].has_value())
                 {
                     auto& newBlock = m_map[idx.x][idx.y][idx.z];
                     newBlock.emplace(m_app.context().resources());
@@ -292,7 +292,7 @@ Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
     if (glfwRawMouseMotionSupported())
         glfwSetInputMode(window().glfwHandle(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
-    glfwSetInputMode(window().glfwHandle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //  glfwSetInputMode(window().glfwHandle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     window().registerOnKeyPressedCallback(std::bind(&Cubic::onKeyPressed, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
@@ -310,7 +310,7 @@ Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
                 .path = "./shaders/shader.frag.spv",
             })
             .addShaderInterfaceContainer<Camera>()
-            .addShaderInterfaceContainer<Renderable>());
+            .addShaderInterfaceContainer<Renderable>(10));
 
     m_map = std::make_unique<Map>();
     m_hero = std::make_unique<Hero>(*this, *m_map);

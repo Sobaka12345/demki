@@ -1,21 +1,12 @@
 #pragma once
 
+#include <utils.hpp>
+
 #include <memory>
 #include <concepts>
 #include <cstdint>
 #include <span>
-
-enum class InterfaceBlockID : int32_t
-{
-    INVALID = -1,
-    IBLOCK_ID_0 = 0,
-    IBLOCK_ID_1,
-    IBLOCK_ID_2,
-    IBLOCK_ID_3,
-    IBLOCK_ID_4,
-    IBLOCK_ID_5,
-    IBLOCK_ID_6
-};
+#include <unordered_map>
 
 enum class ShaderBlockType
 {
@@ -37,12 +28,14 @@ enum class ShaderStage
 struct ShaderInterfaceBinding
 {
     uint32_t count = 1;
-    InterfaceBlockID id = InterfaceBlockID::INVALID;
     ShaderBlockType type = ShaderBlockType::INVALID;
     ShaderStage stage = ShaderStage::INVALID;
 };
 
 class OperationContext;
+class IPipeline;
+struct IPipelineBindContext;
+
 class IShaderInterfaceHandle;
 
 class IShaderInterfaceContainer
@@ -55,9 +48,9 @@ public:
     };
 
 public:
-    ~IShaderInterfaceContainer(){};
+    virtual ~IShaderInterfaceContainer();
 
-    virtual void bind(::OperationContext& context) = 0;
+    virtual void bind(::OperationContext& context);
     virtual uint32_t id() const = 0;
     virtual std::span<const ShaderInterfaceBinding> layout() const = 0;
 
@@ -69,6 +62,10 @@ protected:
 
 private:
     static uint32_t s_id;
+
+private:
+    bool m_isInDestruction = false;
+    std::unordered_map<IPipeline*, FragileSharedPtr<IPipelineBindContext>> m_contexts;
 };
 
 template <typename T>

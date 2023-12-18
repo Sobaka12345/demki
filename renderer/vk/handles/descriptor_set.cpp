@@ -1,28 +1,36 @@
 #include "descriptor_set.hpp"
 
 #include "device.hpp"
+#include "descriptor_pool.hpp"
 
 namespace vk { namespace handles {
 
 DescriptorSet::DescriptorSet(DescriptorSet&& other)
     : Handle(std::move(other))
     , m_device(other.m_device)
-    , m_pool(other.m_pool)
+    , m_pool(std::move(other.m_pool))
 {}
 
-DescriptorSet::DescriptorSet(
-    const Device& device, DescriptorSetAllocateInfo allocInfo, VkHandleType* handlePtr)
+DescriptorSet::DescriptorSet(const Device& device,
+    HandlePtr<DescriptorPool> pool,
+    std::span<const VkDescriptorSetLayout> setLayouts,
+    VkHandleType* handlePtr)
     : Handle(handlePtr)
     , m_device(device)
-    , m_pool(allocInfo.descriptorPool())
+    , m_pool(pool)
 {
-    ASSERT(create(vkAllocateDescriptorSets, m_device, &allocInfo) == VK_SUCCESS,
+    auto info =
+        DescriptorSetAllocateInfo{}
+            .descriptorPool(m_pool->handle())
+            .descriptorSetCount(setLayouts.size())
+            .pSetLayouts(setLayouts.data());
+    ASSERT(create(vkAllocateDescriptorSets, m_device, &info) == VK_SUCCESS,
         "failed to allocate descriptor sets!");
 }
 
 DescriptorSet::~DescriptorSet()
 {
-    destroy(vkFreeDescriptorSets, m_device, m_pool, 1, handlePtr());
+    if (m_pool.isAlive()) destroy(vkFreeDescriptorSets, m_device, m_pool->handle(), 1, handlePtr());
 }
 
 void DescriptorSet::write(std::span<const Write> writes)

@@ -2,6 +2,7 @@
 
 #include "graphics_context.hpp"
 #include "renderer.hpp"
+#include "descriptor_set_provider.hpp"
 
 #include "handles/command_buffer.hpp"
 #include "handles/descriptor_set.hpp"
@@ -65,8 +66,8 @@ void GraphicsPipeline::BindContext::bind(::OperationContext& context,
 	//  TO DO: RETURN DYNAMIC OFFSETS
     const auto uniforms = container.dynamicUniforms();
     std::vector<uint32_t> offsets(uniforms.size(), 0);
-    specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(), setId,
-        *set, offsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(),
+        descriptorSetInfo.setId, currentSet, offsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
@@ -246,9 +247,10 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
     return newEl->second;
 }
 
-GraphicsPipeline::BindContext* GraphicsPipeline::newBindContext() const
+GraphicsPipeline::BindContext* GraphicsPipeline::newBindContext(
+    BindContext::DescriptorSetInfo descriptorSetInfo) const
 {
-    return new BindContext;
+    return new BindContext(std::move(descriptorSetInfo));
 }
 
 }    //  namespace vk

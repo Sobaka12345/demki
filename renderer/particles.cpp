@@ -35,7 +35,7 @@ void Particles::draw(OperationContext& context)
 
 void Particles::bind(OperationContext& context)
 {
-    context.pipeline().bindContext(*this).lock()->bind(context, *this);
+    IShaderInterfaceContainer::bind(context);
 }
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::uniforms() const

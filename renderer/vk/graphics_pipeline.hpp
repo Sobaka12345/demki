@@ -14,6 +14,8 @@ class GraphicsPipeline
 {
     struct BindContext : public Pipeline::BindContext
     {
+        using Pipeline::BindContext::BindContext;
+
         virtual void bind(::OperationContext& context,
             const IShaderInterfaceContainer& container) override;
     };
@@ -30,7 +32,8 @@ public:
 private:
     const handles::Pipeline& pipeline(const vk::OperationContext& context);
 
-    virtual BindContext* newBindContext() const override;
+    virtual BindContext* newBindContext(
+        BindContext::DescriptorSetInfo descriptorSetInfo) const override;
 
 private:
     VkPrimitiveTopology m_topology;
