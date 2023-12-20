@@ -29,23 +29,17 @@ class RenderPass;
 
 class Pipeline : virtual public IPipeline
 {
-    struct IdVectorHasher
+protected:
+    struct DescriptorOffsetVisitor : public ShaderInterfaceHandleVisitor
     {
-        size_t operator()(const std::vector<ShaderResource::Descriptor::Id>& e) const
+        void visit(ShaderInterfaceHandle& handle) override
         {
-            size_t result = 0;
-            uint64_t pow = 1;
-            for (ShaderResource::Descriptor::Id el : e)
-            {
-                result += el.resourceId * pow + el.descriptorId * pow * 2 + el.bufferId * pow * 3;
-                pow *= 10;
-            }
-
-            return result;
+            result = &handle.currentDescriptor()->dynamicOffset;
         }
+
+        uint32_t* result = nullptr;
     };
 
-protected:
     struct BindContext : public IPipelineBindContext
     {
         struct DescriptorSetInfo
@@ -95,7 +89,7 @@ protected:
 
     bool m_isInDestruction;
     std::unordered_map<uint32_t, DescriptorSetProvider> m_descriptorSetProviders;
-    std::list<FragileSharedPtr<BindContext>> m_bindContexts;
+    std::unordered_map<std::type_index, FragileSharedPtr<BindContext>> m_bindContexts;
     std::unordered_map<uint32_t, std::pair<uint32_t, handles::DescriptorSetLayout>> m_setLayouts;
 
     std::unique_ptr<handles::PipelineLayout> m_pipelineLayout;

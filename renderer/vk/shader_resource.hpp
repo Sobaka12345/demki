@@ -1,6 +1,6 @@
 #pragma once
 
-#include "handles/buffer.hpp"
+#include "handles/memory.hpp"
 
 #include "vk/types.hpp"
 
@@ -47,7 +47,10 @@ public:
             bool operator==(const Id& other) const;
         } id;
 
+        uint32_t offset() const { return dynamicOffset + descriptorBufferInfo.offset(); }
+
         std::weak_ptr<handles::Memory> memory;
+        uint32_t dynamicOffset = 0;
         DescriptorBufferInfo descriptorBufferInfo;
         DescriptorImageInfo descriptorImageInfo;
 

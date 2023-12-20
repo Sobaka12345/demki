@@ -72,13 +72,28 @@ void Pipeline::BindContext::bind(::OperationContext& context,
     std::span descriptors = container.uniforms();
     std::vector<ShaderResource::Descriptor::Id> keyVector;
     keyVector.reserve(descriptors.size());
-    std::transform(descriptors.begin(), descriptors.end(), std::back_inserter(keyVector),
-        [&assureDescriptorsVisitor](const auto& x) {
-            DASSERT(!x.handle.expired(), "descriptor handle is expired or was not initialized");
-            x.handle.lock()->accept(resourceIdVisitor);
-            x.handle.lock()->accept(assureDescriptorsVisitor);
-            return *resourceIdVisitor.result;
-        });
+    for (const auto& descriptor : descriptors)
+    {
+        DASSERT(!descriptor.handle.expired(),
+            "descriptor handle is expired or was not initialized");
+        descriptor.handle.lock()->accept(resourceIdVisitor);
+        descriptor.handle.lock()->accept(assureDescriptorsVisitor);
+
+        if (descriptor.binding.type == ShaderBlockType::UNIFORM_DYNAMIC)
+        {
+            keyVector.push_back({
+                //  dynamic descriptors use dynamic offsets and can
+                //  share same descriptor set given the same buffer ID
+                .descriptorId = 0,
+                .bufferId = resourceIdVisitor.result->bufferId,
+                .resourceId = resourceIdVisitor.result->resourceId,
+            });
+        }
+        else
+        {
+            keyVector.push_back(*resourceIdVisitor.result);
+        }
+    }
 
     if (auto iter = sets.find(keyVector); iter != sets.end())
     {
@@ -177,22 +192,31 @@ Pipeline::~Pipeline()
 FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
     const IShaderInterfaceContainer& container)
 {
-	auto& [setId, layout] = m_setLayouts.at(container.id());
+    const auto containerId = container.id();
+    const auto containerTypeId = container.typeId();
+
+    if (auto iter = m_bindContexts.find(containerTypeId); iter != m_bindContexts.end())
+    {
+        return iter->second;
+    }
+
+    auto& [setId, layout] = m_setLayouts.at(containerId);
 
     BindContext* context = newBindContext({
-		.setId = setId,
-		.bindingIndices = m_bindingIndices.at(container.id()),
-		.descriptorSetProvider = m_descriptorSetProviders.at(container.id()),
-		.descriptorSetLayout = layout,
-	});
-
-    auto contextIter = m_bindContexts.emplace(m_bindContexts.end(), context);
-
-    contextIter->registerDeleteCallback([&, contextIter](BindContext* context) {
-        if (!m_isInDestruction) m_bindContexts.erase(contextIter);
+        .setId = setId,
+        .bindingIndices = m_bindingIndices.at(containerId),
+        .descriptorSetProvider = m_descriptorSetProviders.at(containerId),
+        .descriptorSetLayout = layout,
     });
 
-    return *contextIter;
+
+    auto [contextIter, _] = m_bindContexts.emplace(containerTypeId, context);
+
+    contextIter->second.registerDeleteCallback([&, containerTypeId](BindContext* context) {
+        if (!m_isInDestruction) m_bindContexts.erase(containerTypeId);
+    });
+
+    return contextIter->second;
 }
 
 }    //  namespace vk

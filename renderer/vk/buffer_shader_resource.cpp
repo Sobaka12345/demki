@@ -45,6 +45,17 @@ size_t BufferShaderResource::allocateBuffer()
     return m_buffers.size() - 1;
 }
 
+void BufferShaderResource::populateDescriptor(Descriptor& descriptor)
+{
+    auto& buffer = m_buffers[descriptor.id.bufferId];
+    descriptor.descriptorBufferInfo =
+        DescriptorBufferInfo{}
+            .buffer(buffer)
+            .offset(descriptor.id.descriptorId * alignment())
+            .range(m_alignment);
+    descriptor.memory = buffer.memory();
+}
+
 std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::tryFetchDescriptor(
     size_t bufferId)
 {
@@ -58,13 +69,7 @@ std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::tryFetchDescri
         descriptor->id.bufferId = bufferId;
         descriptor->id.resourceId = id();
 
-        auto& buffer = m_buffers[bufferId];
-        descriptor->descriptorBufferInfo =
-            DescriptorBufferInfo{}
-                .buffer(buffer)
-                .offset(freeDescriptorId * alignment())
-                .range(m_alignment);
-        descriptor->memory = buffer.memory();
+        populateDescriptor(*descriptor);
 
         return descriptor;
     }
@@ -90,6 +95,20 @@ VkMemoryPropertyFlags UniformBufferShaderResource::memoryProperties() const
     return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 }
 
+void DynamicUniformBufferShaderResource::populateDescriptor(Descriptor& descriptor)
+{
+    auto& buffer = m_buffers[descriptor.id.bufferId];
+    descriptor.descriptorBufferInfo =
+        DescriptorBufferInfo{}.buffer(buffer).offset(0).range(m_alignment);
+    descriptor.dynamicOffset = descriptor.id.descriptorId * alignment();
+    descriptor.memory = buffer.memory();
+}
+
+void StaticUniformBufferShaderResource::populateDescriptor(Descriptor& descriptor)
+{
+    UniformBufferShaderResource::populateDescriptor(descriptor);
+}
+
 handles::BufferCreateInfo StorageBufferShaderResource::bufferCreateInfo() const
 {
     return handles::BufferCreateInfo{}
@@ -103,6 +122,5 @@ VkMemoryPropertyFlags StorageBufferShaderResource::memoryProperties() const
 {
     return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
-
 
 }    //  namespace vk

@@ -54,12 +54,6 @@ void Renderable::bind(OperationContext& context)
     m_model.lock()->bind(context);
     m_texture.lock()->bind(context);
 
-    //  if (m_bindContext.expired())
-    //    {
-    //        m_bindContext = context.pipeline().bindContext(*this);
-    //    }
-    //  m_bindContext.lock()->bind(context, *this);
-
     IShaderInterfaceContainer::bind(context);
 }
 

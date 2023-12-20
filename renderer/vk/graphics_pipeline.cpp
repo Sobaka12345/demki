@@ -52,20 +52,17 @@ void GraphicsPipeline::BindContext::bind(::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
     Pipeline::BindContext::bind(context, container);
-
     auto& specContext = get(context);
 
-    //    std::vector<uint32_t> offsets(uniforms.size());
-    //    std::transform(uniforms.begin(), uniforms.end(), offsets.begin(),
-    //    [](const auto& descriptor) {
-    //        DASSERT(!descriptor.handle.expired(), "handle is expired or has not
-    //        been initialized"); return
-    //        descriptor.handle.lock()->resourceOffset();
-    //    });
+    static Pipeline::DescriptorOffsetVisitor descriptorOffsetVisitor;
 
-	//  TO DO: RETURN DYNAMIC OFFSETS
-    const auto uniforms = container.dynamicUniforms();
-    std::vector<uint32_t> offsets(uniforms.size(), 0);
+    std::vector<uint32_t> offsets;
+    for (auto& descriptor : container.dynamicUniforms())
+    {
+        descriptor.handle.lock()->accept(descriptorOffsetVisitor);
+        offsets.push_back(*descriptorOffsetVisitor.result);
+    }
+
     specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(),
         descriptorSetInfo.setId, currentSet, offsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
 }

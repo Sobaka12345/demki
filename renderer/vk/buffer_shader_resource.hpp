@@ -19,6 +19,9 @@ public:
 
     uint32_t alignment() const { return m_alignment; }
 
+protected:
+    virtual void populateDescriptor(ShaderResource::Descriptor& descriptor);
+
 private:
     size_t allocateBuffer();
     std::shared_ptr<ShaderResource::Descriptor> tryFetchDescriptor(size_t bufferId);
@@ -32,10 +35,12 @@ protected:
     const uint32_t m_chunkObjectCount;
     const uint32_t m_alignment;
 
+protected:
+    handles::HandleVector<handles::Buffer> m_buffers;
+
 private:
     const handles::Device& m_device;
 
-    handles::HandleVector<handles::Buffer> m_buffers;
     std::vector<std::unordered_set<uint64_t>> m_freeDescriptors;
 };
 
@@ -47,6 +52,24 @@ public:
 private:
     virtual handles::BufferCreateInfo bufferCreateInfo() const override;
     virtual VkMemoryPropertyFlags memoryProperties() const override;
+};
+
+class DynamicUniformBufferShaderResource : public UniformBufferShaderResource
+{
+public:
+    using UniformBufferShaderResource::UniformBufferShaderResource;
+
+private:
+    virtual void populateDescriptor(ShaderResource::Descriptor& descriptor) override;
+};
+
+class StaticUniformBufferShaderResource : public UniformBufferShaderResource
+{
+public:
+    using UniformBufferShaderResource::UniformBufferShaderResource;
+
+private:
+    virtual void populateDescriptor(ShaderResource::Descriptor& descriptor) override;
 };
 
 class StorageBufferShaderResource : public BufferShaderResource

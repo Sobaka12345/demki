@@ -161,8 +161,12 @@ std::shared_ptr<ShaderInterfaceHandle> ResourceManager::fetchHandleSpecific(Shad
     {
         return insertAndFetchSpecificHandle(m_storageShaderResources);
     }
+    else if (sbt == ShaderBlockType::UNIFORM_DYNAMIC)
+    {
+        return insertAndFetchSpecificHandle(m_dynamicUniformShaderResources);
+    }
 
-    return insertAndFetchSpecificHandle(m_uniformShaderResources);
+    return insertAndFetchSpecificHandle(m_staticUniformShaderResources);
 }
 
 std::shared_ptr<IShaderInterfaceHandle> ResourceManager::fetchHandle(ShaderBlockType sbt,

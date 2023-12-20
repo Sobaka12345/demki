@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <span>
 #include <unordered_map>
+#include <typeindex>
 
 enum class ShaderBlockType
 {
@@ -52,6 +53,7 @@ public:
 
     virtual void bind(::OperationContext& context);
     virtual uint32_t id() const = 0;
+    virtual std::type_index typeId() const = 0;
     virtual std::span<const ShaderInterfaceBinding> layout() const = 0;
 
     virtual std::span<const InterfaceDescriptor> uniforms() const = 0;
@@ -82,6 +84,8 @@ public:
     {
         return sLayout();
     };
+
+    virtual std::type_index typeId() const final override { return std::type_index{ typeid(T) }; }
 
     virtual uint32_t id() const final override { return sId(); };
 };

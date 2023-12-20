@@ -73,7 +73,9 @@ private:
 	std::vector<size_t> m_freeBufferSpace;
     handles::HandleVector<handles::Buffer> m_modelBuffers;
     handles::HandleVector<handles::Buffer> m_indBuffers;
-    std::unordered_map<uint32_t, UniformBufferShaderResource> m_uniformShaderResources;
+    std::unordered_map<uint32_t, StaticUniformBufferShaderResource> m_staticUniformShaderResources;
+    std::unordered_map<uint32_t, DynamicUniformBufferShaderResource>
+        m_dynamicUniformShaderResources;
     std::unordered_map<uint32_t, StorageBufferShaderResource> m_storageShaderResources;
 };
 

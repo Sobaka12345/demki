@@ -34,16 +34,7 @@ ViewProjection Camera::viewProjection() const
 
 void Camera::bind(OperationContext& context)
 {
-    //    if (m_bindContext.expired())
-    //    {
-    //        m_bindContext = context.pipeline().bindContext(*this);
-    //    }
-
-    //    m_bindContext.lock()->bind(context, *this);
-
     IShaderInterfaceContainer::bind(context);
-
-    //  context.pipeline().bindContext(*this)->bind(context, *this);
 }
 
 std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Camera::uniforms() const
