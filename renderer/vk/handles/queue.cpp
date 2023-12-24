@@ -11,15 +11,19 @@ Queue& Queue::operator=(Queue&& other) noexcept
 {
 	Handle::operator=(std::move(other));
 
-	return *this;
+    return *this;
 }
 
 Queue::Queue(
-    const Device& device, uint32_t queueFamilyIndex, uint32_t queueIndex, VkHandleType* handlePtr)
+        const Device& device, uint32_t queueFamilyIndex, uint32_t queueIndex, VkHandleType* handlePtr) noexcept
 	: Handle(handlePtr)
 {
 	create(vkGetDeviceQueue, device, queueFamilyIndex, queueIndex);
 }
+
+Queue::Queue(const Device& device, uint32_t queueFamilyIndex, uint32_t queueIndex) noexcept
+    : Queue(device, queueFamilyIndex, queueIndex, nullptr)
+{}
 
 Queue::~Queue() {}
 

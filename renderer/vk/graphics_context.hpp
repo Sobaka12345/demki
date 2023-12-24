@@ -41,9 +41,9 @@ public:
     virtual std::shared_ptr<IComputer> createComputer(
         IComputer::CreateInfo createInfo) const override;
     virtual std::shared_ptr<IComputePipeline> createComputePipeline(
-        IComputePipeline::CreateInfo createInfo) const;
+        IComputePipeline::CreateInfo createInfo) const override;
     virtual std::shared_ptr<IGraphicsPipeline> createGraphicsPipeline(
-        IGraphicsPipeline::CreateInfo createInfo) const;
+        IGraphicsPipeline::CreateInfo createInfo) const override;
     virtual std::shared_ptr<IRenderer> createRenderer(
         IRenderer::CreateInfo createInfo) const override;
     virtual std::shared_ptr<IStorageBuffer> createStorageBuffer(

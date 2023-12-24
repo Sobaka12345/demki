@@ -2,12 +2,12 @@
 
 namespace vk { namespace handles {
 
-PhysicalDevice::PhysicalDevice(PhysicalDevice &&other)
+PhysicalDevice::PhysicalDevice(PhysicalDevice&& other) noexcept
     : Handle(std::move(other))
 {}
 
-PhysicalDevice::PhysicalDevice()
-    : Handle(nullptr)
+PhysicalDevice::PhysicalDevice() noexcept
+    : Handle(static_cast<VkHandleType*>(nullptr))
 {}
 
 }}

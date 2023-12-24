@@ -113,10 +113,10 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
 
     for (size_t i = 0; i < m_maxFramesInFlight; ++i)
     {
-        m_inFlightFences.emplace_back(m_context.device(),
+        m_inFlightFences.emplaceBack(m_context.device(),
             handles::FenceCreateInfo{}.flags(VK_FENCE_CREATE_SIGNALED_BIT));
-        m_imageAvailableSemaphores.emplace_back(m_context.device(), handles::SemaphoreCreateInfo{});
-        m_renderFinishedSemaphores.emplace_back(m_context.device(), handles::SemaphoreCreateInfo{});
+        m_imageAvailableSemaphores.emplaceBack(m_context.device(), handles::SemaphoreCreateInfo{});
+        m_renderFinishedSemaphores.emplaceBack(m_context.device(), handles::SemaphoreCreateInfo{});
     }
 
     m_commandBuffers =
@@ -250,7 +250,7 @@ void Swapchain::populateOperationContext(OperationContext& context)
                     .height(m_swapchainCreateInfo.imageExtent().height)
                     .layers(1);
 
-            m_swapChainFramebuffers.emplace_back(m_context.device(), framebufferInfo);
+            m_swapChainFramebuffers.emplaceBack(m_context.device(), framebufferInfo);
         }
     }
 
@@ -478,7 +478,7 @@ void Swapchain::create()
         auto createInfo =
             imageViewCreateInfo().image(m_swapChainImages[i]).format(m_swapchain->imageFormat());
         createInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        m_swapChainImageViews.emplace_back(m_swapchain->device(), std::move(createInfo));
+        m_swapChainImageViews.emplaceBack(m_swapchain->device(), std::move(createInfo));
     }
 }
 

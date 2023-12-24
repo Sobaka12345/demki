@@ -31,19 +31,24 @@ class Device;
 
 class Queue : public Handle<VkQueue>
 {
+    HANDLE(Queue);
+
 public:
+    Queue(const Queue& other) = delete;
 	Queue(Queue&& other) noexcept;
 	Queue& operator=(Queue&& other) noexcept;
-	Queue(const Queue& other) = delete;
-    Queue(const Device& device,
-        uint32_t queueFamilyIndex,
-        uint32_t queueIndex,
-        VkHandleType* handlePtr = nullptr);
-	~Queue();
+    Queue(const Device& device, uint32_t queueFamilyIndex, uint32_t queueIndex) noexcept;
+    virtual ~Queue();
 
 	VkResult waitIdle() const;
     VkResult submit(uint32_t submitCount, const SubmitInfo* pSubmits, VkFence fence) const;
     VkResult presentKHR(PresentInfoKHR presentInfo) const;
+
+protected:
+    Queue(const Device& device,
+        uint32_t queueFamilyIndex,
+        uint32_t queueIndex,
+        VkHandleType* handlePtr) noexcept;
 };
 
 }}    //  namespace vk::handles

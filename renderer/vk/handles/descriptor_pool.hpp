@@ -30,20 +30,25 @@ class PipelineLayout;
 
 class DescriptorPool : public Handle<VkDescriptorPool>
 {
+    HANDLE(DescriptorPool);
+
 public:
     DescriptorPool(const DescriptorPool& other) = delete;
-    DescriptorPool(DescriptorPool&& other);
-    DescriptorPool(const Device& device,
-        DescriptorPoolCreateInfo createInfo,
-        VkHandleType* handlePtr = nullptr);
+    DescriptorPool(DescriptorPool&& other) noexcept;
+    DescriptorPool(const Device& device, DescriptorPoolCreateInfo createInfo) noexcept;
     ~DescriptorPool();
 
     std::shared_ptr<DescriptorSet> allocateSet(const DescriptorSetLayout& layout);
-    std::vector<std::shared_ptr<DescriptorSets>> allocateSets(
-        std::span<const DescriptorSetLayout> layouts);
+    std::vector<std::shared_ptr<DescriptorSet>> allocateSets(
+        const HandleVector<DescriptorSetLayout>& layouts);
 
     bool isFull() const;
     bool isEmpty() const;
+
+protected:
+    DescriptorPool(const Device& device,
+        DescriptorPoolCreateInfo createInfo,
+        VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

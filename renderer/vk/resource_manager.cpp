@@ -32,14 +32,14 @@ std::shared_ptr<IModel> ResourceManager::createModel(
     const size_t verticesSize = vertices.size() * vertexSize;
     const size_t indicesSize = indices.size() * indexSize;
 
-    m_modelBuffers.emplace_back(m_context.device(),
+    m_modelBuffers.emplaceBack(m_context.device(),
         BufferCreateInfo()
             .size(verticesSize)
             .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
             .sharingMode(VK_SHARING_MODE_EXCLUSIVE));
     m_modelBuffers.back().allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    m_indBuffers.emplace_back(m_context.device(),
+    m_indBuffers.emplaceBack(m_context.device(),
         BufferCreateInfo()
             .size(indicesSize)
             .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT)

@@ -7,29 +7,10 @@
 
 namespace vk { namespace handles {
 
-CommandBuffer::CommandBuffer(const Device& device, const CommandPool& pool, VkHandleType* handlePtr)
-    : Handle(handlePtr)
-    , m_device(device)
-    , m_pool(pool)
-{
-    setOwner(false);
-}
-
-CommandBuffer::~CommandBuffer()
-{
-    destroy(vkFreeCommandBuffers, m_device, m_pool, 1, handlePtr());
-}
-
-CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
-    : Handle(std::move(other))
-    , m_device(other.m_device)
-    , m_pool(other.m_pool)
-{}
-
 CommandBuffer::CommandBuffer(const Device& device,
     const CommandPool& pool,
     VkCommandBufferLevel level,
-    VkHandleType* handlePtr)
+    VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , m_device(device)
     , m_pool(pool)
@@ -38,6 +19,22 @@ CommandBuffer::CommandBuffer(const Device& device,
         CommandBufferAllocateInfo{}.commandPool(pool).level(level).commandBufferCount(1);
     ASSERT(create(vkAllocateCommandBuffers, device, &allocateInfo) == VK_SUCCESS,
         "failed to create CommandBuffer");
+}
+
+CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
+    : Handle(std::move(other))
+    , m_device(other.m_device)
+    , m_pool(other.m_pool)
+{}
+
+CommandBuffer::CommandBuffer(
+        const Device& device, const CommandPool& pool, VkCommandBufferLevel level) noexcept
+    : CommandBuffer(device, pool, level, nullptr)
+{}
+
+CommandBuffer::~CommandBuffer()
+{
+    destroy(vkFreeCommandBuffers, m_device, m_pool, 1, handlePtr());
 }
 
 VkResult CommandBuffer::begin(CommandBufferBeginInfo beginInfo) const

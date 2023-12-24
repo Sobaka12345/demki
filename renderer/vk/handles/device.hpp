@@ -16,15 +16,15 @@
 namespace vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(DeviceCreateInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
-    VKSTRUCT_PROPERTY(const void *, pNext)
+    VKSTRUCT_PROPERTY(const void*, pNext)
     VKSTRUCT_PROPERTY(VkDeviceCreateFlags, flags)
     VKSTRUCT_PROPERTY(uint32_t, queueCreateInfoCount)
-    VKSTRUCT_PROPERTY(const VkDeviceQueueCreateInfo *, pQueueCreateInfos)
+    VKSTRUCT_PROPERTY(const VkDeviceQueueCreateInfo*, pQueueCreateInfos)
     VKSTRUCT_PROPERTY(uint32_t, enabledLayerCount)
-    VKSTRUCT_PROPERTY(const char *const *, ppEnabledLayerNames)
+    VKSTRUCT_PROPERTY(const char* const*, ppEnabledLayerNames)
     VKSTRUCT_PROPERTY(uint32_t, enabledExtensionCount)
-    VKSTRUCT_PROPERTY(const char *const *, ppEnabledExtensionNames)
-    VKSTRUCT_PROPERTY(const VkPhysicalDeviceFeatures *, pEnabledFeatures)
+    VKSTRUCT_PROPERTY(const char* const*, ppEnabledExtensionNames)
+    VKSTRUCT_PROPERTY(const VkPhysicalDeviceFeatures*, pEnabledFeatures)
 END_DECLARE_VKSTRUCT()
 
 class Queue;
@@ -64,6 +64,8 @@ private:
 
 class Device : public Handle<VkDevice>
 {
+    HANDLE(Device);
+
     struct SwapChainSupportDetails
     {
         VkSurfaceCapabilitiesKHR capabilities;
@@ -71,15 +73,16 @@ class Device : public Handle<VkDevice>
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-    static const std::array<const char *const, 1> s_deviceExtensions;
+    static const std::array<const char* const, 1> s_deviceExtensions;
     static SwapChainSupportDetails swapChainSupportDetails(VkPhysicalDevice physicalDevice,
         VkSurfaceKHR surface);
 
 public:
+    Device(const Device& other) = delete;
     Device();
-    Device(Device &&other);
-    Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType *handlePtr = nullptr);
-    ~Device();
+    Device(Device&& other) noexcept;
+    Device(VkInstance instance, VkSurfaceKHR surface) noexcept;
+    virtual ~Device();
 
     void waitIdle() const;
 
@@ -97,6 +100,9 @@ public:
     {
         return m_physicalDeviceProperties;
     }
+
+protected:
+    Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePtr) noexcept;
 
 private:
     void pickPhysicalDevice();

@@ -18,19 +18,17 @@ Buffer::Buffer(Buffer&& other) noexcept
     , m_size(std::move(other.m_size))
 {}
 
-Buffer::Buffer(const Device& device, VkHandleType* handlePtr) noexcept
-    : Handle(handlePtr)
-    , SIMemoryAccessor(device)
-    , m_size(0)
-{}
-
-Buffer::Buffer(const Device& device, BufferCreateInfo bufferInfo, VkHandleType* handlePtr)
+Buffer::Buffer(const Device& device, BufferCreateInfo bufferInfo, VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , SIMemoryAccessor(device)
     , m_size(bufferInfo.size())
 {
     ASSERT(create(vkCreateBuffer, device, &bufferInfo, nullptr) == VK_SUCCESS);
 }
+
+Buffer::Buffer(const Device& device, BufferCreateInfo bufferInfo) noexcept
+    : Buffer(device, std::move(bufferInfo), nullptr)
+{}
 
 Buffer::~Buffer()
 {

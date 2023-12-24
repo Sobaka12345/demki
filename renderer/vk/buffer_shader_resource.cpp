@@ -32,8 +32,8 @@ std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::fetchDescripto
 
 size_t BufferShaderResource::allocateBuffer()
 {
-    m_buffers.emplace_back(m_device, bufferCreateInfo());
-    m_buffers.back().allocateAndBindMemory(memoryProperties()).lock()->map();
+    auto& newBuffer = m_buffers.emplaceBack(m_device, bufferCreateInfo());
+    newBuffer.allocateAndBindMemory(memoryProperties()).lock()->map();
     m_freeDescriptors.push_back(std::unordered_set<uint64_t>{});
     auto& freeSet = m_freeDescriptors.back();
 

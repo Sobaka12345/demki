@@ -4,13 +4,13 @@
 
 namespace vk { namespace handles {
 
-Swapchain::Swapchain(Swapchain &&other)
+Swapchain::Swapchain(Swapchain&& other) noexcept
     : Handle(std::move(other))
     , m_device(other.m_device)
 {}
 
 Swapchain::Swapchain(
-    const Device &device, SwapchainCreateInfoKHR createInfo, VkHandleType *handlePtr)
+    const Device& device, SwapchainCreateInfoKHR createInfo, VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , m_device(device)
     , m_imageFormat(createInfo.imageFormat())
@@ -20,6 +20,10 @@ Swapchain::Swapchain(
         "failed to create swapchain");
 }
 
+Swapchain::Swapchain(const Device& device, SwapchainCreateInfoKHR createInfo) noexcept
+    : Swapchain(device, std::move(createInfo), nullptr)
+{}
+
 Swapchain::~Swapchain()
 {
     destroy(vkDestroySwapchainKHR, m_device, handle(), nullptr);
@@ -27,14 +31,7 @@ Swapchain::~Swapchain()
 
 HandleVector<Image> Swapchain::images() const
 {
-    uint32_t imageCount;
-    HandleVector<Image> result;
-
-    vkGetSwapchainImagesKHR(m_device, handle(), &imageCount, nullptr);
-    result.resize(imageCount, m_device);
-    vkGetSwapchainImagesKHR(m_device, handle(), &imageCount, result.handleData());
-
-    return result;
+    return Image::swapChainImages(m_device, *this);
 }
 
 

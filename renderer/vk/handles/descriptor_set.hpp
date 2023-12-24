@@ -4,6 +4,8 @@
 
 #include "vk/utils.hpp"
 
+#include <functional>
+#include <memory>
 #include <span>
 #include <optional>
 
@@ -30,9 +32,11 @@ END_DECLARE_VKSTRUCT()
 
 class Device;
 class DescriptorPool;
+class DescriptorSetLayout;
 
 class DescriptorSet : public Handle<VkDescriptorSet>
 {
+    HANDLE(DescriptorSet);
     friend class DescriptorSets;
 
 public:
@@ -43,32 +47,41 @@ public:
         VkDescriptorSetLayoutBinding layoutBinding;
     };
 
+public:
     DescriptorSet(const DescriptorSet& other) = delete;
-    DescriptorSet(DescriptorSet&& other);
-    ~DescriptorSet();
+    DescriptorSet(DescriptorSet&& other) noexcept;
+    virtual ~DescriptorSet();
 
     void write(std::span<const Write> writes);
     void write(std::span<const WriteDescriptorSet> writes);
 
-private:
+protected:
+    static HandleVector<DescriptorSet> create(const Device& device,
+        HandlePtr<DescriptorPool> pool,
+        const HandleVector<DescriptorSetLayout>& setLayouts);
+
+    static std::vector<std::shared_ptr<DescriptorSet>> createShared(const Device& device,
+        HandlePtr<DescriptorPool> pool,
+        const HandleVector<DescriptorSetLayout>& setLayouts,
+        std::function<void(DescriptorSet*)> destructor = std::default_delete<DescriptorSet>{});
+
+protected:
     DescriptorSet(const Device& device,
         HandlePtr<DescriptorPool> pool,
-        std::span<const VkDescriptorSetLayout> setLayouts,
-        VkHandleType* handlePtr = nullptr);
+        const DescriptorSetLayout& setLayout,
+        VkHandleType* handlePtr = nullptr) noexcept;
+
+    DescriptorSet(
+        const Device& device, HandlePtr<DescriptorPool> pool, VkHandleType* handlePtr) noexcept;
+
+    DescriptorSet(
+        const Device& device, HandlePtr<DescriptorPool> pool, VkHandleType handle) noexcept;
 
     friend class DescriptorPool;
 
 protected:
     const Device& m_device;
     HandlePtr<DescriptorPool> m_pool;
-};
-
-class DescriptorSets : public HandleVector<DescriptorSet>
-{
-public:
-    using HandleVector::HandleVector;
-
-    void write(std::span<const WriteDescriptorSet> writes);
 };
 
 }}    //  namespace vk::handles

@@ -24,11 +24,15 @@ class Device;
 
 class Pipeline : public Handle<VkPipeline>
 {
+    HANDLE(Pipeline);
+
 public:
     Pipeline(const Pipeline& other) = delete;
-    Pipeline(Pipeline&& other);
-    Pipeline(const Device& device, VkPipelineCache cache, VkHandleType* handlePtr);
-    ~Pipeline();
+    Pipeline(Pipeline&& other) noexcept;
+    virtual ~Pipeline();
+
+protected:
+    Pipeline(const Device& device, VkPipelineCache cache, VkHandleType* handlePtr) noexcept;
 
 protected:
     const Device& m_device;

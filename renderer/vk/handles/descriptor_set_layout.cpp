@@ -4,14 +4,15 @@
 
 namespace vk { namespace handles {
 
-DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other)
+DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) noexcept
     : Handle(std::move(other))
     , m_device(other.m_device)
     , m_bindings(std::move(other.m_bindings))
 {}
 
-DescriptorSetLayout::DescriptorSetLayout(
-    const Device& device, DescriptorSetLayoutCreateInfo createInfo, VkHandleType* handlePtr)
+DescriptorSetLayout::DescriptorSetLayout(const Device& device,
+    DescriptorSetLayoutCreateInfo createInfo,
+    VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , m_device(device)
 {
@@ -24,14 +25,19 @@ DescriptorSetLayout::DescriptorSetLayout(
         "failed to create descriptor set layout!");
 }
 
-handles::DescriptorSetLayoutBinding DescriptorSetLayout::binding(int32_t bindingId) const
-{
-    return m_bindings.at(bindingId);
-}
+DescriptorSetLayout::DescriptorSetLayout(const Device& device,
+                                         DescriptorSetLayoutCreateInfo createInfo) noexcept
+    : DescriptorSetLayout(device, std::move(createInfo), nullptr)
+{}
 
 DescriptorSetLayout::~DescriptorSetLayout()
 {
     destroy(vkDestroyDescriptorSetLayout, m_device, handle(), nullptr);
+}
+
+handles::DescriptorSetLayoutBinding DescriptorSetLayout::binding(int32_t bindingId) const
+{
+    return m_bindings.at(bindingId);
 }
 
 }}    //  namespace vk::handles

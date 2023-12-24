@@ -32,6 +32,8 @@ class PipelineLayout;
 
 class CommandBuffer : public Handle<VkCommandBuffer>
 {
+    HANDLE(CommandBuffer);
+
 public:
     struct Resources
     {
@@ -41,11 +43,8 @@ public:
 public:
     CommandBuffer(const CommandBuffer& other) = delete;
     CommandBuffer(CommandBuffer&& other) noexcept;
-    CommandBuffer(const Device& device, const CommandPool& pool, VkHandleType* handlePtr = nullptr);
-    CommandBuffer(const Device& device,
-        const CommandPool& pool,
-        VkCommandBufferLevel level,
-        VkHandleType* handlePtr = nullptr);
+    CommandBuffer(
+        const Device& device, const CommandPool& pool, VkCommandBufferLevel level) noexcept;
     ~CommandBuffer();
 
     VkResult begin(
@@ -105,6 +104,12 @@ public:
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const;
 
     Resources& resourcesInUse() const;
+
+protected:
+    CommandBuffer(const Device& device,
+        const CommandPool& pool,
+        VkCommandBufferLevel level,
+        VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

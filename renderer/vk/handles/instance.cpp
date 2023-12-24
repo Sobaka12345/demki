@@ -2,16 +2,16 @@
 
 namespace vk { namespace handles {
 
-Instance::Instance(InstanceCreateInfo createInfo)
-    : Handle(nullptr)
+Instance::Instance() noexcept
+    : Handle(static_cast<VkHandleType*>(nullptr))
+{}
+
+Instance::Instance(InstanceCreateInfo createInfo) noexcept
+    : Instance()
 {
     ASSERT(create(vkCreateInstance, &createInfo, nullptr) == VK_SUCCESS,
         "failed to create instance!");
 }
-
-Instance::Instance()
-    : Handle(nullptr)
-{}
 
 Instance::~Instance()
 {

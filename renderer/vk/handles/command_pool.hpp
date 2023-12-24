@@ -15,17 +15,22 @@ END_DECLARE_VKSTRUCT()
 
 class CommandPool : public Handle<VkCommandPool>
 {
+    HANDLE(CommandPool);
+
 public:
-    CommandPool(
-        const Device& device, CommandPoolCreateInfo poolInfo, VkHandleType* handlePtr = nullptr);
-    CommandPool(CommandPool&& other) noexcept;
     CommandPool(const CommandPool& other) = delete;
+    CommandPool(const Device& device, CommandPoolCreateInfo poolInfo) noexcept;
+    CommandPool(CommandPool&& other) noexcept;
     ~CommandPool();
 
     CommandBuffer allocateBuffer(
         VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const;
     HandleVector<CommandBuffer> allocateBuffers(uint32_t count,
         VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const;
+
+protected:
+    CommandPool(
+        const Device& device, CommandPoolCreateInfo poolInfo, VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;
