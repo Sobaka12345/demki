@@ -19,18 +19,24 @@ class Device;
 
 class ComputePipeline : public Pipeline
 {
+    HANDLE(ComputePipeline);
+
 public:
     static HandleVector<ComputePipeline> create(const Device& device,
         VkPipelineCache cache,
         std::span<const ComputePipelineCreateInfo> createInfos);
 
+public:
     ComputePipeline(const ComputePipeline& other) = delete;
-    ComputePipeline(ComputePipeline&& other);
-    ComputePipeline(const Device& device, VkPipelineCache cache, VkHandleType* handlePtr);
+    ComputePipeline(ComputePipeline&& other) noexcept;
+    ComputePipeline(
+        const Device& device, VkPipelineCache cache, ComputePipelineCreateInfo createInfo) noexcept;
+
+protected:
     ComputePipeline(const Device& device,
         VkPipelineCache cache,
         ComputePipelineCreateInfo createInfo,
-        VkHandleType* handlePtr = nullptr);
+        VkHandleType* handlePtr) noexcept;
 };
 
 }    //  namespace handles

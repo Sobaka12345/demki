@@ -20,11 +20,18 @@ class Instance;
 
 class DebugUtilsMessenger : public Handle<VkDebugUtilsMessengerEXT>
 {
+    HANDLE(DebugUtilsMessenger);
+
 public:
-	DebugUtilsMessenger(DebugUtilsMessenger&& other) = delete;
 	DebugUtilsMessenger(const DebugUtilsMessenger& other) = delete;
-    DebugUtilsMessenger(const Instance& app, DebugUtilsMessengerCreateInfoEXT createInfo);
+    DebugUtilsMessenger(DebugUtilsMessenger&& other) noexcept;
+    DebugUtilsMessenger(const Instance& app, DebugUtilsMessengerCreateInfoEXT createInfo) noexcept;
 	~DebugUtilsMessenger();
+
+protected:
+    DebugUtilsMessenger(const Instance& app,
+        DebugUtilsMessengerCreateInfoEXT createInfo,
+        VkHandleType* handlePtr) noexcept;
 
 private:
     static VkResult createMessenger(const Instance& app,

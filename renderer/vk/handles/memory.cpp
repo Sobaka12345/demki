@@ -89,7 +89,15 @@ void Memory::HostVisibleMapped::sync(VkDeviceSize size, ptrdiff_t offset)
     vkFlushMappedMemoryRanges(memory.device, 1, &range);
 }
 
-Memory::Memory(const Device& device, MemoryAllocateInfo allocInfo, VkHandleType* handlePtr)
+Memory::Memory(Memory&& other) noexcept
+    : Handle(std::move(other))
+    , device(other.device)
+    , size(std::move(other.size))
+    , mapped(std::move(other.mapped))
+    , memoryType(std::move(other.memoryType))
+{}
+
+Memory::Memory(const Device& device, MemoryAllocateInfo allocInfo, VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , device(device)
     , size(allocInfo.allocationSize())
@@ -98,12 +106,8 @@ Memory::Memory(const Device& device, MemoryAllocateInfo allocInfo, VkHandleType*
     ASSERT(create(vkAllocateMemory, device, &allocInfo, nullptr) == VK_SUCCESS);
 }
 
-Memory::Memory(Memory&& other)
-    : Handle(std::move(other))
-    , device(other.device)
-    , size(std::move(other.size))
-    , mapped(std::move(other.mapped))
-    , memoryType(std::move(other.memoryType))
+Memory::Memory(const Device& device, MemoryAllocateInfo allocInfo) noexcept
+    : Memory(device, std::move(allocInfo), nullptr)
 {}
 
 Memory::~Memory()

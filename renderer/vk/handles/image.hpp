@@ -57,16 +57,22 @@ BEGIN_DECLARE_VKSTRUCT(ImageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)
     VKSTRUCT_PROPERTY(VkImageLayout, initialLayout)
 END_DECLARE_VKSTRUCT()
 
+class Swapchain;
+
 class Image
     : public SIMemoryAccessor<Image>
     , public Handle<VkImage>
 {
+    HANDLE(Image);
+
 public:
-    Image(Image&& other) noexcept;
+    static HandleVector<Image> swapChainImages(const Device& device, const Swapchain& swapchain);
+
+public:
     Image(const Image& other) = delete;
-    Image(const Device& device, VkHandleType* handle);
-    Image(const Device& device, ImageCreateInfo imageInfo, VkHandleType* handlePtr = nullptr);
-    ~Image();
+    Image(Image&& other) noexcept;
+    Image(const Device& device, ImageCreateInfo imageInfo) noexcept;
+    virtual ~Image();
 
     bool bindMemory(uint32_t bindingOffset);
 
@@ -77,6 +83,10 @@ public:
 
     void transitionLayout(
         VkImageLayout oldLayout, VkImageLayout newLayout, ImageSubresourceRange subresourceRange);
+
+protected:
+    Image(const Device& device, VkHandleType* handlePtr) noexcept;
+    Image(const Device& device, ImageCreateInfo imageInfo, VkHandleType* handlePtr) noexcept;
 
 private:
     std::weak_ptr<Memory> allocateMemoryImpl(VkMemoryPropertyFlags properties);

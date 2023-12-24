@@ -15,13 +15,18 @@ class Device;
 
 class Semaphore : public Handle<VkSemaphore>
 {
+    HANDLE(Semaphore);
+
 public:
     Semaphore(const Semaphore& other) = delete;
-    Semaphore(Semaphore&& other);
-    Semaphore(const Device& device, VkHandleType* handlePtr);
+    Semaphore(Semaphore&& other) noexcept;
+    Semaphore(const Device& device,
+        SemaphoreCreateInfo createInfo = SemaphoreCreateInfo{}) noexcept;
+    virtual ~Semaphore();
+
+protected:
     Semaphore(
-        const Device& device, SemaphoreCreateInfo createInfo, VkHandleType* handlePtr = nullptr);
-    ~Semaphore();
+        const Device& device, SemaphoreCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

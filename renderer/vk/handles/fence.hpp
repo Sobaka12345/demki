@@ -15,12 +15,16 @@ class Device;
 
 class Fence : public Handle<VkFence>
 {
+    HANDLE(Fence);
+
 public:
     Fence(const Fence& other) = delete;
-    Fence(Fence&& other);
-    Fence(const Device& device, VkHandleType* handlePtr);
-    Fence(const Device& device, FenceCreateInfo createInfo, VkHandleType* handlePtr = nullptr);
-    ~Fence();
+    Fence(Fence&& other) noexcept;
+    Fence(const Device& device, FenceCreateInfo createInfo = FenceCreateInfo{}) noexcept;
+    virtual ~Fence();
+
+protected:
+    Fence(const Device& device, FenceCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

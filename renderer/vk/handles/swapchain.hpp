@@ -29,12 +29,13 @@ class Device;
 
 class Swapchain : public Handle<VkSwapchainKHR>
 {
+    HANDLE(Swapchain);
+
 public:
     Swapchain(const Swapchain& other) = delete;
-    Swapchain(Swapchain&& other);
-    Swapchain(
-        const Device& device, SwapchainCreateInfoKHR createInfo, VkHandleType* handlePtr = nullptr);
-    ~Swapchain();
+    Swapchain(Swapchain&& other) noexcept;
+    Swapchain(const Device& device, SwapchainCreateInfoKHR createInfo) noexcept;
+    virtual ~Swapchain();
 
     HandleVector<Image> images() const;
 
@@ -43,6 +44,10 @@ public:
     VkFormat imageFormat() const { return m_imageFormat; }
 
     const Device& device() const { return m_device; }
+
+protected:
+    Swapchain(
+        const Device& device, SwapchainCreateInfoKHR createInfo, VkHandleType* handlePtr) noexcept;
 
 public:
     const Device& m_device;

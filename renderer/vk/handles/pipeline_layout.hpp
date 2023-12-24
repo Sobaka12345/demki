@@ -19,13 +19,18 @@ class Device;
 
 class PipelineLayout : public Handle<VkPipelineLayout>
 {
+    HANDLE(PipelineLayout);
+
 public:
     PipelineLayout(const PipelineLayout& other) = delete;
-    PipelineLayout(PipelineLayout&& other);
+    PipelineLayout(PipelineLayout&& other) noexcept;
+    PipelineLayout(const Device& device, PipelineLayoutCreateInfo createInfo) noexcept;
+    virtual ~PipelineLayout();
+
+protected:
     PipelineLayout(const Device& device,
         PipelineLayoutCreateInfo createInfo,
-        VkHandleType* handlePtr = nullptr);
-    ~PipelineLayout();
+        VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

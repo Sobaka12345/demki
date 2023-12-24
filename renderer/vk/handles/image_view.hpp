@@ -28,13 +28,17 @@ class Device;
 
 class ImageView : public Handle<VkImageView>
 {
+    HANDLE(ImageView);
+
 public:
     ImageView(const ImageView& other) = delete;
     ImageView(ImageView&& other) noexcept;
-    ImageView(const Device& device, VkHandleType* handlePtr) noexcept;
+    ImageView(const Device& device, ImageViewCreateInfo createInfo) noexcept;
+    virtual ~ImageView();
+
+protected:
     ImageView(
-        const Device& device, ImageViewCreateInfo createInfo, VkHandleType* handlePtr = nullptr);
-    ~ImageView();
+        const Device& device, ImageViewCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

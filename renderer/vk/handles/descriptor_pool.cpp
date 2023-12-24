@@ -6,7 +6,7 @@
 
 namespace vk { namespace handles {
 
-DescriptorPool::DescriptorPool(DescriptorPool&& other)
+DescriptorPool::DescriptorPool(DescriptorPool&& other) noexcept
     : Handle(std::move(other))
     , m_device(other.m_device)
     , m_maxSetCount(other.m_maxSetCount)
@@ -14,7 +14,7 @@ DescriptorPool::DescriptorPool(DescriptorPool&& other)
 {}
 
 DescriptorPool::DescriptorPool(
-    const Device& device, DescriptorPoolCreateInfo createInfo, VkHandleType* handlePtr)
+    const Device& device, DescriptorPoolCreateInfo createInfo, VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , m_maxSetCount(createInfo.maxSets())
     , m_device(device)
@@ -24,6 +24,10 @@ DescriptorPool::DescriptorPool(
         "failed to create descriptor pool");
 }
 
+DescriptorPool::DescriptorPool(const Device& device, DescriptorPoolCreateInfo createInfo) noexcept
+    : DescriptorPool(device, std::move(createInfo), nullptr)
+{}
+
 DescriptorPool::~DescriptorPool()
 {
     destroy(vkDestroyDescriptorPool, m_device, handle(), nullptr);
@@ -31,8 +35,8 @@ DescriptorPool::~DescriptorPool()
 
 std::shared_ptr<DescriptorSet> DescriptorPool::allocateSet(const DescriptorSetLayout& layout)
 {
-    auto set = std::shared_ptr<DescriptorSet>(
-        new DescriptorSet(m_device, this, { layout.handlePtr(), 1 }), [this](DescriptorSet* set) {
+    auto set = std::shared_ptr<DescriptorSet>(new DescriptorSet(m_device, this, layout),
+        [this](DescriptorSet* set) {
             if (set->m_pool.isAlive()) --m_currentSetCount;
 
             std::default_delete<DescriptorSet>{}(set);
@@ -42,11 +46,15 @@ std::shared_ptr<DescriptorSet> DescriptorPool::allocateSet(const DescriptorSetLa
     return set;
 }
 
-std::vector<std::shared_ptr<DescriptorSets>> DescriptorPool::allocateSets(
-    std::span<const DescriptorSetLayout> layouts)
+std::vector<std::shared_ptr<DescriptorSet>> DescriptorPool::allocateSets(
+    const HandleVector<DescriptorSetLayout>& layouts)
 {
-    ASSERT(false, "not implemented");
-    return {};
+    m_currentSetCount += layouts.size();
+    return DescriptorSet::createShared(m_device, this, layouts, [this](DescriptorSet* set) {
+        if (set->m_pool.isAlive()) --m_currentSetCount;
+
+        std::default_delete<DescriptorSet>{}(set);
+    });
 }
 
 bool DescriptorPool::isFull() const
@@ -58,5 +66,6 @@ bool DescriptorPool::isEmpty() const
 {
     return !m_currentSetCount;
 }
+
 
 }}    //  namespace vk::handles

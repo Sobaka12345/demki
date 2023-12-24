@@ -33,14 +33,25 @@ void DebugUtilsMessenger::destroyMessenger(const Instance& app,
     }
 }
 
+DebugUtilsMessenger::DebugUtilsMessenger(DebugUtilsMessenger&& other) noexcept
+    : Handle(std::move(other))
+    , m_app(other.m_app)
+{}
+
 DebugUtilsMessenger::DebugUtilsMessenger(const Instance& app,
-    DebugUtilsMessengerCreateInfoEXT createInfo)
-    : Handle(nullptr)
+    DebugUtilsMessengerCreateInfoEXT createInfo,
+    VkHandleType* handlePtr) noexcept
+    : Handle(handlePtr)
     , m_app(app)
 {
     ASSERT(create(createMessenger, app, &createInfo, nullptr) == VK_SUCCESS,
         "failed to set up debug messenger!");
 }
+
+DebugUtilsMessenger::DebugUtilsMessenger(const Instance& app,
+                                         DebugUtilsMessengerCreateInfoEXT createInfo) noexcept
+    : DebugUtilsMessenger(app, std::move(createInfo), nullptr)
+{}
 
 DebugUtilsMessenger::~DebugUtilsMessenger()
 {

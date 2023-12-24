@@ -30,11 +30,16 @@ END_DECLARE_VKSTRUCT()
 
 class Sampler : public Handle<VkSampler>
 {
+    HANDLE(Sampler);
+
 public:
 	Sampler(const Sampler& other) = delete;
 	Sampler(Sampler&& other) noexcept;
-	Sampler(const Device& device, SamplerCreateInfo createInfo, VkHandleType* handlePtr = nullptr);
-	~Sampler();
+    Sampler(const Device& device, SamplerCreateInfo createInfo) noexcept;
+    virtual ~Sampler();
+
+protected:
+    Sampler(const Device& device, SamplerCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
 
 private:
 	const Device& m_device;

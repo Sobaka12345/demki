@@ -1,26 +1,44 @@
 #include "image.hpp"
 
 #include "device.hpp"
+#include "swapchain.hpp"
 
 namespace vk { namespace handles {
+
+HandleVector<Image> Image::swapChainImages(const Device& device, const Swapchain& swapchain)
+{
+    HandleVector<Image> result;
+    uint32_t imageCount;
+
+    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+
+    result.emplaceBackBatch(vkGetSwapchainImagesKHR, imageCount,
+        std::forward_as_tuple(device.handle(), swapchain.handle(), &imageCount),
+        std::forward_as_tuple(device));
+
+    return result;
+}
 
 Image::Image(Image&& other) noexcept
     : Handle(std::move(other))
     , SIMemoryAccessor(std::move(other))
 {}
 
-Image::Image(const Device& device, VkHandleType* handlePtr)
+Image::Image(const Device& device, VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , SIMemoryAccessor(device)
 {}
 
-Image::Image(const Device& device, ImageCreateInfo imageInfo, VkHandleType* handlePtr)
-    : Handle(handlePtr)
-    , SIMemoryAccessor(device)
+Image::Image(const Device& device, ImageCreateInfo imageInfo, VkHandleType* handlePtr) noexcept
+    : Image(device, handlePtr)
 {
     ASSERT(create(vkCreateImage, device, &imageInfo, nullptr) == VK_SUCCESS,
         "failed to create image!");
 }
+
+Image::Image(const Device& device, ImageCreateInfo imageInfo) noexcept
+    : Image(device, std::move(imageInfo), nullptr)
+{}
 
 Image::~Image()
 {

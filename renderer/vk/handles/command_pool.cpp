@@ -3,7 +3,7 @@
 namespace vk { namespace handles {
 
 CommandPool::CommandPool(
-    const Device &device, CommandPoolCreateInfo poolInfo, VkHandleType *handlePtr)
+    const Device& device, CommandPoolCreateInfo poolInfo, VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , m_device(device)
 {
@@ -11,7 +11,11 @@ CommandPool::CommandPool(
         "failed to create command pool!");
 }
 
-CommandPool::CommandPool(CommandPool &&other) noexcept
+CommandPool::CommandPool(const Device& device, CommandPoolCreateInfo poolInfo) noexcept
+    : CommandPool(device, std::move(poolInfo), nullptr)
+{}
+
+CommandPool::CommandPool(CommandPool&& other) noexcept
     : Handle(std::move(other))
     , m_device(other.m_device)
 {}
@@ -30,7 +34,7 @@ HandleVector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count,
     VkCommandBufferLevel level) const
 {
     HandleVector<CommandBuffer> result;
-    result.resize(count, m_device, *this);
+    result.resize(count, m_device, *this, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     const auto allocateInfo =
         CommandBufferAllocateInfo{}.commandBufferCount(count).commandPool(handle()).level(level);

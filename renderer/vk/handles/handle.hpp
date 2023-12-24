@@ -1,13 +1,19 @@
 #pragma once
 
 #include "assert.hpp"
+#include "vk/utils.hpp"
 
+#include <span>
 #include <vector>
 #include <unordered_set>
 
 #include <vulkan/vulkan_core.h>
 
 namespace vk { namespace handles {
+
+#define HANDLE(type)           \
+    friend class Handle<type>; \
+    friend class HandleVector<type>
 
 struct Watcher
 {
@@ -74,11 +80,17 @@ public:
     using VkHandleType = HandleType;
 
 public:
-    Handle(HandleType* handlePtr)
+    explicit Handle(HandleType* handlePtr)
         : m_handlePtr(handlePtr ? handlePtr : new HandleType(VK_NULL_HANDLE))
         , m_externalPtr(handlePtr)
         , m_owner(false)
     {}
+
+    explicit Handle(HandleType handle)
+        : Handle(static_cast<HandleType*>(nullptr))
+    {
+        *m_handlePtr = handle;
+    }
 
     virtual ~Handle()
     {
@@ -199,6 +211,8 @@ inline HandlePtr<HandleType>::~HandlePtr()
 template <typename T>
 class HandleVector
 {
+    friend T;
+
 public:
     HandleVector() {}
 
@@ -227,19 +241,19 @@ public:
         for (size_t i = 0; i < count; ++i)
         {
             m_vkHandles[i] = VK_NULL_HANDLE;
-            m_handles.emplace_back(std::forward<Args>(constructorArgs)..., &m_vkHandles[i]);
+            m_handles.emplace_back(
+                createObject(std::forward<Args>(constructorArgs)..., &m_vkHandles[i]));
         }
     }
 
     template <typename... Args>
-    const auto& emplace_back(Args&&... constructorArgs)
+    auto& emplaceBack(Args&&... constructorArgs)
     {
         const size_t initialCapacity = m_vkHandles.capacity();
 
         m_vkHandles.push_back(VK_NULL_HANDLE);
-        auto& newEl = m_handles.emplace_back(std::forward<Args>(constructorArgs)...,
-            &m_vkHandles[m_vkHandles.size() - 1]);
-        //  newEl.setOwner(false);
+        auto& newEl = m_handles.emplace_back(createObject(std::forward<Args>(constructorArgs)...,
+            &m_vkHandles[m_vkHandles.size() - 1]));
 
         if (m_vkHandles.capacity() != initialCapacity) revalidatePointers();
 
@@ -249,17 +263,26 @@ public:
     template <typename... Args>
     void resize(size_t size, Args&&... constructorArgs)
     {
-        ASSERT(size > m_handles.size(), "NOT IMPLEMENTED");
+        if (size == m_vkHandles.size()) return;
 
         const size_t initialCapacity = m_vkHandles.capacity();
-        m_handles.reserve(size);
         m_vkHandles.resize(size, VK_NULL_HANDLE);
-        for (size_t i = m_handles.size(); i < m_vkHandles.size(); ++i)
-        {
-            m_handles.emplace_back(std::forward<Args>(constructorArgs)..., &m_vkHandles[i]);
-        }
 
         if (m_vkHandles.capacity() != initialCapacity) revalidatePointers();
+
+        if (m_handles.size() > m_vkHandles.size())
+        {
+            while (m_handles.size() < m_vkHandles.size()) m_handles.pop_back();
+        }
+        else
+        {
+            m_handles.reserve(size);
+            for (size_t i = m_handles.size(); i < m_vkHandles.size(); ++i)
+            {
+                m_handles.emplace_back(
+                    createObject(std::forward<Args>(constructorArgs)..., &m_vkHandles[i]));
+            }
+        }
     }
 
     void reserve(size_t capacity)
@@ -277,28 +300,86 @@ public:
         m_vkHandles.clear();
     }
 
-    const T& back() const { return m_handles.back(); }
-
-    const T& front() const { return m_handles.front(); }
-
-    const T& operator[](size_t i) const { return m_handles[i]; }
-
     T& back() { return m_handles.back(); }
+
+    const T& back() const { return m_handles.back(); }
 
     T& front() { return m_handles.front(); }
 
+    const T& front() const { return m_handles.front(); }
+
     T& operator[](size_t i) { return m_handles[i]; }
+
+    const T& operator[](size_t i) const { return m_handles[i]; }
 
     size_t size() const { return m_vkHandles.size(); }
 
     T* data() { return m_handles.data(); }
 
+    const T* data() const { return m_handles.data(); }
+
     typename T::VkHandleType* handleData() { return m_vkHandles.data(); }
 
+    const typename T::VkHandleType* handleData() const { return m_vkHandles.data(); }
+
 private:
+    template <typename IT>
+    constexpr std::enable_if<std::is_std_span<std::remove_reference_t<IT>>::value,
+        typename std::remove_reference_t<IT>::element_type>::type&
+        indexedValueIfSpan(size_t index, std::remove_reference_t<IT>& value) const
+    {
+        return value[index];
+    }
+
+    template <typename IT>
+    constexpr std::enable_if<!std::is_std_span<std::remove_reference_t<IT>>::value,
+        std::remove_reference_t<IT>>::type&&
+        indexedValueIfSpan(size_t index, std::remove_reference_t<IT>& value) const
+    {
+        return static_cast<std::remove_reference_t<IT>&&>(value);
+    }
+
+    template <typename CreateFunc, typename FuncArgs, typename ConstructorArgs>
+    //  requires IsValidVkCreateFunction<CreateFunc, FuncArgs>
+    auto emplaceBackBatch(
+        CreateFunc func, size_t size, FuncArgs&& funcArgs, ConstructorArgs&& constructorArgs)
+    {
+        const size_t initialCapacity = m_vkHandles.capacity();
+        const size_t oldSize = m_vkHandles.size();
+        m_vkHandles.resize(oldSize + size, VK_NULL_HANDLE);
+
+        ASSERT(
+            std::apply([&](auto&&... args) { return func(args..., m_vkHandles.data() + oldSize); },
+                std::forward<FuncArgs>(funcArgs)) == VK_SUCCESS,
+            "failed to create vk handles");
+
+        if (m_vkHandles.capacity() != initialCapacity) revalidatePointers();
+
+        m_handles.reserve(m_vkHandles.size());
+        for (size_t i = m_handles.size(); i < m_vkHandles.size(); ++i)
+        {
+            std::apply(
+                [&](auto&&... args) {
+                    m_handles.emplace_back(createObject(
+                        indexedValueIfSpan<decltype(args)>(i,
+                            (std::forward<decltype(args)>(args)))...,
+                        &m_vkHandles[i]));
+                },
+                constructorArgs);
+        }
+
+        return m_handles.begin() + oldSize;
+    }
+
+    template <typename... Args>
+    auto createObject(Args&&... args)
+    {
+        return T{ std::forward<Args>(args)... };
+    }
+
     void revalidatePointers()
     {
-        for (size_t i = 0; i < m_vkHandles.size(); ++i)
+        for (size_t i = 0; i < m_handles.size(); ++i)
         {
             m_handles[i].m_handlePtr = &m_vkHandles[i];
         }

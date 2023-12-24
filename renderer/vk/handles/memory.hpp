@@ -27,6 +27,9 @@ class Device;
 
 struct Memory : public Handle<VkDeviceMemory>
 {
+    HANDLE(Memory);
+
+public:
     struct Mapped
     {
         Mapped(const Memory& memory);
@@ -60,9 +63,10 @@ struct Memory : public Handle<VkDeviceMemory>
         void* data;
     };
 
-    Memory(const Device& device, MemoryAllocateInfo size, VkHandleType* handlePtr = nullptr);
-    Memory(Memory&& other);
-    ~Memory();
+public:
+    Memory(const Device& device, MemoryAllocateInfo size) noexcept;
+    Memory(Memory&& other) noexcept;
+    virtual ~Memory();
 
     std::weak_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
     void unmap();
@@ -71,6 +75,9 @@ struct Memory : public Handle<VkDeviceMemory>
     VkDeviceSize size;
     std::shared_ptr<Mapped> mapped;
     VkMemoryType memoryType;
+
+protected:
+    Memory(const Device& device, MemoryAllocateInfo size, VkHandleType* handlePtr) noexcept;
 
 private:
     //  nasty?

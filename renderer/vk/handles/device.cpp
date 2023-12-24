@@ -90,13 +90,13 @@ uint32_t QueueFamilies::queueFamilyIndex(QueueFamilyType type) const
 }
 
 Device::Device()
-    : Handle(nullptr)
+    : Handle(static_cast<VkHandleType*>(nullptr))
     , m_instance(VK_NULL_HANDLE)
     , m_physicalDevice(VK_NULL_HANDLE)
     , m_surface(VK_NULL_HANDLE)
 {}
 
-Device::Device(Device&& other)
+Device::Device(Device&& other) noexcept
     : Handle(std::move(other))
     , m_instance(other.m_instance)
     , m_surface(other.m_surface)
@@ -106,7 +106,7 @@ Device::Device(Device&& other)
     , m_physicalDeviceProperties(std::move(other.m_physicalDeviceProperties))
 {}
 
-Device::Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePtr)
+Device::Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePtr) noexcept
     : Handle(handlePtr)
     , m_instance(instance)
     , m_surface(surface)
@@ -114,6 +114,10 @@ Device::Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePt
     pickPhysicalDevice();
     createLogicalDevice();
 }
+
+Device::Device(VkInstance instance, VkSurfaceKHR surface) noexcept
+    : Device(instance, surface, nullptr)
+{}
 
 Device::~Device()
 {

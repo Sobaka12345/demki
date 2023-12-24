@@ -4,7 +4,8 @@ add_library(${PROJECT_NAME} STATIC
 	ogl/operation_context.hpp
 	ogl/operation_context.cpp
 	ogl/shader_interface_handle.hpp
-    vk/handles/buffer.hpp
+	vk/handles/allocator.hpp
+	vk/handles/buffer.hpp
     vk/handles/buffer.cpp
     vk/handles/command.hpp
     vk/handles/command.cpp

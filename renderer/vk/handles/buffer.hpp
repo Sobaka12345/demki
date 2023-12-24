@@ -23,6 +23,8 @@ class Buffer
     : public Handle<VkBuffer>
     , public SIMemoryAccessor<Buffer>
 {
+    HANDLE(Buffer);
+
 public:
     struct Descriptor
     {
@@ -38,8 +40,7 @@ public:
     static BufferCreateInfo staging();
 
     Buffer(Buffer&& other) noexcept;
-    Buffer(const Device& device, VkHandleType* bufferInfo) noexcept;
-    Buffer(const Device& device, BufferCreateInfo bufferInfo, VkHandleType* handlePtr = nullptr);
+    Buffer(const Device& device, BufferCreateInfo bufferInfo) noexcept;
     ~Buffer();
 
     bool bindMemory(uint32_t bindingOffset);
@@ -53,6 +54,9 @@ public:
     void copyToImage(const Image& dst, VkImageLayout dstLayout, VkBufferImageCopy copyRegion) const;
 
     VkDeviceSize size() const { return m_size; }
+
+protected:
+    Buffer(const Device& device, BufferCreateInfo bufferInfo, VkHandleType* handlePtr) noexcept;
 
 private:
     std::weak_ptr<Memory> allocateMemoryImpl(VkMemoryPropertyFlags properties);

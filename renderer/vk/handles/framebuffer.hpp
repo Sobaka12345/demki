@@ -17,12 +17,17 @@ END_DECLARE_VKSTRUCT()
 
 class Framebuffer : public Handle<VkFramebuffer>
 {
+    HANDLE(Framebuffer);
+
 public:
     Framebuffer(const Framebuffer& other) = delete;
     Framebuffer(Framebuffer&& other) noexcept;
+    Framebuffer(const Device& device, FramebufferCreateInfo createInfo) noexcept;
+    virtual ~Framebuffer();
+
+protected:
     Framebuffer(
-        const Device& device, FramebufferCreateInfo createInfo, VkHandleType* handlePtr = nullptr);
-    ~Framebuffer();
+        const Device& device, FramebufferCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

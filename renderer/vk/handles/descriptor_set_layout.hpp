@@ -28,16 +28,19 @@ class Device;
 
 class DescriptorSetLayout : public Handle<VkDescriptorSetLayout>
 {
+    HANDLE(DescriptorSetLayout);
+
 public:
     DescriptorSetLayout(const DescriptorSetLayout& other) = delete;
-    DescriptorSetLayout(DescriptorSetLayout&& other);
-    DescriptorSetLayout(const Device& device,
-        DescriptorSetLayoutCreateInfo info,
-        VkHandleType* handlePtr = nullptr);
+    DescriptorSetLayout(DescriptorSetLayout&& other) noexcept;
+    DescriptorSetLayout(const Device& device, DescriptorSetLayoutCreateInfo info) noexcept;
+    virtual ~DescriptorSetLayout();
 
     handles::DescriptorSetLayoutBinding binding(int32_t bindingId) const;
 
-    ~DescriptorSetLayout();
+protected:
+    DescriptorSetLayout(
+        const Device& device, DescriptorSetLayoutCreateInfo info, VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

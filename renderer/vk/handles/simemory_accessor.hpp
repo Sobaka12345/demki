@@ -35,7 +35,7 @@ public:
 
     SIMemoryAccessor(const SIMemoryAccessor& other) = delete;
 
-    SIMemoryAccessor(const Device& device)
+    SIMemoryAccessor(const Device& device) noexcept
         : m_device(device)
     {}
 

@@ -8,30 +8,34 @@ HandleVector<GraphicsPipeline> GraphicsPipeline::create(const Device& device,
     VkPipelineCache cache,
 	std::span<const GraphicsPipelineCreateInfo> createInfos)
 {
-	HandleVector<GraphicsPipeline> result(createInfos.size(), device, cache);
-    vkCreateGraphicsPipelines(device, cache, static_cast<uint32_t>(createInfos.size()),
-        createInfos.data(), nullptr, result.handleData());
+    HandleVector<GraphicsPipeline> result;
+
+    result.emplaceBackBatch(vkCreateGraphicsPipelines, createInfos.size(),
+        std::forward_as_tuple(device.handle(), cache, static_cast<uint32_t>(createInfos.size()),
+            createInfos.data(), nullptr),
+        std::forward_as_tuple(device, cache, createInfos));
 
 	return result;
 }
 
-GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other)
+GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept
     : Pipeline(std::move(other))
-{}
-
-GraphicsPipeline::GraphicsPipeline(
-    const Device& device, VkPipelineCache cache, VkHandleType* handlePtr)
-    : Pipeline(device, cache, handlePtr)
 {}
 
 GraphicsPipeline::GraphicsPipeline(const Device& device,
     VkPipelineCache cache,
     GraphicsPipelineCreateInfo createInfo,
-    VkHandleType* handlePtr)
-	: GraphicsPipeline(device, cache, handlePtr)
+    VkHandleType* handlePtr) noexcept
+    : Pipeline(device, cache, handlePtr)
 {
     ASSERT(Handle::create(vkCreateGraphicsPipelines, device, cache, 1, &createInfo, nullptr) ==
         VK_SUCCESS);
 }
+
+GraphicsPipeline::GraphicsPipeline(
+    const Device& device, VkPipelineCache cache, GraphicsPipelineCreateInfo createInfo) noexcept
+    : GraphicsPipeline(device, cache, std::move(createInfo), nullptr)
+{}
+
 
 }}    //  namespace vk::handles

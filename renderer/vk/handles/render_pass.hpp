@@ -30,16 +30,19 @@ class Device;
 
 class RenderPass : public Handle<VkRenderPass>
 {
-public:
-    static RenderPassCreateInfo defaultCreateInfo();
+    HANDLE(RenderPass);
 
+public:
     RenderPass(const RenderPass& other) = delete;
-    RenderPass(RenderPass&& other);
-    RenderPass(
-        const Device& device, RenderPassCreateInfo createInfo, VkHandleType* handlePtr = nullptr);
-    ~RenderPass();
+    RenderPass(RenderPass&& other) noexcept;
+    RenderPass(const Device& device, RenderPassCreateInfo createInfo) noexcept;
+    virtual ~RenderPass();
 
     std::span<const AttachmentDescription> attachments();
+
+protected:
+    RenderPass(
+        const Device& device, RenderPassCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

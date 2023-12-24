@@ -10,11 +10,16 @@ class Instance;
 
 class Surface : public Handle<VkSurfaceKHR>
 {
+    HANDLE(Surface);
+
 public:
     Surface(const Surface& other) = delete;
-    Surface(Surface&& other);
-    Surface(const Instance& instance, GLFWwindow* window, VkHandleType* handlePtr = nullptr);
-    ~Surface();
+    Surface(Surface&& other) noexcept;
+    Surface(const Instance& instance, GLFWwindow* window) noexcept;
+    virtual ~Surface();
+
+protected:
+    Surface(const Instance& instance, GLFWwindow* window, VkHandleType* handlePtr) noexcept;
 
 private:
     const Instance& m_instance;

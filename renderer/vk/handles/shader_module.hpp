@@ -19,16 +19,21 @@ class Device;
 
 class ShaderModule : public Handle<VkShaderModule>
 {
+    HANDLE(ShaderModule);
+
 public:
     ShaderModule(const ShaderModule& other) = delete;
-    ShaderModule(ShaderModule&& other);
+    ShaderModule(ShaderModule&& other) noexcept;
+    ShaderModule(const Device& device, std::filesystem::path filePath) noexcept;
+    ShaderModule(const Device& device, std::vector<char> code) noexcept;
+    virtual ~ShaderModule();
+
+protected:
     ShaderModule(
-        const Device& device, std::filesystem::path createInfo, VkHandleType* handlePtr = nullptr);
+        const Device& device, ShaderModuleCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
     ShaderModule(
-        const Device& device, std::vector<char> createInfo, VkHandleType* handlePtr = nullptr);
-    ShaderModule(
-        const Device& device, ShaderModuleCreateInfo createInfo, VkHandleType* handlePtr = nullptr);
-    ~ShaderModule();
+        const Device& device, std::filesystem::path filePath, VkHandleType* handlePtr) noexcept;
+    ShaderModule(const Device& device, std::vector<char> code, VkHandleType* handlePtr) noexcept;
 
 private:
     const Device& m_device;

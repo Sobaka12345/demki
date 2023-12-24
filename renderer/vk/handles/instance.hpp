@@ -27,13 +27,16 @@ END_DECLARE_VKSTRUCT();
 
 class Instance : public Handle<VkInstance>
 {
+    HANDLE(Instance);
+
 public:
     Instance(const Instance& other) = delete;
     Instance(Instance&& other) = delete;
+    Instance(InstanceCreateInfo createInfo) noexcept;
+    virtual ~Instance();
 
-    Instance();
-    Instance(InstanceCreateInfo createInfo);
-    ~Instance();
+protected:
+    Instance() noexcept;
 };
 
 }}    //  namespace vk::handles

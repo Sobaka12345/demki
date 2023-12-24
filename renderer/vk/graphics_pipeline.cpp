@@ -200,7 +200,7 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
 
     for (const auto& shaderInfo : m_shaders)
     {
-        shaders.emplace_back(m_context.device(), shaderInfo.path);
+        shaders.emplaceBack(m_context.device(), shaderInfo.path);
         shaderStageCreateInfos.push_back(
             PipelineShaderStageCreateInfo{}
                 .stage(toShaderStageFlags(shaderInfo.type))
