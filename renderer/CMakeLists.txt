@@ -1,9 +1,27 @@
 declare_project()
 
 add_library(${PROJECT_NAME} STATIC
+	ogl/computer.hpp
+	ogl/computer.cpp
+	ogl/compute_pipeline.hpp
+	ogl/compute_pipeline.cpp
+	ogl/graphics_pipeline.hpp
+	ogl/graphics_pipeline.cpp
+	ogl/graphics_context.hpp
+	ogl/graphics_context.cpp
+	ogl/model.hpp
+	ogl/model.cpp
 	ogl/operation_context.hpp
 	ogl/operation_context.cpp
+	ogl/renderer.hpp
+	ogl/renderer.cpp
 	ogl/shader_interface_handle.hpp
+	ogl/storage_buffer.hpp
+	ogl/storage_buffer.cpp
+	ogl/swapchain.hpp
+	ogl/swapchain.cpp
+	ogl/texture.hpp
+	ogl/texture.cpp
 	vk/handles/allocator.hpp
 	vk/handles/buffer.hpp
     vk/handles/buffer.cpp
@@ -82,8 +100,6 @@ add_library(${PROJECT_NAME} STATIC
 	vk/renderer.cpp
 	vk/operation_context.hpp
 	vk/operation_context.cpp
-    vk/resource_manager.hpp
-    vk/resource_manager.cpp
 	vk/storage_buffer.hpp
 	vk/storage_buffer.cpp
     vk/swapchain.hpp
@@ -114,17 +130,16 @@ add_library(${PROJECT_NAME} STATIC
 	istorage_buffer.hpp
 	icompute_pipeline.hpp
 	icompute_target.hpp
-    iresource.hpp
-    iresource_manager.hpp
+	iresource.hpp
     iswapchain.hpp
     itexture.hpp
 	ishader_interface_handle.hpp
 	particles.hpp
 	particles.cpp
-    renderable.hpp
-    renderable.cpp
-    renderable_pack.hpp
-    renderable_pack.cpp
+	resources.hpp
+	resources.cpp
+	renderable.hpp
+	renderable.cpp
 	operation_context.hpp
 	storage_buffer_value.hpp
     types.hpp

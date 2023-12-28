@@ -1,8 +1,5 @@
 #pragma once
 
-#include "vk/resource_manager.hpp"
-#include "vk/handles/buffer.hpp"
-
 #include <imodel.hpp>
 #include <operation_context.hpp>
 
@@ -12,27 +9,32 @@
 
 namespace vk {
 
-class Model
-    : public IModel
-    , public vk::Resource
+namespace handles {
+struct Memory;
+}
+
+class GraphicsContext;
+
+class Model : public IModel
 {
 public:
     friend class ResourceManager;
 
-    struct Descriptor : public vk::Resource::Descriptor
-    {
-        vk::handles::Buffer::Descriptor vertices;
-        vk::handles::Buffer::Descriptor indices;
-    };
-
 public:
-    Model(Descriptor descriptor);
+    Model(GraphicsContext& context, IModel::CreateInfo createInfo);
 
-    virtual void draw(const ::OperationContext& context) override;
-    virtual void bind(const ::OperationContext& context) override;
+    virtual void draw(::OperationContext& context) override;
+    virtual void bind(::OperationContext& context) override;
 
 private:
-    Descriptor m_descriptor;
+    GraphicsContext& m_context;
+
+    VkDeviceSize m_vertexSize;
+    VkDeviceSize m_indexSize;
+    VkDeviceSize m_indicesSize;
+    VkDeviceSize m_verticesSize;
+
+    std::weak_ptr<handles::Memory> m_memory;
 };
 
 }    //  namespace vk

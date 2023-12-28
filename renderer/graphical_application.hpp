@@ -4,6 +4,7 @@
 #include "igraphics_context.hpp"
 
 #include "window.hpp"
+#include "resources.hpp"
 
 #include <memory>
 #include <ratio>
@@ -23,6 +24,7 @@ public:
 
     int exec();
 
+    IGraphicsContext& context();
     const IGraphicsContext& context() const;
     uint32_t clientWidth() const;
     uint32_t clientHeight() const;
@@ -40,5 +42,6 @@ private:
 
 private:
     std::unique_ptr<Window> m_window;
+    std::unique_ptr<Resources> m_resources;
     std::unique_ptr<IGraphicsContext> m_graphicsContext;
 };

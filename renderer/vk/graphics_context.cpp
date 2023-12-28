@@ -1,18 +1,18 @@
 #include "graphics_context.hpp"
 
-#include "resource_manager.hpp"
-
 #include "handles/surface.hpp"
-
 #include "compute_pipeline.hpp"
 #include "graphics_pipeline.hpp"
 #include "computer.hpp"
+#include "model.hpp"
 #include "renderer.hpp"
 #include "swapchain.hpp"
+#include "texture.hpp"
 #include "storage_buffer.hpp"
 
 #include <operation_context.hpp>
 #include <window.hpp>
+#include <resources.hpp>
 
 #include <cstring>
 #include <iostream>
@@ -136,8 +136,9 @@ std::vector<const char*> getRequiredExtensions()
     return extensions;
 }
 
-GraphicsContext::GraphicsContext(const Window& window)
+GraphicsContext::GraphicsContext(const Window& window, Resources& resources)
     : m_window(window)
+    , m_resources(resources)
 {
     auto appInfo =
         handles::ApplicationInfo()
@@ -180,15 +181,52 @@ GraphicsContext::GraphicsContext(const Window& window)
 
     m_surface = std::make_unique<handles::Surface>(*this, m_window.glfwHandle());
     m_device = std::make_unique<handles::Device>(handle(), *m_surface);
-    m_resourceManager = std::make_unique<ResourceManager>(*this);
 }
 
 GraphicsContext::~GraphicsContext()
 {
-    m_resourceManager.reset();
+    m_buffers.clear();
+    m_dynamicUniformShaderResources.clear();
+    m_staticUniformShaderResources.clear();
+    m_storageShaderResources.clear();
     m_device.reset();
     m_debugMessenger.reset();
     m_surface.reset();
+}
+
+std::shared_ptr<ShaderInterfaceHandle> GraphicsContext::fetchHandleSpecific(ShaderBlockType sbt,
+    uint32_t layoutSize)
+{
+    const uint32_t alignment = dynamicAlignment(layoutSize);
+
+    auto insertAndFetchSpecificHandle = [&](auto& map) {
+        if (auto el = map.find(layoutSize); el != map.end())
+        {
+            return ShaderInterfaceHandle::create(el->second);
+        }
+        using PairType = typename std::remove_reference<decltype(map)>::type::value_type;
+        auto [iter, _] = map.emplace(
+            PairType{ alignment, typename PairType::second_type{ device(), alignment, 100 } });
+
+        return ShaderInterfaceHandle::create(iter->second);
+    };
+
+    if (sbt == ShaderBlockType::STORAGE)
+    {
+        return insertAndFetchSpecificHandle(m_storageShaderResources);
+    }
+    else if (sbt == ShaderBlockType::UNIFORM_DYNAMIC)
+    {
+        return insertAndFetchSpecificHandle(m_dynamicUniformShaderResources);
+    }
+
+    return insertAndFetchSpecificHandle(m_staticUniformShaderResources);
+}
+
+std::shared_ptr<IShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlockType sbt,
+    uint32_t layoutSize)
+{
+    return fetchHandleSpecific(sbt, layoutSize);
 }
 
 VkFormat GraphicsContext::findSupportedFormat(const std::vector<VkFormat>& candidates,
@@ -227,9 +265,16 @@ bool GraphicsContext::hasStencilComponent(VkFormat format) const
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-ResourceManager& GraphicsContext::resources()
+uint32_t GraphicsContext::dynamicAlignment(uint32_t layoutSize) const
 {
-    return *m_resourceManager;
+    const uint32_t minAlignment =
+        device().physicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
+
+    if (minAlignment > 0)
+    {
+        layoutSize = (layoutSize + minAlignment - 1) & ~(minAlignment - 1);
+    }
+    return layoutSize;
 }
 
 const handles::Surface& GraphicsContext::surface() const
@@ -247,48 +292,72 @@ const Window& GraphicsContext::window() const
     return m_window;
 }
 
-std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo createInfo) const
+std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo createInfo)
 {
     return std::make_shared<Computer>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<IComputePipeline> GraphicsContext::createComputePipeline(
-    IComputePipeline::CreateInfo createInfo) const
+    IComputePipeline::CreateInfo createInfo)
 {
     return std::make_shared<ComputePipeline>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<IGraphicsPipeline> GraphicsContext::createGraphicsPipeline(
-    IGraphicsPipeline::CreateInfo createInfo) const
+    IGraphicsPipeline::CreateInfo createInfo)
 {
     return std::make_shared<GraphicsPipeline>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<IRenderer> GraphicsContext::createRenderer(IRenderer::CreateInfo createInfo) const
+std::shared_ptr<IRenderer> GraphicsContext::createRenderer(IRenderer::CreateInfo createInfo)
 {
     return std::make_shared<Renderer>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
-    IStorageBuffer::CreateInfo createInfo) const
+    IStorageBuffer::CreateInfo createInfo)
 {
     return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(
-    ISwapchain::CreateInfo createInfo) const
+std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(ISwapchain::CreateInfo createInfo)
 {
     return std::make_shared<Swapchain>(*this, std::move(createInfo));
 }
 
-ResourceManager& GraphicsContext::resourcesSpecific() const
+std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
 {
-    return *m_resourceManager;
+    auto [vertices, indices] = m_resources.loadModelData(path);
+    return createModel({
+        .vertices = vertices,
+        .indices = indices,
+    });
 }
 
-IResourceManager& GraphicsContext::resources() const
+std::shared_ptr<IModel> GraphicsContext::createModel(IModel::CreateInfo createInfo)
 {
-    return resourcesSpecific();
+    return std::shared_ptr<IModel>(
+        m_resources.registerResource(new Model(*this, std::move(createInfo))));
+}
+
+std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path path)
+{
+    return createTexture({ .path = path });
+}
+
+std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo createInfo)
+{
+    return std::shared_ptr<ITexture>(
+        m_resources.registerResource(new Texture(*this, std::move(createInfo))));
+}
+
+//  TO DO: improve memory allocation
+std::weak_ptr<handles::Memory> GraphicsContext::fetchMemory(
+    size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties)
+{
+    auto& newBuffer = m_buffers.emplaceBack(device(),
+        handles::BufferCreateInfo().size(size).usage(usage).sharingMode(VK_SHARING_MODE_EXCLUSIVE));
+    return newBuffer.allocateAndBindMemory(memoryProperties);
 }
 
 void GraphicsContext::waitIdle()

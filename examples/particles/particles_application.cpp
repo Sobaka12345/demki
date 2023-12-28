@@ -70,7 +70,7 @@ ParticlesApplication::ParticlesApplication(uint32_t windowWidth, uint32_t window
     }
 
     m_particles = std::make_unique<Particles>(context(), particles);
-    m_deltaTime = std::make_unique<DeltaTime>(context().resources());
+    m_deltaTime = std::make_unique<DeltaTime>(context());
 
     m_computePipeline = context().createComputePipeline(
         IComputePipeline::CreateInfo{}

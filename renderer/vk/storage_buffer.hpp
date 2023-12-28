@@ -17,7 +17,7 @@ class StorageBuffer
     , public ComputeTarget
 {
 public:
-    StorageBuffer(const GraphicsContext& context, IStorageBuffer::CreateInfo createInfo);
+    StorageBuffer(GraphicsContext& context, IStorageBuffer::CreateInfo createInfo);
 
     virtual void accept(ComputerInfoVisitor& visitor) const override;
     virtual bool prepare(::OperationContext& context) override;

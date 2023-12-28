@@ -11,6 +11,8 @@ public:
 
     uint64_t id() const { return m_id; }
 
+    virtual ~IResource() {}
+
 private:
     static uint64_t createId()
     {

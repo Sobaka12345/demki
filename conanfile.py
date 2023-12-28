@@ -7,6 +7,7 @@ class DemkiConan(ConanFile):
     requires = ["glfw/3.3.8",
                 "tinyobjloader/2.0.0-rc10",
                 "vulkan-loader/1.3.204.1",
+                "glad/0.1.36",
                 "glm/0.9.9.8",
 				"stb/cci.20220909",
 				"pfr/2.1.0"]

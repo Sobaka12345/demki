@@ -10,7 +10,7 @@ class IRenderable
 {
 public:
     virtual ~IRenderable(){};
-    virtual void draw(const OperationContext& context) const = 0;
+    virtual void draw(::OperationContext& context) const = 0;
     virtual void bind(::OperationContext& context) = 0;
 
     virtual std::weak_ptr<IModel> model() const = 0;

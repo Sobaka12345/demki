@@ -2,7 +2,7 @@
 
 #include <igraphics_context.hpp>
 
-Particles::Particles(const IGraphicsContext& context, std::span<const Particle> initialData)
+Particles::Particles(IGraphicsContext& context, std::span<const Particle> initialData)
     : m_currentIndex(0)
 {
     IStorageBuffer::CreateInfo bufferInfo{

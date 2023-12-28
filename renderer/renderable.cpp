@@ -3,7 +3,6 @@
 
 #include <imodel.hpp>
 #include <itexture.hpp>
-#include <iresource_manager.hpp>
 
 Renderable::Renderable(IShaderResourceProvider& provider)
     : m_shaderResourceProvider(provider)
@@ -39,7 +38,7 @@ Renderable::Renderable(Renderable&& other) noexcept
 
 Renderable::~Renderable() {}
 
-void Renderable::draw(const OperationContext& context) const
+void Renderable::draw(OperationContext& context) const
 {
     if (!m_model.expired() && !m_texture.expired())
     {

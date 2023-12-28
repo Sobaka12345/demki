@@ -124,10 +124,10 @@ class Hero : public Renderable
 
 public:
     Hero(GraphicalApplication& app, Map& map)
-        : Renderable(app.context().resources())
+        : Renderable(app.context())
         , m_app(app)
         , m_map(map)
-        , m_camera(app.context().resources())
+        , m_camera(app.context())
         , m_up(0.0f, -1.0f, 0.0f)
         , m_currentPosition(s_startPosition)
     {
@@ -247,7 +247,7 @@ public:
                 if (idx.x != -1 && !m_map[idx.x][idx.y][idx.z].has_value())
                 {
                     auto& newBlock = m_map[idx.x][idx.y][idx.z];
-                    newBlock.emplace(m_app.context().resources());
+                    newBlock.emplace(m_app.context());
                     newBlock.value().setModel(block->model());
                     newBlock.value().setTexture(block->texture());
                     newBlock.value().setPosition(
@@ -265,7 +265,7 @@ public:
     }
 
 private:
-    const GraphicalApplication& m_app;
+    GraphicalApplication& m_app;
     Camera m_camera;
     Map& m_map;
 
@@ -315,9 +315,9 @@ Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
     m_map = std::make_unique<Map>();
     m_hero = std::make_unique<Hero>(*this, *m_map);
 
-    m_model = context().resources().createModel(executablePath() / "models" / "Erde mit Grass.obj");
-    m_texture = context().resources().createTexture(
-        { .path = executablePath() / "textures" / "Erde mit Grass.png" });
+    m_model = context().createModel(executablePath() / "models" / "Erde mit Grass.obj");
+    m_texture =
+        context().createTexture({ .path = executablePath() / "textures" / "Erde mit Grass.png" });
 
     for (size_t x = 0; x < m_map->size(); ++x)
         for (size_t y = 0; y < (*m_map)[x].size(); ++y)
@@ -330,7 +330,7 @@ Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
                 if (y == idx.y)
                 {
                     auto& block = (*m_map)[x][y][z];
-                    block.emplace(context().resources());
+                    block.emplace(context());
                     block->setModel(m_model);
                     block->setTexture(m_texture);
                     block->setPosition(glm::translate(glm::identity<glm::mat4>(),

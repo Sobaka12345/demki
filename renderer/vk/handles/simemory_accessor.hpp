@@ -1,8 +1,9 @@
 #pragma once
 
-#include "memory.hpp"
-
 namespace vk { namespace handles {
+
+class Device;
+class Memory;
 
 template <typename Impl>
 class SIMemoryAccessor

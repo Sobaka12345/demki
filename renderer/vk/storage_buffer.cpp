@@ -9,19 +9,17 @@
 
 #include "compute_pipeline.hpp"
 #include "compute_target.hpp"
-#include "resource_manager.hpp"
 
 namespace vk {
 
-StorageBuffer::StorageBuffer(const GraphicsContext& context, CreateInfo createInfo)
+StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
     , m_emitWait(false)
     , m_elementCount(createInfo.size / createInfo.elementLayoutSize)
     , m_commandBuffer(std::make_unique<handles::CommandBuffer>(
           context.device().commandPool(handles::GRAPHICS_COMPUTE).lock()->allocateBuffer()))
 {
-    m_handle =
-        context.resourcesSpecific().fetchHandleSpecific(ShaderBlockType::STORAGE, createInfo.size);
+    m_handle = context.fetchHandleSpecific(ShaderBlockType::STORAGE, createInfo.size);
 
     m_handle->write(createInfo.initialData, createInfo.size);
 

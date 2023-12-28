@@ -4,11 +4,14 @@
 #include "handles/debug_utils_messenger.hpp"
 #include "handles/instance.hpp"
 
+#include "buffer_shader_resource.hpp"
+
 #include <igraphics_context.hpp>
 
 #include <memory>
 
 class Window;
+class Resources;
 
 namespace vk {
 
@@ -24,41 +27,44 @@ class GraphicsContext
     : public handles::Instance
     , public IGraphicsContext
 {
-protected:
-    using TimeResolution = std::nano;
-
 public:
     const static bool s_enableValidationLayers;
     const static std::vector<const char*> s_validationLayers;
 
 public:
-    GraphicsContext(const Window& window);
+    GraphicsContext(const Window& window, Resources& resources);
     GraphicsContext(GraphicsContext&& other) = delete;
     GraphicsContext(const GraphicsContext& other) = delete;
     virtual ~GraphicsContext();
 
 public:
-    virtual std::shared_ptr<IComputer> createComputer(
-        IComputer::CreateInfo createInfo) const override;
-    virtual std::shared_ptr<IComputePipeline> createComputePipeline(
-        IComputePipeline::CreateInfo createInfo) const override;
-    virtual std::shared_ptr<IGraphicsPipeline> createGraphicsPipeline(
-        IGraphicsPipeline::CreateInfo createInfo) const override;
-    virtual std::shared_ptr<IRenderer> createRenderer(
-        IRenderer::CreateInfo createInfo) const override;
-    virtual std::shared_ptr<IStorageBuffer> createStorageBuffer(
-        IStorageBuffer::CreateInfo createInfo) const override;
-    virtual std::shared_ptr<ISwapchain> createSwapchain(
-        ISwapchain::CreateInfo createInfo) const override;
+    std::shared_ptr<ShaderInterfaceHandle> fetchHandleSpecific(ShaderBlockType sbt,
+        uint32_t layoutSize);
+    virtual std::shared_ptr<IShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt,
+        uint32_t layoutSize) override;
 
-    ResourceManager& resourcesSpecific() const;
-    virtual IResourceManager& resources() const override;
+    virtual std::shared_ptr<IComputer> createComputer(IComputer::CreateInfo createInfo) override;
+    virtual std::shared_ptr<IComputePipeline> createComputePipeline(
+        IComputePipeline::CreateInfo createInfo) override;
+    virtual std::shared_ptr<IGraphicsPipeline> createGraphicsPipeline(
+        IGraphicsPipeline::CreateInfo createInfo) override;
+    virtual std::shared_ptr<IRenderer> createRenderer(IRenderer::CreateInfo createInfo) override;
+    virtual std::shared_ptr<IStorageBuffer> createStorageBuffer(
+        IStorageBuffer::CreateInfo createInfo) override;
+    virtual std::shared_ptr<ISwapchain> createSwapchain(ISwapchain::CreateInfo createInfo) override;
+
+    virtual std::shared_ptr<IModel> createModel(std::filesystem::path path) override;
+    virtual std::shared_ptr<IModel> createModel(IModel::CreateInfo createInfo) override;
+    virtual std::shared_ptr<ITexture> createTexture(std::filesystem::path path) override;
+    virtual std::shared_ptr<ITexture> createTexture(ITexture::CreateInfo createInfo) override;
+
+    std::weak_ptr<handles::Memory> fetchMemory(size_t size,
+        VkBufferUsageFlags usage,
+        VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     virtual void waitIdle() override;
 
     virtual Multisampling maxSampleCount() const override;
-
-    ResourceManager& resources();
 
     const handles::Surface& surface() const;
     const handles::Device& device() const;
@@ -71,15 +77,22 @@ private:
         VkImageTiling tiling,
         VkFormatFeatureFlags features) const;
     bool hasStencilComponent(VkFormat format) const;
+    uint32_t dynamicAlignment(uint32_t layoutSize) const;
 
 private:
     const Window& m_window;
+    Resources& m_resources;
+
+    handles::HandleVector<handles::Buffer> m_buffers;
+
+    std::unordered_map<uint32_t, StaticUniformBufferShaderResource> m_staticUniformShaderResources;
+    std::unordered_map<uint32_t, DynamicUniformBufferShaderResource>
+        m_dynamicUniformShaderResources;
+    std::unordered_map<uint32_t, StorageBufferShaderResource> m_storageShaderResources;
 
     std::unique_ptr<handles::Surface> m_surface;
     std::unique_ptr<handles::Device> m_device;
     std::unique_ptr<handles::DebugUtilsMessenger> m_debugMessenger;
-
-    std::unique_ptr<ResourceManager> m_resourceManager;
 };
 
 }    //  namespace vk

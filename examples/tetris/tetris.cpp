@@ -25,7 +25,7 @@ Tetris::Tetris(uint32_t windowWidth, uint32_t windowHeight)
         std::placeholders::_4));
 
     {
-        m_camera = std::make_shared<Camera>(context().resources());
+        m_camera = std::make_shared<Camera>(context());
 
         constexpr float fov = 45.0f;
         constexpr float distance = Field::s_height * 90.0f / fov;
@@ -57,7 +57,7 @@ Tetris::Tetris(uint32_t windowWidth, uint32_t windowHeight)
 
     m_renderer = context().createRenderer({ .multisampling = Multisampling::MSA_1X });
 
-    m_field = std::make_shared<Field>(context().resources());
+    m_field = std::make_shared<Field>(context());
     m_field->flushRowsAndSpawnFigure();
 }
 

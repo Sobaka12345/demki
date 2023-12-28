@@ -41,7 +41,7 @@ Dummy::Dummy(uint32_t windowWidth, uint32_t windowHeight)
             .addShaderInterfaceContainer<Camera>()
             .addShaderInterfaceContainer<Renderable>());
 
-    m_camera = std::make_unique<Camera>(context().resources());
+    m_camera = std::make_unique<Camera>(context());
 
     ViewProjection viewProjection;
     viewProjection.view = glm::lookAt(
@@ -51,11 +51,11 @@ Dummy::Dummy(uint32_t windowWidth, uint32_t windowHeight)
 
     m_camera->setViewProjection(viewProjection);
 
-    m_model = context().resources().createModel(executablePath() / "models" / "viking_room.obj");
-    m_texture = context().resources().createTexture(
-        { .path = executablePath() / "textures" / "viking_room.png" });
+    m_model = context().createModel(executablePath() / "models" / "viking_room.obj");
+    m_texture =
+        context().createTexture({ .path = executablePath() / "textures" / "viking_room.png" });
 
-    m_renderable = std::make_unique<Renderable>(context().resources());
+    m_renderable = std::make_unique<Renderable>(context());
     m_renderable->setModel(m_model);
     m_renderable->setTexture(m_texture);
     m_renderable->setPosition(
