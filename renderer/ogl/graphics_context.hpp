@@ -1,6 +1,7 @@
 #pragma once
 
 #include <igraphics_context.hpp>
+#include <resources.hpp>
 
 class Window;
 
@@ -11,7 +12,7 @@ class ResourceManager;
 class GraphicsContext : public IGraphicsContext
 {
 public:
-    GraphicsContext(const Window& window);
+    GraphicsContext(Window& window, Resources& resources);
     GraphicsContext(GraphicsContext&& other) = delete;
     GraphicsContext(const GraphicsContext& other) = delete;
     virtual ~GraphicsContext();
@@ -36,11 +37,14 @@ public:
 
     const Window& window() const;
 
+    virtual std::shared_ptr<IModel> createModel(std::filesystem::path path) override;
     virtual std::shared_ptr<IModel> createModel(IModel::CreateInfo createInfo) override;
+    virtual std::shared_ptr<ITexture> createTexture(std::filesystem::path path) override;
     virtual std::shared_ptr<ITexture> createTexture(ITexture::CreateInfo createInfo) override;
 
+
 private:
-    const Window& m_window;
+    Window& m_window;
 };
 
 }    //  namespace ogl

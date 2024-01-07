@@ -59,9 +59,9 @@ bool Particles::prepare(OperationContext& context)
     return m_particlesBuffers[m_currentIndex]->prepare(context);
 }
 
-void Particles::compute(OperationContext& context)
+void Particles::present(OperationContext& context)
 {
-    m_particlesBuffers[m_currentIndex]->compute(context);
+    m_particlesBuffers[m_currentIndex]->present(context);
 
     m_currentIndex = (m_currentIndex + 1) % m_particlesBuffers.size();
 }

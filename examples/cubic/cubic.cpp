@@ -277,8 +277,8 @@ private:
     glm::vec3 m_currentPosition;
 };
 
-Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
-    : GraphicalApplication("Cubic", windowWidth, windowHeight)
+Cubic::Cubic(CreateInfo createInfo)
+    : GraphicalApplication(std::move(createInfo))
     , m_movement(FALL)
     , xCursorPrev(0)
     , yCursorPrev(0)
@@ -316,8 +316,7 @@ Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
     m_hero = std::make_unique<Hero>(*this, *m_map);
 
     m_model = context().createModel(executablePath() / "models" / "Erde mit Grass.obj");
-    m_texture =
-        context().createTexture({ .path = executablePath() / "textures" / "Erde mit Grass.png" });
+    m_texture = context().createTexture({ executablePath() / "textures" / "Erde mit Grass.png" });
 
     for (size_t x = 0; x < m_map->size(); ++x)
         for (size_t y = 0; y < (*m_map)[x].size(); ++y)

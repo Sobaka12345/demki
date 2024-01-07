@@ -1,12 +1,12 @@
 #pragma once
 
-#include "render_target.hpp"
-
 #include "handles/fence.hpp"
 #include "handles/semaphore.hpp"
 #include "handles/swapchain.hpp"
 #include "handles/image_view.hpp"
 #include "handles/framebuffer.hpp"
+
+#include "ispecific_operation_target.hpp"
 
 #include <iswapchain.hpp>
 
@@ -22,9 +22,7 @@ namespace handles {
 class Surface;
 }
 
-class Swapchain
-    : public ISwapchain
-    , public RenderTarget
+class Swapchain : public SpecificOperationTarget<ISwapchain>
 {
     struct SwapChainSupportDetails
     {

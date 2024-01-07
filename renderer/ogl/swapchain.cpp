@@ -5,6 +5,7 @@
 #include <window.hpp>
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 namespace ogl {
 
@@ -36,16 +37,26 @@ void Swapchain::accept(RenderInfoVisitor& visitor) const
 
 bool Swapchain::prepare(::OperationContext& context)
 {
+    get(context).specificTarget = this;
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return true;
 }
 
-void Swapchain::present(::OperationContext& context) {}
+void Swapchain::present(::OperationContext& context)
+{
+    glfwSwapBuffers(m_context.window().glfwHandle());
+}
 
 uint32_t Swapchain::framesInFlight() const
 {
     return 1;
+}
+
+GLuint Swapchain::framebuffer()
+{
+    return 0;
 }
 
 }    //  namespace ogl

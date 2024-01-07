@@ -17,7 +17,7 @@ layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragTexture;
 
 void main() {
-    gl_Position = camera.projection * camera.view * position.model * vec4(inPosition, 1.0);
+	gl_Position = camera.projection * camera.view * position.model * vec4(inPosition, 1.0);
     fragColor = inColor;
     fragTexture = inTexture;
 }

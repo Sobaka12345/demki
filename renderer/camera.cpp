@@ -10,14 +10,14 @@ Camera::Camera(IShaderResourceProvider& provider)
 
 void Camera::setView(glm::mat4 view)
 {
-    auto old = m_viewProjection.get();
+    ViewProjection old = m_viewProjection.get();
     old.view = std::move(view);
     m_viewProjection.set(old);
 }
 
 void Camera::setProjection(glm::mat4 projection)
 {
-    auto old = m_viewProjection.get();
+    ViewProjection old = m_viewProjection.get();
     old.projection = std::move(projection);
     m_viewProjection.set(old);
 }

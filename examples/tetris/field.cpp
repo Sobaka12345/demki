@@ -24,10 +24,10 @@ Field::Field(IGraphicsContext& context)
     : m_context(context)
 {
     m_cube = context.createModel(IModel::CreateInfo{
-        .vertices = s_cubeVertices,
-        .indices = s_cubeIndices,
+        s_cubeVertices,
+        s_cubeIndices,
     });
-    m_cubeTexture = context.createTexture({ .path = executablePath() / "textures" / "roshi.jpg" });
+    m_cubeTexture = context.createTexture(executablePath() / "textures" / "roshi.jpg");
 
     for (int32_t row = 0; row < m_blocks.size(); ++row)
     {

@@ -12,7 +12,7 @@ void StorageBuffer::accept(ComputerInfoVisitor& visitor) const {}
 
 bool StorageBuffer::prepare(OperationContext& context) {}
 
-void StorageBuffer::compute(OperationContext& context) {}
+void StorageBuffer::present(OperationContext& context) {}
 
 std::weak_ptr<IShaderInterfaceHandle> StorageBuffer::handle() const {}
 

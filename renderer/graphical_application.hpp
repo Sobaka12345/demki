@@ -14,13 +14,23 @@ class Renderer;
 
 class GraphicalApplication
 {
+public:
+    struct CreateInfo
+    {
+        std::string windowName = "demki";
+        int windowWidth = 640;
+        int windowHeight = 480;
+        GAPI gapi = GAPI::Vulkan;
+
+        static CreateInfo readFromCmd(int argc, char** argv);
+    };
+
 protected:
     using TimeResolution = std::nano;
 
 public:
-    GraphicalApplication(
-        std::string name = "demki", uint32_t windowWidth = 640, uint32_t windowHeight = 480);
-    ~GraphicalApplication();
+    GraphicalApplication(CreateInfo createInfo);
+    virtual ~GraphicalApplication();
 
     int exec();
 

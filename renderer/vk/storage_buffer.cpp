@@ -8,7 +8,6 @@
 #include "handles/queue.hpp"
 
 #include "compute_pipeline.hpp"
-#include "compute_target.hpp"
 
 namespace vk {
 
@@ -44,13 +43,13 @@ bool StorageBuffer::prepare(::OperationContext& context)
 
     auto& specContext = get(context);
     specContext.commandBuffer = m_commandBuffer.get();
-    specContext.computeTarget = this;
+    specContext.specificTarget = this;
 
     m_commandBuffer->reset();
     return m_commandBuffer->begin() == VK_SUCCESS;
 }
 
-void StorageBuffer::compute(::OperationContext& context)
+void StorageBuffer::present(::OperationContext& context)
 {
     auto& specContext = get(context);
     auto [x, y, z] = specContext.computePipeline->computeDimensions();

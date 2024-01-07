@@ -1,12 +1,14 @@
 #pragma once
 
+#include <iwindow.hpp>
+
 #include <string>
 #include <vector>
 #include <functional>
 
 class GLFWwindow;
 
-class Window
+class Window : public IWindow
 {
 private:
     static void cursorPosCallback(GLFWwindow* window, double xPos, double yPos);
@@ -37,6 +39,9 @@ public:
         std::function<void(int key, int scancode, int action, int mods)> callback) const;
 
 private:
+    virtual void init(GAPI gapi) override;
+
+private:
     bool m_iconified;
 
     mutable std::vector<std::function<void(double xPos, double yPos)>> m_cursorPosCallback;
@@ -45,6 +50,7 @@ private:
     mutable std::vector<std::function<void(int key, int scancode, int action, int mods)>>
         m_onKeyPressedCallback;
 
+    int m_width, m_height;
     std::string m_name;
     GLFWwindow* m_window;
 };

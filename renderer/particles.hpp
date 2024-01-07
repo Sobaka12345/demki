@@ -42,7 +42,7 @@ public:
 
     virtual void accept(ComputerInfoVisitor& visitor) const override;
     virtual bool prepare(OperationContext& context) override;
-    virtual void compute(OperationContext& context) override;
+    virtual void present(OperationContext& context) override;
 
 private:
     size_t m_currentIndex;

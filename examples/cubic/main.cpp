@@ -1,6 +1,6 @@
 #include "cubic.hpp"
 
-int main()
+int main(int argc, char** argv)
 {
-    return Cubic{ 1920, 1080 }.exec();
+    return Cubic{ Cubic::CreateInfo{ .windowWidth = 1920, .windowHeight = 1080 } }.exec();
 }

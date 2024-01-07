@@ -136,8 +136,9 @@ std::vector<const char*> getRequiredExtensions()
     return extensions;
 }
 
-GraphicsContext::GraphicsContext(const Window& window, Resources& resources)
-    : m_window(window)
+GraphicsContext::GraphicsContext(Window& window, Resources& resources)
+    : IGraphicsContext(window, GAPI::Vulkan)
+    , m_window(window)
     , m_resources(resources)
 {
     auto appInfo =
@@ -327,11 +328,7 @@ std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(ISwapchain::CreateI
 
 std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
 {
-    auto [vertices, indices] = m_resources.loadModelData(path);
-    return createModel({
-        .vertices = vertices,
-        .indices = indices,
-    });
+    return createModel(IModel::CreateInfo{ path });
 }
 
 std::shared_ptr<IModel> GraphicsContext::createModel(IModel::CreateInfo createInfo)
@@ -342,7 +339,7 @@ std::shared_ptr<IModel> GraphicsContext::createModel(IModel::CreateInfo createIn
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path path)
 {
-    return createTexture({ .path = path });
+    return createTexture(ITexture::CreateInfo{ path });
 }
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo createInfo)

@@ -1,6 +1,7 @@
 #include "operation_context.hpp"
 
 #include "computer.hpp"
+#include "ispecific_operation_target.hpp"
 #include "renderer.hpp"
 #include "compute_pipeline.hpp"
 #include "graphics_pipeline.hpp"
@@ -21,8 +22,6 @@ OperationContext::OperationContext(Renderer* renderer)
 OperationContext::OperationContext(OperationContext&& other)
     : graphicsPipeline(std::move(other.graphicsPipeline))
     , computePipeline(std::move(other.computePipeline))
-    , computeTarget(std::move(other.computeTarget))
-    , renderTarget(std::move(other.renderTarget))
     , renderer(std::move(other.renderer))
     , computer(std::move(other.computer))
 {
@@ -40,9 +39,16 @@ void OperationContext::submit(::OperationContext& context)
 
 void OperationContext::waitForOperation(OperationContext& other) {}
 
-void OperationContext::setScissors(Scissors scissors) const {}
+void OperationContext::setScissors(Scissors scissors) const
+{
+    glScissor(scissors.x, scissors.y, scissors.width, scissors.height);
+}
 
-void OperationContext::setViewport(Viewport viewport) const {}
+void OperationContext::setViewport(Viewport viewport) const
+{
+    glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
+    glDepthRangef(viewport.minDepth, viewport.maxDepth);
+}
 
 IPipeline* OperationContext::pipeline()
 {
@@ -50,6 +56,11 @@ IPipeline* OperationContext::pipeline()
     if (computePipeline) return computePipeline;
 
     return nullptr;
+}
+
+IOperationTarget* OperationContext::operationTarget()
+{
+    return specificTarget->toBase();
 }
 
 }    //  namespace ogl

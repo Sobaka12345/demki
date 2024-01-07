@@ -40,7 +40,7 @@ Renderable::~Renderable() {}
 
 void Renderable::draw(OperationContext& context) const
 {
-    if (!m_model.expired() && !m_texture.expired())
+    if (!m_model.expired())
     {
         m_model.lock()->draw(context);
     }
@@ -48,10 +48,9 @@ void Renderable::draw(OperationContext& context) const
 
 void Renderable::bind(OperationContext& context)
 {
-    if (m_model.expired() || m_texture.expired()) return;
+    if (m_model.expired()) return;
 
     m_model.lock()->bind(context);
-    m_texture.lock()->bind(context);
 
     IShaderInterfaceContainer::bind(context);
 }

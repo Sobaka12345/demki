@@ -53,9 +53,39 @@ public:
 
         enum PrimitiveTopology
         {
-            POINT,
+            POINTS,
+            LINES,
+            TRIANGLES
+        };
+
+        enum CullMode
+        {
+            FRONT,
+            BACK,
+            FRONT_AND_BACK
+        };
+
+        enum FrontFace
+        {
+            CLOCKWISE,
+            COUNTER_CLOCKWISE
+        };
+
+        enum PolygonMode
+        {
+            FILL,
             LINE,
-            TRIANGLE
+            POINT
+        };
+
+        enum SampleShading
+        {
+            SS_0_PERCENT,
+            SS_20_PERCENT,
+            SS_40_PERCENT,
+            SS_60_PERCENT,
+            SS_80_PERCENT,
+            SS_100_PERCENT,
         };
 
     public:
@@ -91,30 +121,14 @@ public:
 
         auto& bindings() { return m_bindings; }
 
-        CreateInfo& sampleShading(SampleShading value)
-        {
-            m_sampleShading = value;
-            return *this;
-        }
-
-        const auto& sampleShading() const { return m_sampleShading; }
-
-        auto& sampleShading() { return m_sampleShading; }
-
-        CreateInfo& primitiveTopology(PrimitiveTopology value)
-        {
-            m_primitiveTopology = value;
-            return *this;
-        }
-
-        const auto& primitiveTopology() const { return m_primitiveTopology; }
-
-        auto& primitiveTopology() { return m_primitiveTopology; }
-
     private:
-        PrimitiveTopology m_primitiveTopology = TRIANGLE;
-        SampleShading m_sampleShading = SampleShading::SS_0_PERCENT;
         std::vector<Attribute> m_attributes;
         std::vector<Binding> m_bindings;
+
+        CREATE_INFO_PROPERTY(PrimitiveTopology, primitiveTopology, PrimitiveTopology::TRIANGLES);
+        CREATE_INFO_PROPERTY(SampleShading, sampleShading, SampleShading::SS_0_PERCENT);
+        CREATE_INFO_PROPERTY(CullMode, cullMode, CullMode::BACK);
+        CREATE_INFO_PROPERTY(PolygonMode, polygonMode, PolygonMode::FILL);
+        CREATE_INFO_PROPERTY(FrontFace, frontFace, FrontFace::COUNTER_CLOCKWISE);
     };
 };

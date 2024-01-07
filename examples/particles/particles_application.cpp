@@ -47,8 +47,8 @@ public:
 
 static uint64_t s_particleCount = 4096;
 
-ParticlesApplication::ParticlesApplication(uint32_t windowWidth, uint32_t windowHeight)
-    : GraphicalApplication("Particles", windowWidth, windowHeight)
+ParticlesApplication::ParticlesApplication(CreateInfo createInfo)
+    : GraphicalApplication(std::move(createInfo))
 {
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
     m_computer = context().createComputer({});
@@ -84,7 +84,7 @@ ParticlesApplication::ParticlesApplication(uint32_t windowWidth, uint32_t window
 
     m_graphicsPipeline = context().createGraphicsPipeline(
         IGraphicsPipeline::CreateInfo{}
-            .primitiveTopology(IGraphicsPipeline::CreateInfo::POINT)
+            .primitiveTopology(IGraphicsPipeline::CreateInfo::POINTS)
             .addInput<Particle>()
             .addShader(IPipeline::ShaderInfo{
                 .type = IPipeline::ShaderType::VERTEX, .path = "./shaders/shader.vert.spv" })

@@ -2,5 +2,5 @@
 
 int main()
 {
-    return ParticlesApplication{}.exec();
+    return ParticlesApplication{ ParticlesApplication::CreateInfo{} }.exec();
 }

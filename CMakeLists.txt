@@ -27,6 +27,7 @@ find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(tinyobjloader REQUIRED)
+find_package(tclap REQUIRED)
 
 set(SHARED_SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 
@@ -36,7 +37,7 @@ add_subdirectory(examples/particles)
 add_subdirectory(examples/tetris)
 add_subdirectory(examples/dummy)
 
-target_link_libraries(renderer PUBLIC glfw glad::glad Vulkan::Vulkan glm::glm stb::stb tinyobjloader::tinyobjloader pfr::pfr)
+target_link_libraries(renderer PUBLIC glfw glad::glad Vulkan::Vulkan glm::glm stb::stb tinyobjloader::tinyobjloader pfr::pfr tclap::tclap)
 target_link_libraries(tetris PRIVATE renderer)
 target_link_libraries(cubic PRIVATE renderer)
 target_link_libraries(dummy PRIVATE renderer)

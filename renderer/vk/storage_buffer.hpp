@@ -1,7 +1,7 @@
 #pragma once
 
 #include "graphics_context.hpp"
-#include "compute_target.hpp"
+#include "ispecific_operation_target.hpp"
 
 #include <istorage_buffer.hpp>
 
@@ -12,16 +12,14 @@ class Semaphore;
 class Fence;
 }
 
-class StorageBuffer
-    : public IStorageBuffer
-    , public ComputeTarget
+class StorageBuffer : public SpecificOperationTarget<IStorageBuffer>
 {
 public:
     StorageBuffer(GraphicsContext& context, IStorageBuffer::CreateInfo createInfo);
 
     virtual void accept(ComputerInfoVisitor& visitor) const override;
     virtual bool prepare(::OperationContext& context) override;
-    virtual void compute(::OperationContext& context) override;
+    virtual void present(::OperationContext& context) override;
 
     virtual void bind(::OperationContext& context) const override;
     virtual void draw(::OperationContext& context) const override;

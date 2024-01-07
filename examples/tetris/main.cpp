@@ -2,5 +2,5 @@
 
 int main()
 {
-    return Tetris{ 1280, 960 }.exec();
+    return Tetris{ Tetris::CreateInfo{ .windowWidth = 640, .windowHeight = 480 } }.exec();
 }

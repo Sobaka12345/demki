@@ -2,6 +2,12 @@
 
 #include <cstdint>
 
+enum class GAPI
+{
+    OpenGL,
+    Vulkan
+};
+
 struct Scissors
 {
     int32_t x;
@@ -22,21 +28,11 @@ struct Viewport
 
 enum class Multisampling
 {
-    MSA_1X,
-    MSA_2X,
-    MSA_4X,
-    MSA_8X,
-    MSA_16X,
-    MSA_32X,
-    MSA_64X,
-};
-
-enum class SampleShading
-{
-    SS_0_PERCENT,
-    SS_20_PERCENT,
-    SS_40_PERCENT,
-    SS_60_PERCENT,
-    SS_80_PERCENT,
-    SS_100_PERCENT,
+    MSA_1X = 1,
+    MSA_2X = 2,
+    MSA_4X = 4,
+    MSA_8X = 8,
+    MSA_16X = 16,
+    MSA_32X = 32,
+    MSA_64X = 64,
 };

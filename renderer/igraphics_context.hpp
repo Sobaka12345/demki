@@ -9,7 +9,7 @@
 #include <iswapchain.hpp>
 #include <istorage_buffer.hpp>
 #include <ishader_interface_handle.hpp>
-#include <types.hpp>
+#include <iwindow.hpp>
 
 class IGraphicsContext : public IShaderResourceProvider
 {
@@ -34,6 +34,8 @@ public:
 
     virtual ~IGraphicsContext() {}
 
+protected:
+    IGraphicsContext(IWindow& window, GAPI gapi) { window.init(gapi); }
 
 protected:
     using TimeResolution = std::nano;

@@ -11,7 +11,7 @@ class Renderable;
 class Dummy : public GraphicalApplication
 {
 public:
-    Dummy(uint32_t windowWidth = 640, uint32_t windowHeight = 480);
+    Dummy(CreateInfo createInfo);
     ~Dummy();
 
 private:

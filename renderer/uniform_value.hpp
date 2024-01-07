@@ -16,18 +16,12 @@ public:
         : m_uniformHandle(handler)
     {}
 
-    inline void set(LayoutType value)
-    {
-        m_value = std::move(value);
-        m_uniformHandle->write(&m_value);
-    }
+    inline void set(LayoutType value) { m_uniformHandle->write(&value, s_layoutSize); }
 
-    inline LayoutType& get() { return m_value; }
-    inline const LayoutType& get() const { return m_value; }
+    inline const LayoutType& get() const { return *m_uniformHandle->read<LayoutType>(); }
 
     inline const std::weak_ptr<IShaderInterfaceHandle> handle() const { return m_uniformHandle; }
 
 private:
-    LayoutType m_value;
     std::shared_ptr<IShaderInterfaceHandle> m_uniformHandle;
 };

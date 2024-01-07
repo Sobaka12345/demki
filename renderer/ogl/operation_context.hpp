@@ -10,8 +10,8 @@ namespace ogl {
 
 class Computer;
 class Renderer;
-class ComputeTarget;
-class RenderTarget;
+
+class ISpecificOperationTarget;
 
 class ComputePipeline;
 class GraphicsPipeline;
@@ -29,14 +29,15 @@ struct OperationContext
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;
     void setViewport(Viewport viewport) const;
-    IPipeline* pipeline();
 
-    IPipeline* gpipeline = nullptr;
+    IPipeline* pipeline();
+    IOperationTarget* operationTarget();
 
     Renderer* renderer = nullptr;
     Computer* computer = nullptr;
-    ComputeTarget* computeTarget = nullptr;
-    RenderTarget* renderTarget = nullptr;
+
+    ISpecificOperationTarget* specificTarget = nullptr;
+
     ComputePipeline* computePipeline = nullptr;
     GraphicsPipeline* graphicsPipeline = nullptr;
 };

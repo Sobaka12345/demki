@@ -21,10 +21,10 @@ static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
 static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
     2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
 
-Dummy::Dummy(uint32_t windowWidth, uint32_t windowHeight)
-    : GraphicalApplication("Dummy", windowWidth, windowHeight)
+Dummy::Dummy(CreateInfo createInfo)
+    : GraphicalApplication(std::move(createInfo))
 {
-    m_timer.setIntervalMS(100);
+    m_timer.setIntervalMS(50);
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
 
     m_pipeline = context().createGraphicsPipeline(
@@ -45,15 +45,14 @@ Dummy::Dummy(uint32_t windowWidth, uint32_t windowHeight)
 
     ViewProjection viewProjection;
     viewProjection.view = glm::lookAt(
-        glm::vec3(0.0f, 1.0f, 4.f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        glm::vec3(0.0f, 3.0f, -4.f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     viewProjection.projection = glm::perspective(
         glm::radians(45.0f), clientWidth() / static_cast<float>(clientHeight()), 0.1f, 8.0f);
 
     m_camera->setViewProjection(viewProjection);
 
     m_model = context().createModel(executablePath() / "models" / "viking_room.obj");
-    m_texture =
-        context().createTexture({ .path = executablePath() / "textures" / "viking_room.png" });
+    m_texture = context().createTexture(executablePath() / "textures" / "viking_room.png");
 
     m_renderable = std::make_unique<Renderable>(context());
     m_renderable->setModel(m_model);

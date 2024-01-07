@@ -11,12 +11,11 @@
 struct OperationContext;
 
 class IPipeline;
+class IOperationTarget;
 
 namespace vk {
 
-class IOperationTarget;
-class ComputeTarget;
-class RenderTarget;
+class ISpecificOperationTarget;
 class Computer;
 class Renderer;
 
@@ -43,7 +42,6 @@ struct OperationContext
     ~OperationContext();
 
     IPipeline* pipeline();
-
     IOperationTarget* operationTarget();
 
     void submit(::OperationContext& context);
@@ -54,8 +52,7 @@ struct OperationContext
     std::vector<VkSemaphore> waitSemaphores;
     handles::Framebuffer* framebuffer = nullptr;
     handles::CommandBuffer* commandBuffer = nullptr;
-    ComputeTarget* computeTarget = nullptr;
-    RenderTarget* renderTarget = nullptr;
+    ISpecificOperationTarget* specificTarget = nullptr;
 
     ComputePipeline* computePipeline = nullptr;
     GraphicsPipeline* graphicsPipeline = nullptr;

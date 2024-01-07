@@ -30,16 +30,6 @@ class RenderPass;
 class Pipeline : virtual public IPipeline
 {
 protected:
-    struct DescriptorOffsetVisitor : public ShaderInterfaceHandleVisitor
-    {
-        void visit(ShaderInterfaceHandle& handle) override
-        {
-            result = &handle.currentDescriptor()->dynamicOffset;
-        }
-
-        uint32_t* result = nullptr;
-    };
-
     struct BindContext : public IPipelineBindContext
     {
         struct DescriptorSetInfo
@@ -85,6 +75,8 @@ private:
     virtual BindContext* newBindContext(BindContext::DescriptorSetInfo descriptorSetInfo) const = 0;
 
 protected:
+    static ShaderInterfaceHandle::TypeVisitor s_handleVisitor;
+
     const GraphicsContext& m_context;
 
     bool m_isInDestruction;

@@ -1,7 +1,5 @@
 #include "computer.hpp"
 
-#include "compute_target.hpp"
-
 namespace vk {
 
 Computer::Computer(const GraphicsContext& context, CreateInfo createInfo)
@@ -12,7 +10,6 @@ Computer::Computer(const GraphicsContext& context, CreateInfo createInfo)
 {
     ::OperationContext result;
     result.emplace<vk::OperationContext>(this);
-    m_targets.emplace(std::pair<size_t, IComputeTarget&>{ result.id(), target });
 
     if (!target.prepare(result))
     {
@@ -25,9 +22,7 @@ Computer::Computer(const GraphicsContext& context, CreateInfo createInfo)
 
 void Computer::finish(::OperationContext& context)
 {
-    auto iter = m_targets.find(context.id());
-    iter->second.compute(context);
-    m_targets.erase(iter);
+    context.operationTarget().present(context);
 }
 
 }    //  namespace vk

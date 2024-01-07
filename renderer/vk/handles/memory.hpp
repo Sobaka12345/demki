@@ -38,6 +38,7 @@ public:
     {
         Mapped(const Memory& memory);
         virtual ~Mapped();
+        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const = 0;
         virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) = 0;
         virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) = 0;
         void writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
@@ -49,6 +50,7 @@ public:
     {
         DeviceLocalMapped(const Memory& memory, VkDeviceSize offset = 0);
         ~DeviceLocalMapped();
+        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const override;
         virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) override;
         virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) override;
 
@@ -61,6 +63,7 @@ public:
         HostVisibleMapped(
             const Memory& memory, VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
         ~HostVisibleMapped();
+        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const override;
         virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) override;
         virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) override;
 

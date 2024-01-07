@@ -33,6 +33,12 @@ Memory::DeviceLocalMapped::DeviceLocalMapped(const Memory& memory, VkDeviceSize 
 
 Memory::DeviceLocalMapped::~DeviceLocalMapped() {}
 
+const void* Memory::DeviceLocalMapped::read(VkDeviceSize size, ptrdiff_t offset) const
+{
+    ASSERT(false, "not implemented");
+    return nullptr;
+}
+
 void Memory::DeviceLocalMapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
 {
     stagingBuffer->memory().lock()->mapped->writeAndSync(src, size, offset);
@@ -59,6 +65,13 @@ Memory::HostVisibleMapped::HostVisibleMapped(
 Memory::HostVisibleMapped::~HostVisibleMapped()
 {
     vkUnmapMemory(memory.device, memory);
+}
+
+const void* Memory::HostVisibleMapped::read(VkDeviceSize size, ptrdiff_t offset) const
+{
+    ASSERT(size + offset <= memory.size, "invalid memory range");
+
+    return (static_cast<char*>(data)) + offset;
 }
 
 void Memory::HostVisibleMapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)

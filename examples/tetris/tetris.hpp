@@ -15,7 +15,7 @@ class Field;
 class Tetris : public GraphicalApplication
 {
 public:
-    Tetris(uint32_t windowWidth = 640, uint32_t windowHeight = 480);
+    Tetris(CreateInfo createInfo);
     ~Tetris();
 
     void onKeyPressed(int key, int scancode, int action, int mods);

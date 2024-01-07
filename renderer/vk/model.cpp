@@ -8,8 +8,8 @@ namespace vk {
 
 Model::Model(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
-    , m_verticesSize(createInfo.vertices.size_bytes())
-    , m_indicesSize(createInfo.indices.size_bytes())
+    , m_verticesSize(createInfo.vertices.size() * sizeof(createInfo.vertices[0]))
+    , m_indicesSize(createInfo.indices.size() * sizeof(createInfo.indices[0]))
     , m_vertexSize(sizeof(createInfo.vertices[0]))
     , m_indexSize(sizeof(createInfo.indices[0]))
 {

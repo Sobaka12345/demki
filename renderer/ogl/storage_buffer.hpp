@@ -15,7 +15,7 @@ public:
 public:
     virtual void accept(ComputerInfoVisitor& visitor) const override;
     virtual bool prepare(OperationContext& context) override;
-    virtual void compute(OperationContext& context) override;
+    virtual void present(OperationContext& context) override;
 
     virtual std::weak_ptr<IShaderInterfaceHandle> handle() const override;
     virtual void bind(OperationContext& context) const override;

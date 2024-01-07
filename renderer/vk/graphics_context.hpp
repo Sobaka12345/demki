@@ -32,7 +32,7 @@ public:
     const static std::vector<const char*> s_validationLayers;
 
 public:
-    GraphicsContext(const Window& window, Resources& resources);
+    GraphicsContext(Window& window, Resources& resources);
     GraphicsContext(GraphicsContext&& other) = delete;
     GraphicsContext(const GraphicsContext& other) = delete;
     virtual ~GraphicsContext();
@@ -80,7 +80,7 @@ private:
     uint32_t dynamicAlignment(uint32_t layoutSize) const;
 
 private:
-    const Window& m_window;
+    Window& m_window;
     Resources& m_resources;
 
     handles::HandleVector<handles::Buffer> m_buffers;
