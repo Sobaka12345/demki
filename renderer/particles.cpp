@@ -56,6 +56,7 @@ void Particles::accept(ComputerInfoVisitor& visitor) const
 
 bool Particles::prepare(OperationContext& context)
 {
+    context.setOperationTarget(*this);
     return m_particlesBuffers[m_currentIndex]->prepare(context);
 }
 

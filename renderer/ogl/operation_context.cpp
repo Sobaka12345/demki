@@ -60,6 +60,7 @@ IPipeline* OperationContext::pipeline()
 
 IOperationTarget* OperationContext::operationTarget()
 {
+    if (mainTarget) return mainTarget;
     return specificTarget->toBase();
 }
 

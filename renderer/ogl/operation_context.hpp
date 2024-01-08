@@ -37,6 +37,7 @@ struct OperationContext
     Computer* computer = nullptr;
 
     ISpecificOperationTarget* specificTarget = nullptr;
+    IOperationTarget* mainTarget = nullptr;
 
     ComputePipeline* computePipeline = nullptr;
     GraphicsPipeline* graphicsPipeline = nullptr;

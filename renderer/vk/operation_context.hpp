@@ -53,6 +53,7 @@ struct OperationContext
     handles::Framebuffer* framebuffer = nullptr;
     handles::CommandBuffer* commandBuffer = nullptr;
     ISpecificOperationTarget* specificTarget = nullptr;
+    IOperationTarget* mainTarget = nullptr;
 
     ComputePipeline* computePipeline = nullptr;
     GraphicsPipeline* graphicsPipeline = nullptr;

@@ -33,9 +33,12 @@ OperationContext::OperationContext(OperationContext&& other)
     , renderer(std::move(other.renderer))
     , computer(std::move(other.computer))
     , renderPass(std::move(other.renderPass))
+    , mainTarget(std::move(other.mainTarget))
 {
     other.renderer = nullptr;
     other.computer = nullptr;
+    other.computePipeline = nullptr;
+    other.graphicsPipeline = nullptr;
 }
 
 OperationContext::~OperationContext() {}
@@ -50,6 +53,8 @@ IPipeline* OperationContext::pipeline()
 
 IOperationTarget* OperationContext::operationTarget()
 {
+    if (mainTarget) return mainTarget;
+
     return specificTarget->toBase();
 }
 

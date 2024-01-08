@@ -35,6 +35,11 @@ public:
         return *result;
     }
 
+    void setOperationTarget(IOperationTarget& target)
+    {
+        std::visit([&](auto& context) { context.mainTarget = &target; }, *this);
+    }
+
     IPipeline& pipeline()
     {
         IPipeline* result = nullptr;

@@ -16,7 +16,7 @@ public:
         : m_uniformHandle(handler)
     {}
 
-    inline void set(LayoutType value) { m_uniformHandle->write(&value, s_layoutSize); }
+    inline void set(LayoutType value) { m_uniformHandle->write<LayoutType>(&value); }
 
     inline const LayoutType& get() const { return *m_uniformHandle->read<LayoutType>(); }
 
