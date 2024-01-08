@@ -80,7 +80,7 @@ ParticlesApplication::ParticlesApplication(CreateInfo createInfo)
             })
             .addShaderInterfaceContainer<DeltaTime>()
             .addShaderInterfaceContainer<Particles>()
-            .setComputeDimensions({ .x = 256 }));
+            .computeDimensions({ .x = 256 }));
 
     m_graphicsPipeline = context().createGraphicsPipeline(
         IGraphicsPipeline::CreateInfo{}
@@ -107,6 +107,7 @@ void ParticlesApplication::perform()
     m_particles->bind(computeContext);
 
     auto renderContext = m_renderer->start(*m_swapchain);
+
     renderContext.setViewport({
         .x = 0,
         .y = 0,
@@ -123,11 +124,11 @@ void ParticlesApplication::perform()
         .height = m_swapchain->height(),
     });
 
+    renderContext.waitForOperation(computeContext);
+    computeContext.submit();
+
     m_graphicsPipeline->bind(renderContext);
     m_particles->draw(renderContext);
 
-    renderContext.waitForOperation(computeContext);
-
-    computeContext.submit();
     renderContext.submit();
 }

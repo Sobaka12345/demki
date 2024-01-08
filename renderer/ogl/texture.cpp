@@ -18,14 +18,14 @@ Texture::Texture(GraphicsContext& context, CreateInfo createInfo) noexcept
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, createInfo.width, createInfo.height, 0, GL_RGBA,
         GL_UNSIGNED_BYTE, createInfo.pixels);
     glGenerateMipmap(GL_TEXTURE_2D);
+
+    m_handle = std::make_shared<TextureInterfaceHandle>(m_texture);
 }
 
 Texture::~Texture() {}
 
 std::shared_ptr<IShaderInterfaceHandle> Texture::uniformHandle()
 {
-    if (!m_handle) m_handle = std::make_shared<ShaderInterfaceHandle>(m_texture);
-
     return m_handle;
 }
 

@@ -56,7 +56,7 @@ std::shared_ptr<Block> Field::createBlock() const
 
 bool Field::tryMoveFigure(int32_t dx, int32_t dy)
 {
-    return m_figure->tryMove(dx, dy);
+    return m_figure->tryMove(-dx, dy);
 }
 
 bool Field::isPositionOccupied(Position pos) const

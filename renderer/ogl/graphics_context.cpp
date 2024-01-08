@@ -7,6 +7,7 @@
 #include "renderer.hpp"
 #include "swapchain.hpp"
 #include "shader_interface_handle.hpp"
+#include "storage_buffer.hpp"
 #include "texture.hpp"
 
 #include <window.hpp>
@@ -59,7 +60,7 @@ GraphicsContext::~GraphicsContext() {}
 std::shared_ptr<IShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlockType sbt,
     uint32_t layoutSize)
 {
-    return std::make_shared<ShaderInterfaceHandle>(layoutSize, memoryUsage(sbt));
+    return std::make_shared<UniformBufferInterfaceHandle>(layoutSize, memoryUsage(sbt));
 }
 
 std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo createInfo)
@@ -86,7 +87,9 @@ std::shared_ptr<IRenderer> GraphicsContext::createRenderer(IRenderer::CreateInfo
 
 std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
     IStorageBuffer::CreateInfo createInfo)
-{}
+{
+    return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
+}
 
 std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(ISwapchain::CreateInfo createInfo)
 {

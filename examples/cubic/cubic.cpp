@@ -207,7 +207,7 @@ public:
         float kekX = diffX * sensitivity;
         float kekY = diffY * sensitivity;
 
-        m_yaw += kekX;
+        m_yaw -= kekX;
         m_pitch += kekY;
 
         if (m_pitch > 89.0f) m_pitch = 89.0f;
@@ -219,7 +219,7 @@ public:
         direction.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
         m_direction = glm::normalize(direction);
 
-        constexpr glm::vec3 up(0.f, -1.f, 0.f);
+        constexpr glm::vec3 up(0.f, 1.f, 0.f);
         glm::vec3 rightVector = glm::cross(up, m_direction);
         m_up = glm::normalize(glm::cross(m_direction, rightVector));
 

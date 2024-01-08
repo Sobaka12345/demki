@@ -33,7 +33,7 @@ Tetris::Tetris(CreateInfo createInfo)
         viewProjection.view = glm::lookAt(
             glm::vec3(1.0f * Field::s_width / 2.0f, 1.0f * Field::s_height / 2.0f, distance),
             glm::vec3(1.0f * Field::s_width / 2.0f, 1.0f * Field::s_height / 2.0f, 0.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::vec3(0.0f, -1.0f, 0.0f));
         viewProjection.projection = glm::perspective(glm::radians(fov),
             clientWidth() / static_cast<float>(clientHeight()),
             0.1f,

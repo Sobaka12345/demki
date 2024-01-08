@@ -80,8 +80,8 @@ bool Figure::tryRotate()
     std::vector<Position> newPositions(m_blocks.size());
     for (size_t i = 0; i < m_blocks.size(); ++i)
     {
-        newPositions[i].x = -(m_blocks[i]->position().y - anchor.y) + anchor.x;
-        newPositions[i].y = (m_blocks[i]->position().x - anchor.x) + anchor.y;
+        newPositions[i].x = (m_blocks[i]->position().y - anchor.y) + anchor.x;
+        newPositions[i].y = -(m_blocks[i]->position().x - anchor.x) + anchor.y;
         if (m_field.isPositionOccupied(newPositions[i]))
         {
             return false;

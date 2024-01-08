@@ -37,7 +37,12 @@ void OperationContext::submit(::OperationContext& context)
     if (computer) computer->finish(context);
 }
 
-void OperationContext::waitForOperation(OperationContext& other) {}
+void OperationContext::waitForOperation(OperationContext& other)
+{
+    GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+    glFlush();
+}
 
 void OperationContext::setScissors(Scissors scissors) const
 {

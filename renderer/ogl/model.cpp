@@ -35,7 +35,12 @@ Model::Model(GraphicsContext& context, CreateInfo createInfo) noexcept
     glEnableVertexAttribArray(2);
 }
 
-Model::~Model() {}
+Model::~Model()
+{
+    glDeleteBuffers(1, &m_indexBuffer);
+    glDeleteBuffers(1, &m_vertexBuffer);
+    glDeleteVertexArrays(1, &m_vao);
+}
 
 void Model::bind(::OperationContext& context)
 {

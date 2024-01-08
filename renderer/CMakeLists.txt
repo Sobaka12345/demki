@@ -14,6 +14,8 @@ add_library(${PROJECT_NAME} STATIC
 	ogl/model.cpp
 	ogl/operation_context.hpp
 	ogl/operation_context.cpp
+	ogl/pipeline.hpp
+	ogl/pipeline.cpp
 	ogl/renderer.hpp
 	ogl/renderer.cpp
 	ogl/shader_interface_handle.hpp

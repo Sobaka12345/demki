@@ -12,7 +12,7 @@ public:
     Computer(const GraphicsContext& context, IComputer::CreateInfo createInfo);
 
     virtual ::OperationContext start(IComputeTarget& target) override;
-    virtual void finish(::OperationContext& target) override;
+    virtual void finish(::OperationContext& context) override;
 
 private:
     const GraphicsContext& m_context;
