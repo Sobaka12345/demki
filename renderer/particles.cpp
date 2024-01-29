@@ -5,11 +5,7 @@
 Particles::Particles(IGraphicsContext& context, std::span<const Particle> initialData)
     : m_currentIndex(0)
 {
-    IStorageBuffer::CreateInfo bufferInfo{
-        .elementLayoutSize = sizeof(Particle),
-        .size = initialData.size_bytes(),
-        .initialData = initialData.data(),
-    };
+    const auto bufferInfo = IStorageBuffer::CreateInfo{ initialData };
 
     m_particlesBuffers[0] = context.createStorageBuffer(bufferInfo);
     m_particlesBuffers[1] = context.createStorageBuffer(bufferInfo);

@@ -25,6 +25,7 @@ add_library(${PROJECT_NAME} STATIC
 	ogl/swapchain.cpp
 	ogl/texture.hpp
 	ogl/texture.cpp
+	ogl/utils.hpp
 	vk/handles/allocator.hpp
 	vk/handles/buffer.hpp
     vk/handles/buffer.cpp

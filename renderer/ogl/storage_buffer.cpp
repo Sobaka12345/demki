@@ -2,6 +2,7 @@
 
 #include "compute_pipeline.hpp"
 
+#include "utils.hpp"
 #include "graphics_pipeline.hpp"
 #include "icomputer.hpp"
 #include "shader_interface_handle.hpp"
@@ -12,23 +13,26 @@ namespace ogl {
 
 StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
-    , m_elementCount(createInfo.size / createInfo.elementLayoutSize)
+    , m_elementCount(createInfo.initialDataSize)
 {
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_buffer);
 
     glBindVertexArray(m_vao);
 
+    auto& dataMetaInfo = createInfo.dataTypeMetaInfo;
     glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
-    glBufferData(GL_ARRAY_BUFFER, createInfo.size, createInfo.initialData, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)0);
-    glEnableVertexAttribArray(0);
+    glBufferData(GL_ARRAY_BUFFER, m_elementCount * dataMetaInfo.typeSize, createInfo.initialData,
+        GL_STATIC_DRAW);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(4 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    size_t j = 0;
+    for (auto& field : dataMetaInfo.fields)
+    {
+        auto [dimensionCount, glType] = toGLCompoundTypeSize(field.typeId);
+        glVertexAttribPointer(j, dimensionCount, glType, createInfo.normalized ? GL_TRUE : GL_FALSE,
+            dataMetaInfo.typeSize, reinterpret_cast<void*>(field.shift));
+        glEnableVertexAttribArray(j++);
+    }
 
     m_handle = std::make_shared<StorageBufferInterfaceHandle>(m_buffer);
 }

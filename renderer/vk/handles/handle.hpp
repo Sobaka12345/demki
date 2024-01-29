@@ -324,7 +324,7 @@ public:
 
 private:
     template <typename IT>
-    constexpr std::enable_if<std::is_std_span<std::remove_reference_t<IT>>::value,
+    constexpr typename std::enable_if<std::is_std_span<std::remove_reference_t<IT>>::value,
         typename std::remove_reference_t<IT>::element_type>::type&
         indexedValueIfSpan(size_t index, std::remove_reference_t<IT>& value) const
     {
@@ -332,7 +332,7 @@ private:
     }
 
     template <typename IT>
-    constexpr std::enable_if<!std::is_std_span<std::remove_reference_t<IT>>::value,
+    constexpr typename std::enable_if<!std::is_std_span<std::remove_reference_t<IT>>::value,
         std::remove_reference_t<IT>>::type&&
         indexedValueIfSpan(size_t index, std::remove_reference_t<IT>& value) const
     {

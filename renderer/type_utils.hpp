@@ -1,17 +1,11 @@
 #pragma once
 
 #include <type_traits>
+#include <typeinfo>
+#include <typeindex>
 #include <tuple>
 #include <variant>
-
-//  template <typename F, typename... Args>
-//  struct TypeList
-//{ /*
-//       using Nodes = TypeList<F, TypeList<Args...>>;*/
-//      using Head = F;
-//      using Tail = TypeList<Args..., tl::NullType>;
-//      using TypesPack = TypesPacker<F, Args...>;
-//  };
+#include <boost/pfr.hpp>
 
 #define CREATE_INFO_PROPERTY(type, name, def) \
                                               \
@@ -49,3 +43,36 @@ using UniqueTuple = typename Unique<std::tuple<>, Ts...>::type;
 
 template <typename... Ts>
 using UniqueVariant = typename Unique<std::variant<>, Ts...>::type;
+
+struct StructMetaInfo
+{
+    struct Field
+    {
+        ptrdiff_t shift = 0;
+        size_t typeSize = 0;
+        std::type_index typeId;
+    };
+
+    template <typename T>
+        requires std::is_trivial_v<T> && std::is_standard_layout_v<T>
+    static StructMetaInfo fromType()
+    {
+        StructMetaInfo result;
+        result.typeSize = sizeof(T);
+        result.alignment = std::alignment_of_v<T>;
+
+        T value;
+        boost::pfr::for_each_field(value, [&result, &value](auto& subValue) {
+            result.fields.push_back(StructMetaInfo::Field{
+                .shift = reinterpret_cast<uint8_t*>(&subValue) - reinterpret_cast<uint8_t*>(&value),
+                .typeSize = sizeof(decltype(subValue)),
+                .typeId = std::type_index{ typeid(decltype(subValue)) } });
+        });
+
+        return result;
+    }
+
+    size_t alignment = 0;
+    size_t typeSize = 0;
+    std::vector<Field> fields;
+};

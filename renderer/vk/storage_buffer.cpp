@@ -14,13 +14,14 @@ namespace vk {
 StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
     , m_emitWait(false)
-    , m_elementCount(createInfo.size / createInfo.elementLayoutSize)
+    , m_elementCount(createInfo.initialDataSize)
     , m_commandBuffer(std::make_unique<handles::CommandBuffer>(
           context.device().commandPool(handles::GRAPHICS_COMPUTE).lock()->allocateBuffer()))
 {
-    m_handle = context.fetchHandleSpecific(ShaderBlockType::STORAGE, createInfo.size);
+    const size_t sizeInBytes = createInfo.initialDataSize * createInfo.dataTypeMetaInfo.typeSize;
+    m_handle = context.fetchHandleSpecific(ShaderBlockType::STORAGE, sizeInBytes);
 
-    m_handle->write(createInfo.initialData, createInfo.size);
+    m_handle->write(createInfo.initialData, sizeInBytes);
 
     m_computeFinishedSemaphore =
         std::make_unique<handles::Semaphore>(context.device(), handles::SemaphoreCreateInfo{});

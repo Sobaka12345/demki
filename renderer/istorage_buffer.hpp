@@ -2,8 +2,12 @@
 
 #include "icompute_target.hpp"
 
+#include <type_utils.hpp>
+
 #include <memory>
 #include <span>
+
+#include <boost/pfr.hpp>
 
 class IShaderInterfaceHandle;
 
@@ -13,18 +17,17 @@ public:
     struct CreateInfo
     {
         template <typename T>
-        static CreateInfo fromSpan(std::span<const T> span)
-        {
-            return {
-                .elementLayoutSize = sizeof(T),
-                .size = span.size_bytes(),
-                .initialData = span.data(),
-            };
-        }
+        CreateInfo(std::span<const T> data, bool normalized = false)
+            : normalized(normalized)
+            , initialData(data.data())
+            , initialDataSize(data.size())
+            , dataTypeMetaInfo(StructMetaInfo::fromType<T>())
+        {}
 
-        uint64_t elementLayoutSize = 0;
-        uint64_t size = 0;
-        const void* initialData = nullptr;
+        bool normalized;
+        const void* initialData;
+        size_t initialDataSize;
+        StructMetaInfo dataTypeMetaInfo;
     };
 
 public:
