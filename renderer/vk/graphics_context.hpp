@@ -38,6 +38,10 @@ public:
     virtual ~GraphicsContext();
 
 public:
+	std::weak_ptr<handles::Memory> fetchMemory(size_t size,
+		VkBufferUsageFlags usage,
+		VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
     std::shared_ptr<ShaderInterfaceHandle> fetchHandleSpecific(ShaderBlockType sbt,
         uint32_t layoutSize);
     virtual std::shared_ptr<IShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt,
@@ -57,10 +61,6 @@ public:
     virtual std::shared_ptr<IModel> createModel(IModel::CreateInfo createInfo) override;
     virtual std::shared_ptr<ITexture> createTexture(std::filesystem::path path) override;
     virtual std::shared_ptr<ITexture> createTexture(ITexture::CreateInfo createInfo) override;
-
-    std::weak_ptr<handles::Memory> fetchMemory(size_t size,
-        VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     virtual void waitIdle() override;
 

@@ -60,7 +60,6 @@ void Pipeline::BindContext::bind(OperationContext& context,
 
 Pipeline::~Pipeline()
 {
-    m_isInDestruction = true;
 }
 
 void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContainers,
@@ -105,16 +104,14 @@ void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContaine
 FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
     const IShaderInterfaceContainer& container)
 {
-    const auto containerTypeId = container.typeId();
-
-    auto [contextIter, _] = m_bindContexts.emplace(containerTypeId,
-        new BindContext{ m_bindingIndices[container.id()] });
-
-    contextIter->second.registerDeleteCallback([&, containerTypeId](BindContext* context) {
-        if (!m_isInDestruction) m_bindContexts.erase(containerTypeId);
-    });
-
-    return contextIter->second;
+    auto [iter, emplaced] = m_bindContexts.emplace(
+        container.typeId(), new BindContext{ m_bindingIndices[container.id()] });
+    if (emplaced)
+    {
+        iter->second.setFragile(true);
+    }
+    
+    return iter->second;
 }
 
 }    //  namespace ogl

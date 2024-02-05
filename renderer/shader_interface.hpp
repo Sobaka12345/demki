@@ -66,10 +66,9 @@ private:
     static uint32_t s_id;
 
 private:
-    bool m_isInDestruction = false;
-    std::unordered_map<IPipeline*, FragileSharedPtr<IPipelineBindContext>> m_contexts;
+    FragileSharedPtrMap<IPipeline*, IPipelineBindContext> m_contexts;
 };
-
+ 
 template <typename T>
 class SIShaderInterfaceContainer : public IShaderInterfaceContainer
 {

@@ -1,6 +1,7 @@
 #include "graphics_context.hpp"
 
 #include "handles/surface.hpp"
+#include "handles/memory.hpp"
 #include "compute_pipeline.hpp"
 #include "graphics_pipeline.hpp"
 #include "computer.hpp"
@@ -195,6 +196,14 @@ GraphicsContext::~GraphicsContext()
     m_surface.reset();
 }
 
+std::weak_ptr<vk::handles::Memory> GraphicsContext::fetchMemory(
+	size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties)
+{
+	auto& newBuffer = m_buffers.emplaceBack(device(),
+		handles::BufferCreateInfo().size(size).usage(usage).sharingMode(VK_SHARING_MODE_EXCLUSIVE));
+	return newBuffer.allocateAndBindMemory(memoryProperties);
+}
+
 std::shared_ptr<ShaderInterfaceHandle> GraphicsContext::fetchHandleSpecific(ShaderBlockType sbt,
     uint32_t layoutSize)
 {
@@ -348,14 +357,6 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo cr
         m_resources.registerResource(new Texture(*this, std::move(createInfo))));
 }
 
-//  TO DO: improve memory allocation
-std::weak_ptr<handles::Memory> GraphicsContext::fetchMemory(
-    size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties)
-{
-    auto& newBuffer = m_buffers.emplaceBack(device(),
-        handles::BufferCreateInfo().size(size).usage(usage).sharingMode(VK_SHARING_MODE_EXCLUSIVE));
-    return newBuffer.allocateAndBindMemory(memoryProperties);
-}
 
 void GraphicsContext::waitIdle()
 {

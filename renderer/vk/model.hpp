@@ -10,7 +10,7 @@
 namespace vk {
 
 namespace handles {
-struct Memory;
+class Memory;
 }
 
 class GraphicsContext;

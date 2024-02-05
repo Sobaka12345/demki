@@ -1,6 +1,7 @@
 #include "model.hpp"
 
 #include "handles/command_buffer.hpp"
+#include "handles/memory.hpp"
 
 #include "graphics_context.hpp"
 
@@ -15,12 +16,12 @@ Model::Model(GraphicsContext& context, CreateInfo createInfo)
 {
     m_memory = context.fetchMemory(m_verticesSize + m_indicesSize,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    auto mapped = m_memory.lock()->map();
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	auto mapped = m_memory.lock()->map();
     mapped.lock()->write(createInfo.vertices.data(), m_verticesSize, 0);
     mapped.lock()->write(createInfo.indices.data(), m_indicesSize, m_verticesSize);
     mapped.lock()->sync(m_verticesSize + m_indicesSize, 0);
-    m_memory.lock()->unmap();
+	m_memory.lock()->unmap();
 }
 
 void Model::draw(::OperationContext& context)

@@ -141,8 +141,6 @@ void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContaine
 
 Pipeline::~Pipeline()
 {
-    m_isInDestruction = true;
-
     m_bindContexts.clear();
     m_descriptorSetProviders.clear();
 }
@@ -160,19 +158,15 @@ FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
 
     auto& [setId, layout] = m_setLayouts.at(containerId);
 
-    BindContext* context = newBindContext({
-        .setId = setId,
-        .bindingIndices = m_bindingIndices.at(containerId),
-        .descriptorSetProvider = m_descriptorSetProviders.at(containerId),
-        .descriptorSetLayout = layout,
-    });
+    auto [contextIter, _] = m_bindContexts.emplace(containerTypeId, 
+        newBindContext({
+            .setId = setId,
+            .bindingIndices = m_bindingIndices.at(containerId),
+            .descriptorSetProvider = m_descriptorSetProviders.at(containerId),
+            .descriptorSetLayout = layout,
+    }));
 
-
-    auto [contextIter, _] = m_bindContexts.emplace(containerTypeId, context);
-
-    contextIter->second.registerDeleteCallback([&, containerTypeId](BindContext* context) {
-        if (!m_isInDestruction) m_bindContexts.erase(containerTypeId);
-    });
+    contextIter->second.setFragile(true);
 
     return contextIter->second;
 }

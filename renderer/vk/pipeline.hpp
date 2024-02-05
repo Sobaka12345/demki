@@ -6,6 +6,7 @@
 #include "handles/descriptor_set.hpp"
 #include "handles/descriptor_set_layout.hpp"
 
+#include <utils.hpp>
 #include <ipipeline.hpp>
 
 #include <vector>
@@ -63,7 +64,6 @@ public:
 protected:
     Pipeline(const GraphicsContext& context, const auto& createInfo)
         : m_context(context)
-        , m_isInDestruction(false)
     {
         init(createInfo.interfaceContainers());
     }
@@ -79,9 +79,8 @@ protected:
 
     const GraphicsContext& m_context;
 
-    bool m_isInDestruction;
     std::unordered_map<uint32_t, DescriptorSetProvider> m_descriptorSetProviders;
-    std::unordered_map<std::type_index, FragileSharedPtr<BindContext>> m_bindContexts;
+    FragileSharedPtrMap<std::type_index, BindContext> m_bindContexts;
     std::unordered_map<uint32_t, std::pair<uint32_t, handles::DescriptorSetLayout>> m_setLayouts;
 
     std::unique_ptr<handles::PipelineLayout> m_pipelineLayout;

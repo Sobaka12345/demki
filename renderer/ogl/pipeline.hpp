@@ -1,6 +1,7 @@
 #pragma once
 
 #include <igraphics_pipeline.hpp>
+#include <utils.hpp>
 
 #include <glad/glad.h>
 
@@ -8,7 +9,8 @@ namespace ogl {
 
 class GraphicsContext;
 
-class Pipeline : virtual public IPipeline
+class Pipeline 
+    : virtual public IPipeline 
 {
 public:
     struct BindContext : public IPipelineBindContext
@@ -38,11 +40,10 @@ public:
 
 protected:
     const GraphicsContext& m_context;
-    bool m_isInDestruction;
 
     GLuint m_shaderProgram;
     std::unordered_map<uint32_t, std::vector<uint32_t>> m_bindingIndices;
-    std::unordered_map<std::type_index, FragileSharedPtr<BindContext>> m_bindContexts;
+    FragileSharedPtrMap<std::type_index, IPipelineBindContext> m_bindContexts;
 };
 
 }    //  namespace ogl
