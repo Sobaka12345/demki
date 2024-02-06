@@ -80,7 +80,7 @@ protected:
     const GraphicsContext& m_context;
 
     std::unordered_map<uint32_t, DescriptorSetProvider> m_descriptorSetProviders;
-    FragileSharedPtrMap<std::type_index, BindContext> m_bindContexts;
+    FragileSharedPtrMap<std::type_index, IPipelineBindContext> m_bindContexts;
     std::unordered_map<uint32_t, std::pair<uint32_t, handles::DescriptorSetLayout>> m_setLayouts;
 
     std::unique_ptr<handles::PipelineLayout> m_pipelineLayout;
