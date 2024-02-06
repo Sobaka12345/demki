@@ -10,8 +10,8 @@
 
 #include <GLFW/glfw3.h>
 
-Tetris::Tetris(uint32_t windowWidth, uint32_t windowHeight)
-    : GraphicalApplication("Tetris", windowWidth, windowHeight)
+Tetris::Tetris(CreateInfo createInfo)
+    : GraphicalApplication(std::move(createInfo))
     , m_dx(0)
     , m_rotate(false)
     , m_flushedTotal(0)
@@ -25,7 +25,7 @@ Tetris::Tetris(uint32_t windowWidth, uint32_t windowHeight)
         std::placeholders::_4));
 
     {
-        m_camera = std::make_shared<Camera>(context().resources());
+        m_camera = std::make_shared<Camera>(context());
 
         constexpr float fov = 45.0f;
         constexpr float distance = Field::s_height * 90.0f / fov;
@@ -33,7 +33,7 @@ Tetris::Tetris(uint32_t windowWidth, uint32_t windowHeight)
         viewProjection.view = glm::lookAt(
             glm::vec3(1.0f * Field::s_width / 2.0f, 1.0f * Field::s_height / 2.0f, distance),
             glm::vec3(1.0f * Field::s_width / 2.0f, 1.0f * Field::s_height / 2.0f, 0.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::vec3(0.0f, -1.0f, 0.0f));
         viewProjection.projection = glm::perspective(glm::radians(fov),
             clientWidth() / static_cast<float>(clientHeight()),
             0.1f,
@@ -57,7 +57,7 @@ Tetris::Tetris(uint32_t windowWidth, uint32_t windowHeight)
 
     m_renderer = context().createRenderer({ .multisampling = Multisampling::MSA_1X });
 
-    m_field = std::make_shared<Field>(context().resources());
+    m_field = std::make_shared<Field>(context());
     m_field->flushRowsAndSpawnFigure();
 }
 

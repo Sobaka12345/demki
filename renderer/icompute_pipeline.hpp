@@ -14,19 +14,7 @@ public:
 
     class CreateInfo : public IPipeline::CreateInfo<CreateInfo>
     {
-    public:
-        CreateInfo& setComputeDimensions(ComputeDimensions computeDimensions)
-        {
-            m_computeDimensions = std::move(computeDimensions);
-            return *this;
-        }
-
-        const ComputeDimensions& computeDimensions() const { return m_computeDimensions; }
-
-        ComputeDimensions& computeDimensions() { return m_computeDimensions; }
-
-    private:
-        ComputeDimensions m_computeDimensions;
+        CREATE_INFO_PROPERTY(ComputeDimensions, computeDimensions, ComputeDimensions{});
     };
 
 public:

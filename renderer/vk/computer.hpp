@@ -19,7 +19,6 @@ public:
 
 private:
     const GraphicsContext& m_context;
-    std::unordered_map<size_t, IComputeTarget&> m_targets;
 };
 
 }    //  namespace vk

@@ -24,7 +24,6 @@ public:
     Texture(const GraphicsContext& context, ITexture::CreateInfo createInfo);
     ~Texture();
 
-    virtual void bind(::OperationContext& context) override;
     virtual std::shared_ptr<ShaderResource::Descriptor> fetchDescriptor() override;
     virtual std::shared_ptr<IShaderInterfaceHandle> uniformHandle() override;
 

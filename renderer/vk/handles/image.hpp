@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include "handle.hpp"
+
 #include "simemory_accessor.hpp"
 
 namespace vk {

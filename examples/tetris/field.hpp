@@ -12,7 +12,7 @@ class OperationContext;
 
 class IModel;
 class ITexture;
-class IResourceManager;
+class IGraphicsContext;
 
 class Field
 {
@@ -28,7 +28,7 @@ public:
     using FieldType = std::array<RowType, s_height>;
 
 public:
-    Field(IResourceManager& resources);
+    Field(IGraphicsContext& resources);
     std::shared_ptr<Block> createBlock() const;
 
     int32_t flushRowsAndSpawnFigure();
@@ -44,7 +44,7 @@ private:
     int flushRows(int32_t topRowBound, int32_t bottomRowBound);
 
 private:
-    IResourceManager& m_resources;
+    IGraphicsContext& m_context;
 
     FieldType m_blocks;
     std::shared_ptr<IModel> m_cube;

@@ -1,6 +1,6 @@
 #include "tetris.hpp"
 
-int main()
+int main(int argc, char** argv)
 {
-    return Tetris{ 1280, 960 }.exec();
+    return Tetris{ Tetris::CreateInfo::readFromCmd(argc, argv) }.exec();
 }

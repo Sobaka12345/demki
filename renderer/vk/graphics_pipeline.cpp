@@ -15,25 +15,78 @@
 
 namespace {
 
-VkPrimitiveTopology primitiveTopology(IGraphicsPipeline::CreateInfo::PrimitiveTopology pt)
+float toVkSampleShadingCoefficient(IGraphicsPipeline::CreateInfo::SampleShading sampleShading)
+{
+    switch (sampleShading)
+    {
+        case IGraphicsPipeline::CreateInfo::SampleShading::SS_0_PERCENT: return 0.0f;
+        case IGraphicsPipeline::CreateInfo::SampleShading::SS_20_PERCENT: return 0.2f;
+        case IGraphicsPipeline::CreateInfo::SampleShading::SS_40_PERCENT: return 0.4f;
+        case IGraphicsPipeline::CreateInfo::SampleShading::SS_60_PERCENT: return 0.6f;
+        case IGraphicsPipeline::CreateInfo::SampleShading::SS_80_PERCENT: return 0.8f;
+        case IGraphicsPipeline::CreateInfo::SampleShading::SS_100_PERCENT: return 1.0f;
+    }
+
+    ASSERT(false, "sample shading not declared");
+    return 0.0f;
+}
+
+VkCullModeFlags toVkCullMode(IGraphicsPipeline::CreateInfo::CullMode cullMode)
+{
+    switch (cullMode)
+    {
+        case IGraphicsPipeline::CreateInfo::FRONT: return VK_CULL_MODE_FRONT_BIT;
+        case IGraphicsPipeline::CreateInfo::BACK: return VK_CULL_MODE_BACK_BIT;
+        case IGraphicsPipeline::CreateInfo::FRONT_AND_BACK: return VK_CULL_MODE_FRONT_AND_BACK;
+    };
+    ASSERT(false, "not implemented");
+    return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+}
+
+VkFrontFace toVkFrontFace(IGraphicsPipeline::CreateInfo::FrontFace frontFace)
+{
+    switch (frontFace)
+    {
+        case IGraphicsPipeline::CreateInfo::CLOCKWISE: return VK_FRONT_FACE_CLOCKWISE;
+        case IGraphicsPipeline::CreateInfo::COUNTER_CLOCKWISE:
+            return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    }
+    ASSERT(false, "not implemented");
+    return VK_FRONT_FACE_MAX_ENUM;
+}
+
+VkPolygonMode toVkPolygonMode(IGraphicsPipeline::CreateInfo::PolygonMode polygonMode)
+{
+    switch (polygonMode)
+    {
+        case IGraphicsPipeline::CreateInfo::POINT: return VK_POLYGON_MODE_POINT;
+        case IGraphicsPipeline::CreateInfo::LINE: return VK_POLYGON_MODE_LINE;
+        case IGraphicsPipeline::CreateInfo::FILL: return VK_POLYGON_MODE_FILL;
+    }
+    ASSERT(false, "not implemented");
+    return VK_POLYGON_MODE_MAX_ENUM;
+}
+
+VkPrimitiveTopology toVkPrimitiveTopology(IGraphicsPipeline::CreateInfo::PrimitiveTopology pt)
 {
     switch (pt)
     {
-        case IGraphicsPipeline::CreateInfo::POINT: return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-        case IGraphicsPipeline::CreateInfo::LINE: return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-        case IGraphicsPipeline::CreateInfo::TRIANGLE: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        case IGraphicsPipeline::CreateInfo::POINTS: return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        case IGraphicsPipeline::CreateInfo::LINES: return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        case IGraphicsPipeline::CreateInfo::TRIANGLES: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     }
+    ASSERT(false, "not implemented");
     return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
 }
 
-VkVertexInputRate inputRate(IGraphicsPipeline::CreateInfo::Binding::Rate rate)
+VkVertexInputRate toVkInputRate(IGraphicsPipeline::CreateInfo::Binding::Rate rate)
 {
     if (rate == IGraphicsPipeline::CreateInfo::Binding::VERTEX) return VK_VERTEX_INPUT_RATE_VERTEX;
     ASSERT(false, "not implemented");
     return VK_VERTEX_INPUT_RATE_MAX_ENUM;
 }
 
-VkFormat attrubuteFormat(IGraphicsPipeline::CreateInfo::Attribute::Format attribute)
+VkFormat toVkAttrubuteFormat(IGraphicsPipeline::CreateInfo::Attribute::Format attribute)
 {
     switch (attribute)
     {
@@ -54,13 +107,11 @@ void GraphicsPipeline::BindContext::bind(::OperationContext& context,
     Pipeline::BindContext::bind(context, container);
     auto& specContext = get(context);
 
-    static Pipeline::DescriptorOffsetVisitor descriptorOffsetVisitor;
-
     std::vector<uint32_t> offsets;
     for (auto& descriptor : container.dynamicUniforms())
     {
-        descriptor.handle.lock()->accept(descriptorOffsetVisitor);
-        offsets.push_back(*descriptorOffsetVisitor.result);
+        descriptor.handle.lock()->accept(s_handleVisitor);
+        offsets.push_back(s_handleVisitor->currentDescriptor()->dynamicOffset);
     }
 
     specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(),
@@ -94,7 +145,7 @@ GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
             .rasterizerDiscardEnable(VK_FALSE)
             .polygonMode(VK_POLYGON_MODE_FILL)
             .cullMode(VK_CULL_MODE_BACK_BIT)
-            .frontFace(VK_FRONT_FACE_CLOCKWISE)
+            .frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
             .depthBiasEnable(VK_FALSE)
             .lineWidth(1.0f)
             .depthBiasClamp(0.0f)
@@ -152,9 +203,12 @@ GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
 
 GraphicsPipeline::GraphicsPipeline(const GraphicsContext& context, CreateInfo createInfo)
     : Pipeline(context, createInfo)
-    , m_topology(primitiveTopology(createInfo.primitiveTopology()))
+    , m_topology(toVkPrimitiveTopology(createInfo.primitiveTopology()))
     , m_shaders(std::move(createInfo.shaders()))
-    , m_sampleShading(createInfo.sampleShading())
+    , m_sampleShading(toVkSampleShadingCoefficient(createInfo.sampleShading()))
+    , m_polygonMode(toVkPolygonMode(createInfo.polygonMode()))
+    , m_cullMode(toVkCullMode(createInfo.cullMode()))
+    , m_frontFace(toVkFrontFace(createInfo.frontFace()))
 {
     m_bindingDescriptions.reserve(createInfo.bindings().size());
     m_attributeDescriptions.reserve(createInfo.attributes().size());
@@ -164,7 +218,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsContext& context, CreateInfo cr
         m_bindingDescriptions.push_back({
             .binding = bindingDesc.binding,
             .stride = bindingDesc.stride,
-            .inputRate = inputRate(bindingDesc.inputRate),
+            .inputRate = toVkInputRate(bindingDesc.inputRate),
         });
     }
 
@@ -173,7 +227,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsContext& context, CreateInfo cr
         m_attributeDescriptions.push_back({
             .location = attributeDesc.location,
             .binding = attributeDesc.binding,
-            .format = attrubuteFormat(attributeDesc.format),
+            .format = toVkAttrubuteFormat(attributeDesc.format),
             .offset = attributeDesc.offset,
         });
     }
@@ -208,6 +262,19 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
                 .pName("main"));
     }
 
+    PipelineRasterizationStateCreateInfo rasterizer =
+        PipelineRasterizationStateCreateInfo()
+            .depthClampEnable(VK_FALSE)
+            .rasterizerDiscardEnable(VK_FALSE)
+            .polygonMode(m_polygonMode)
+            .cullMode(m_cullMode)
+            .frontFace(m_frontFace)
+            .depthBiasEnable(VK_FALSE)
+            .lineWidth(1.0f)
+            .depthBiasClamp(0.0f)
+            .depthBiasConstantFactor(0.0f)
+            .depthBiasSlopeFactor(0.0f);
+
     PipelineInputAssemblyStateCreateInfo inputAssembly =
         PipelineInputAssemblyStateCreateInfo()
             .topology(m_topology)
@@ -215,10 +282,9 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
 
     PipelineMultisampleStateCreateInfo multisampling =
         PipelineMultisampleStateCreateInfo()
-            .sampleShadingEnable(
-                m_sampleShading == SampleShading::SS_0_PERCENT ? VK_FALSE : VK_TRUE)
+            .sampleShadingEnable(m_sampleShading < 0.01f ? VK_FALSE : VK_TRUE)
             .rasterizationSamples(context.renderer->sampleCount())
-            .minSampleShading(toVkSampleShadingCoefficient(m_sampleShading))
+            .minSampleShading(m_sampleShading)
             .pSampleMask(nullptr)
             .alphaToCoverageEnable(VK_FALSE)
             .alphaToOneEnable(VK_FALSE);

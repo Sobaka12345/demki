@@ -5,10 +5,9 @@
 
 #include "graphics_pipeline.hpp"
 #include "renderer.hpp"
-#include "render_target.hpp"
 #include "computer.hpp"
-#include "compute_target.hpp"
 #include "compute_pipeline.hpp"
+#include "ispecific_operation_target.hpp"
 
 #include <vulkan/vulkan_core.h>
 #include <operation_context.hpp>
@@ -30,14 +29,16 @@ OperationContext::OperationContext(OperationContext&& other)
     , waitSemaphores(std::move(other.waitSemaphores))
     , framebuffer(std::move(other.framebuffer))
     , commandBuffer(std::move(other.commandBuffer))
-    , computeTarget(std::move(other.computeTarget))
-    , renderTarget(std::move(other.renderTarget))
+    , specificTarget(std::move(other.specificTarget))
     , renderer(std::move(other.renderer))
     , computer(std::move(other.computer))
     , renderPass(std::move(other.renderPass))
+    , mainTarget(std::move(other.mainTarget))
 {
     other.renderer = nullptr;
     other.computer = nullptr;
+    other.computePipeline = nullptr;
+    other.graphicsPipeline = nullptr;
 }
 
 OperationContext::~OperationContext() {}
@@ -50,6 +51,13 @@ IPipeline* OperationContext::pipeline()
     return nullptr;
 }
 
+IOperationTarget* OperationContext::operationTarget()
+{
+    if (mainTarget) return mainTarget;
+
+    return specificTarget->toBase();
+}
+
 void OperationContext::submit(::OperationContext& context)
 {
     if (renderer) renderer->finish(context);
@@ -60,9 +68,9 @@ inline VkViewport toVkViewport(const Viewport& val)
 {
     return VkViewport{
         .x = val.x,
-        .y = val.y,
+        .y = val.height,
         .width = val.width,
-        .height = val.height,
+        .height = -val.height,
         .minDepth = val.minDepth,
         .maxDepth = val.maxDepth,
     };
@@ -86,8 +94,8 @@ inline VkRect2D toVkScissors(const Scissors& scissors)
 
 void OperationContext::waitForOperation(OperationContext& other)
 {
-    other.operationTarget()->populateWaitInfo(*this);
-    operationTarget()->waitFor(*this);
+    other.specificTarget->populateWaitInfo(*this);
+    specificTarget->waitFor(*this);
 }
 
 void OperationContext::setScissors(Scissors scissors) const
@@ -98,15 +106,6 @@ void OperationContext::setScissors(Scissors scissors) const
 void OperationContext::setViewport(Viewport viewport) const
 {
     commandBuffer->setViewport(toVkViewport(viewport));
-}
-
-IOperationTarget* OperationContext::operationTarget()
-{
-    if (graphicsPipeline) return renderTarget;
-    else if (computePipeline)
-        return computeTarget;
-
-    return nullptr;
 }
 
 }    //  namespace vk

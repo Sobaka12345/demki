@@ -14,7 +14,7 @@ struct DeltaTime;
 class ParticlesApplication : public GraphicalApplication
 {
 public:
-    ParticlesApplication(uint32_t windowWidth = 640, uint32_t windowHeight = 480);
+    ParticlesApplication(CreateInfo createInfo);
     ~ParticlesApplication();
 
 private:

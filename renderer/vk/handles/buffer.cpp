@@ -2,6 +2,7 @@
 
 #include "device.hpp"
 #include "image.hpp"
+#include "memory.hpp"
 
 namespace vk { namespace handles {
 
@@ -38,14 +39,7 @@ Buffer::~Buffer()
 bool Buffer::bindMemory(uint32_t bindingOffset)
 {
     DASSERT(m_memory);
-    if (auto result =
-            vkBindBufferMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
-        result)
-    {
-        m_memory->bindedBuffer = this;
-        return true;
-    }
-    return false;
+    return m_memory->bindBuffer(*this, bindingOffset);
 }
 
 void Buffer::copyTo(const Buffer& dst, VkBufferCopy copyRegion) const

@@ -9,35 +9,30 @@
 #include "handles/image_view.hpp"
 #include "handles/sampler.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 namespace {
 constexpr auto s_imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
 }
 
 namespace vk {
 
-Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo)
+Texture::Texture(const GraphicsContext& context, ITexture::CreateInfo createInfo)
     : m_context(context)
+    , m_width(createInfo.width)
+    , m_height(createInfo.height)
 {
-    int texChannels;
-    stbi_uc *pixels = stbi_load(createInfo.path.string().c_str(), &m_width, &m_height, &texChannels,
-        STBI_rgb_alpha);
-    VkDeviceSize imageSize = m_width * m_height * 4;
-
     m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1;
 
-    ASSERT(pixels, "failed to load texture image!");
+    ASSERT(createInfo.pixels, "failed to load texture image!");
 
-    handles::Buffer stagingBuffer(m_context.device(), handles::Buffer::staging().size(imageSize));
+    handles::Buffer stagingBuffer(m_context.device(),
+        handles::Buffer::staging().size(createInfo.imageSize));
     stagingBuffer
         .allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
         .lock()
         ->map()
         .lock()
-        ->write(pixels, imageSize);
+        ->write(createInfo.pixels, createInfo.imageSize);
 
     m_image = std::make_unique<handles::Image>(m_context.device(),
         handles::ImageCreateInfo()
@@ -85,8 +80,6 @@ Texture::Texture(const GraphicsContext &context, ITexture::CreateInfo createInfo
 
     generateMipmaps();
 
-    stbi_image_free(pixels);
-
     m_imageView = std::make_unique<handles::ImageView>(m_context.device(),
         handles::ImageViewCreateInfo()
             .image(*m_image)
@@ -121,8 +114,6 @@ Texture::~Texture()
     m_image.reset();
 }
 
-void Texture::bind(::OperationContext &context) {}
-
 std::shared_ptr<ShaderResource::Descriptor> Texture::fetchDescriptor()
 {
     auto result = ShaderResource::fetchDescriptor();
@@ -133,7 +124,7 @@ std::shared_ptr<ShaderResource::Descriptor> Texture::fetchDescriptor()
     return result;
 }
 
-void Texture::freeDescriptor(const ShaderResource::Descriptor &descriptor) {}
+void Texture::freeDescriptor(const ShaderResource::Descriptor& descriptor) {}
 
 std::shared_ptr<IShaderInterfaceHandle> Texture::uniformHandle()
 {

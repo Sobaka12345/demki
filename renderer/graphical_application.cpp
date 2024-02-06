@@ -1,14 +1,68 @@
 #include "graphical_application.hpp"
 
 #include "vk/graphics_context.hpp"
+#include "ogl/graphics_context.hpp"
 
 #include <GLFW/glfw3.h>
+#include <utils.hpp>
 
-GraphicalApplication::GraphicalApplication(
-    std::string name, uint32_t windowWidth, uint32_t windowHeight)
+#include <tclap/CmdLine.h>
+
+GraphicalApplication::CreateInfo GraphicalApplication::CreateInfo::readFromCmd(int argc,
+    char** argv)
 {
-    m_window = std::make_unique<Window>(windowWidth, windowHeight, name);
-    m_graphicsContext = std::make_unique<vk::GraphicsContext>(*m_window);
+    CreateInfo result;
+
+    try
+    {
+        TCLAP::CmdLine cmd("Graphical application", ' ');
+        TCLAP::ValueArg<std::string> gapiArg(
+            "g", "gapi", "Graphics API to use", false, "opengl, vulkan", "string");
+
+        cmd.add(gapiArg);
+
+        cmd.parse(argc, argv);
+        if (gapiArg.isSet())
+        {
+            if (auto value = gapiArg.getValue(); value == "opengl")
+            {
+                result.gapi = GAPI::OpenGL;
+            }
+            else if (value == "vulkan")
+            {
+                result.gapi = GAPI::Vulkan;
+            }
+            else
+            {
+                throw TCLAP::ArgException("invalid argument exception",
+                    "undefined",
+                    "invalid argument value, possible values are: opengl, vulkan");
+            }
+        }
+    }
+    catch (TCLAP::ArgException& e)
+    {
+        std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
+    }
+
+    return result;
+}
+
+GraphicalApplication::GraphicalApplication(CreateInfo createInfo)
+{
+    m_window = std::make_unique<Window>(
+        createInfo.windowWidth, createInfo.windowHeight, createInfo.windowName);
+    m_resources = std::make_unique<Resources>(executablePath());
+
+
+    switch (createInfo.gapi)
+    {
+        case GAPI::OpenGL:
+            m_graphicsContext = std::make_unique<ogl::GraphicsContext>(*m_window, *m_resources);
+            break;
+        case GAPI::Vulkan:
+        default: m_graphicsContext = std::make_unique<vk::GraphicsContext>(*m_window, *m_resources);
+    }
 
     m_swapchain = m_graphicsContext->createSwapchain({ .framesInFlight = 2 });
 }
@@ -23,6 +77,11 @@ GraphicalApplication::~GraphicalApplication()
 int GraphicalApplication::exec()
 {
     return mainLoop();
+}
+
+IGraphicsContext& GraphicalApplication::context()
+{
+    return *m_graphicsContext;
 }
 
 const IGraphicsContext& GraphicalApplication::context() const

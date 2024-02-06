@@ -4,6 +4,7 @@
 #include "igraphics_context.hpp"
 
 #include "window.hpp"
+#include "resources.hpp"
 
 #include <memory>
 #include <ratio>
@@ -13,16 +14,27 @@ class Renderer;
 
 class GraphicalApplication
 {
+public:
+    struct CreateInfo
+    {
+        std::string windowName = "demki";
+        int windowWidth = 640;
+        int windowHeight = 480;
+        GAPI gapi = GAPI::Vulkan;
+
+        static CreateInfo readFromCmd(int argc, char** argv);
+    };
+
 protected:
     using TimeResolution = std::nano;
 
 public:
-    GraphicalApplication(
-        std::string name = "demki", uint32_t windowWidth = 640, uint32_t windowHeight = 480);
-    ~GraphicalApplication();
+    GraphicalApplication(CreateInfo createInfo);
+    virtual ~GraphicalApplication();
 
     int exec();
 
+    IGraphicsContext& context();
     const IGraphicsContext& context() const;
     uint32_t clientWidth() const;
     uint32_t clientHeight() const;
@@ -40,5 +52,6 @@ private:
 
 private:
     std::unique_ptr<Window> m_window;
+    std::unique_ptr<Resources> m_resources;
     std::unique_ptr<IGraphicsContext> m_graphicsContext;
 };

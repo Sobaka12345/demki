@@ -47,8 +47,8 @@ public:
 
 static uint64_t s_particleCount = 4096;
 
-ParticlesApplication::ParticlesApplication(uint32_t windowWidth, uint32_t windowHeight)
-    : GraphicalApplication("Particles", windowWidth, windowHeight)
+ParticlesApplication::ParticlesApplication(CreateInfo createInfo)
+    : GraphicalApplication(std::move(createInfo))
 {
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
     m_computer = context().createComputer({});
@@ -70,7 +70,7 @@ ParticlesApplication::ParticlesApplication(uint32_t windowWidth, uint32_t window
     }
 
     m_particles = std::make_unique<Particles>(context(), particles);
-    m_deltaTime = std::make_unique<DeltaTime>(context().resources());
+    m_deltaTime = std::make_unique<DeltaTime>(context());
 
     m_computePipeline = context().createComputePipeline(
         IComputePipeline::CreateInfo{}
@@ -80,11 +80,11 @@ ParticlesApplication::ParticlesApplication(uint32_t windowWidth, uint32_t window
             })
             .addShaderInterfaceContainer<DeltaTime>()
             .addShaderInterfaceContainer<Particles>()
-            .setComputeDimensions({ .x = 256 }));
+            .computeDimensions({ .x = 256 }));
 
     m_graphicsPipeline = context().createGraphicsPipeline(
         IGraphicsPipeline::CreateInfo{}
-            .primitiveTopology(IGraphicsPipeline::CreateInfo::POINT)
+            .primitiveTopology(IGraphicsPipeline::CreateInfo::POINTS)
             .addInput<Particle>()
             .addShader(IPipeline::ShaderInfo{
                 .type = IPipeline::ShaderType::VERTEX, .path = "./shaders/shader.vert.spv" })
@@ -107,6 +107,7 @@ void ParticlesApplication::perform()
     m_particles->bind(computeContext);
 
     auto renderContext = m_renderer->start(*m_swapchain);
+
     renderContext.setViewport({
         .x = 0,
         .y = 0,
@@ -123,11 +124,11 @@ void ParticlesApplication::perform()
         .height = m_swapchain->height(),
     });
 
+    renderContext.waitForOperation(computeContext);
+    computeContext.submit();
+
     m_graphicsPipeline->bind(renderContext);
     m_particles->draw(renderContext);
 
-    renderContext.waitForOperation(computeContext);
-
-    computeContext.submit();
     renderContext.submit();
 }

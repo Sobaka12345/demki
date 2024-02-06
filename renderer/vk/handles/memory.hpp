@@ -4,7 +4,11 @@
 
 #include "vk/utils.hpp"
 
+#include "buffer.hpp"
+#include "image.hpp"
+
 #include <memory>
+#include <variant>
 
 namespace vk { namespace handles {
 
@@ -34,6 +38,7 @@ public:
     {
         Mapped(const Memory& memory);
         virtual ~Mapped();
+        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const = 0;
         virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) = 0;
         virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) = 0;
         void writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
@@ -45,6 +50,7 @@ public:
     {
         DeviceLocalMapped(const Memory& memory, VkDeviceSize offset = 0);
         ~DeviceLocalMapped();
+        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const override;
         virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) override;
         virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) override;
 
@@ -57,6 +63,7 @@ public:
         HostVisibleMapped(
             const Memory& memory, VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
         ~HostVisibleMapped();
+        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const override;
         virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) override;
         virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) override;
 
@@ -64,9 +71,15 @@ public:
     };
 
 public:
-    Memory(const Device& device, MemoryAllocateInfo size) noexcept;
+    Memory(const Device& buffer, MemoryAllocateInfo allocInfo) noexcept;
     Memory(Memory&& other) noexcept;
     virtual ~Memory();
+
+    bool bindImage(const Image& image, uint32_t offset = 0);
+    bool bindBuffer(const Buffer& buffer, uint32_t offset = 0);
+
+    const Buffer& buffer() const;
+    const Image& image() const;
 
     std::weak_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
     void unmap();
@@ -77,16 +90,10 @@ public:
     VkMemoryType memoryType;
 
 protected:
-    Memory(const Device& device, MemoryAllocateInfo size, VkHandleType* handlePtr) noexcept;
+    Memory(const Device& device, MemoryAllocateInfo allocInfo, VkHandleType* handlePtr) noexcept;
 
 private:
-    //  nasty?
-    friend class Buffer;
-    friend class Image;
-    friend class DeviceLocalMapped;
-    friend class HostVisibleMapped;
-    const Buffer* bindedBuffer = nullptr;
-    const Image* bindedImage = nullptr;
+    std::variant<const Buffer*, const Image*> bindedResource;
 };
 
 }}    //  namespace vk::handles

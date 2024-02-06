@@ -1,9 +1,31 @@
 declare_project()
 
 add_library(${PROJECT_NAME} STATIC
+	ogl/computer.hpp
+	ogl/computer.cpp
+	ogl/compute_pipeline.hpp
+	ogl/compute_pipeline.cpp
+	ogl/graphics_pipeline.hpp
+	ogl/graphics_pipeline.cpp
+	ogl/graphics_context.hpp
+	ogl/graphics_context.cpp
+	ogl/ispecific_operation_target.hpp
+	ogl/model.hpp
+	ogl/model.cpp
 	ogl/operation_context.hpp
 	ogl/operation_context.cpp
+	ogl/pipeline.hpp
+	ogl/pipeline.cpp
+	ogl/renderer.hpp
+	ogl/renderer.cpp
 	ogl/shader_interface_handle.hpp
+	ogl/storage_buffer.hpp
+	ogl/storage_buffer.cpp
+	ogl/swapchain.hpp
+	ogl/swapchain.cpp
+	ogl/texture.hpp
+	ogl/texture.cpp
+	ogl/utils.hpp
 	vk/handles/allocator.hpp
 	vk/handles/buffer.hpp
     vk/handles/buffer.cpp
@@ -69,21 +91,17 @@ add_library(${PROJECT_NAME} STATIC
 	vk/computer.cpp
 	vk/compute_pipeline.hpp
 	vk/compute_pipeline.cpp
-	vk/compute_target.hpp
 	vk/descriptor_set_provider.hpp
 	vk/descriptor_set_provider.cpp
 	vk/graphics_pipeline.hpp
 	vk/graphics_pipeline.cpp
-	vk/ioperation_target.hpp
+	vk/ispecific_operation_target.hpp
 	vk/pipeline.hpp
 	vk/pipeline.cpp
-	vk/render_target.hpp
 	vk/renderer.hpp
 	vk/renderer.cpp
 	vk/operation_context.hpp
 	vk/operation_context.cpp
-    vk/resource_manager.hpp
-    vk/resource_manager.cpp
 	vk/storage_buffer.hpp
 	vk/storage_buffer.cpp
     vk/swapchain.hpp
@@ -101,6 +119,7 @@ add_library(${PROJECT_NAME} STATIC
     assert.hpp
 	camera.hpp
 	camera.cpp
+	create_info.cpp
     graphical_application.hpp
     graphical_application.cpp
 	icomputer.hpp
@@ -111,20 +130,20 @@ add_library(${PROJECT_NAME} STATIC
     irenderable.hpp
     irenderer.hpp
 	irender_target.hpp
+	ioperation_target.hpp
 	istorage_buffer.hpp
 	icompute_pipeline.hpp
 	icompute_target.hpp
-    iresource.hpp
-    iresource_manager.hpp
+	iresource.hpp
     iswapchain.hpp
     itexture.hpp
 	ishader_interface_handle.hpp
 	particles.hpp
 	particles.cpp
-    renderable.hpp
-    renderable.cpp
-    renderable_pack.hpp
-    renderable_pack.cpp
+	resources.hpp
+	resources.cpp
+	renderable.hpp
+	renderable.cpp
 	operation_context.hpp
 	storage_buffer_value.hpp
     types.hpp

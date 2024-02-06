@@ -4,7 +4,6 @@
 #include "ipipeline.hpp"
 
 #include "shader_interface.hpp"
-#include "storage_buffer_value.hpp"
 
 class IStorageBuffer;
 class IGraphicsContext;
@@ -33,7 +32,7 @@ public:
     };
 
 public:
-    Particles(const IGraphicsContext& context, std::span<const Particle> initialData);
+    Particles(IGraphicsContext& context, std::span<const Particle> initialData);
 
     void draw(OperationContext& context);
 
@@ -43,7 +42,7 @@ public:
 
     virtual void accept(ComputerInfoVisitor& visitor) const override;
     virtual bool prepare(OperationContext& context) override;
-    virtual void compute(OperationContext& context) override;
+    virtual void present(OperationContext& context) override;
 
 private:
     size_t m_currentIndex;

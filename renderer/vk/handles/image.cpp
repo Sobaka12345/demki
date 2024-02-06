@@ -1,6 +1,7 @@
 #include "image.hpp"
 
 #include "device.hpp"
+#include "memory.hpp"
 #include "swapchain.hpp"
 
 namespace vk { namespace handles {
@@ -48,13 +49,7 @@ Image::~Image()
 bool Image::bindMemory(uint32_t bindingOffset)
 {
     DASSERT(m_memory);
-    if (auto result = vkBindImageMemory(m_device, handle(), *m_memory, bindingOffset) == VK_SUCCESS;
-        result)
-    {
-        m_memory->bindedImage = this;
-        return true;
-    }
-    return false;
+    return m_memory->bindImage(*this, bindingOffset);
 }
 
 void Image::transitionLayout(

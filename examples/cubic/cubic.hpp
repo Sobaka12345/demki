@@ -14,7 +14,7 @@ class Map;
 class Cubic : public GraphicalApplication
 {
 public:
-    Cubic(uint32_t windowWidth = 640, uint32_t windowHeight = 480);
+    Cubic(CreateInfo createInfo);
     ~Cubic();
 
 private:

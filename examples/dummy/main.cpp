@@ -1,6 +1,6 @@
 #include "dummy.hpp"
 
-int main()
+int main(int argc, char** argv)
 {
-    return Dummy{}.exec();
+    return Dummy{ Dummy::CreateInfo::readFromCmd(argc, argv) }.exec();
 }

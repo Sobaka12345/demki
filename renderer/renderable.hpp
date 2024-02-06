@@ -30,7 +30,7 @@ public:
     Renderable(const Renderable& other) noexcept;
     Renderable(Renderable&& other) noexcept;
     virtual ~Renderable();
-    virtual void draw(const OperationContext& context) const override;
+    virtual void draw(OperationContext& context) const override;
 
     virtual void bind(OperationContext& context) override;
     virtual std::span<const InterfaceDescriptor> uniforms() const override;

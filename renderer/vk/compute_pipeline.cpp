@@ -20,13 +20,11 @@ void ComputePipeline::BindContext::bind(::OperationContext& context,
     Pipeline::BindContext::bind(context, container);
     auto& specContext = get(context);
 
-    static Pipeline::DescriptorOffsetVisitor descriptorOffsetVisitor;
-
     std::vector<uint32_t> offsets;
     for (auto& descriptor : container.dynamicUniforms())
     {
-        descriptor.handle.lock()->accept(descriptorOffsetVisitor);
-        offsets.push_back(*descriptorOffsetVisitor.result);
+        descriptor.handle.lock()->accept(s_handleVisitor);
+        offsets.push_back(s_handleVisitor->currentDescriptor()->dynamicOffset);
     }
 
     specContext.commandBuffer->bindDescriptorSet(specContext.computePipeline->layout(),

@@ -4,7 +4,7 @@
 
 #include <utils.hpp>
 #include <renderable.hpp>
-#include <iresource_manager.hpp>
+#include <igraphics_context.hpp>
 
 static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
     Vertex3DColoredTextured{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
@@ -20,12 +20,14 @@ static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
 static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
     2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
 
-Field::Field(IResourceManager& resources)
-    : m_resources(resources)
+Field::Field(IGraphicsContext& context)
+    : m_context(context)
 {
-    m_cube = resources.createModel(s_cubeVertices, s_cubeIndices);
-    m_cubeTexture =
-        resources.createTexture({ .path = executablePath() / "textures" / "roshi.jpg" });
+    m_cube = context.createModel(IModel::CreateInfo{
+        s_cubeVertices,
+        s_cubeIndices,
+    });
+    m_cubeTexture = context.createTexture(executablePath() / "textures" / "roshi.jpg");
 
     for (int32_t row = 0; row < m_blocks.size(); ++row)
     {
@@ -45,7 +47,7 @@ Field::Field(IResourceManager& resources)
 
 std::shared_ptr<Block> Field::createBlock() const
 {
-    Renderable obj(m_resources);
+    Renderable obj(m_context);
     obj.setModel(m_cube);
     obj.setTexture(m_cubeTexture);
 
@@ -54,7 +56,7 @@ std::shared_ptr<Block> Field::createBlock() const
 
 bool Field::tryMoveFigure(int32_t dx, int32_t dy)
 {
-    return m_figure->tryMove(dx, dy);
+    return m_figure->tryMove(-dx, dy);
 }
 
 bool Field::isPositionOccupied(Position pos) const

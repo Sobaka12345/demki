@@ -181,7 +181,7 @@ Swapchain::~Swapchain()
 
 void Swapchain::populateOperationContext(OperationContext& context)
 {
-    context.renderTarget = this;
+    context.specificTarget = this;
     context.commandBuffer = &currentCommandBuffer();
 
     if (!m_swapChainFramebuffers.size())

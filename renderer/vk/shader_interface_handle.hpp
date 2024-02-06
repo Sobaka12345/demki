@@ -23,6 +23,17 @@ private:
     ShaderInterfaceHandle(ShaderResource&);
 
 public:
+    struct TypeVisitor : public ShaderInterfaceHandleVisitor
+    {
+        void visit(ShaderInterfaceHandle& handle) override { this->handle = &handle; }
+
+        ShaderInterfaceHandle* operator->() { return handle; }
+
+    private:
+        ShaderInterfaceHandle* handle = nullptr;
+    };
+
+public:
     [[nodiscard]] static std::shared_ptr<ShaderInterfaceHandle> create(ShaderResource&);
     ~ShaderInterfaceHandle();
 
@@ -33,10 +44,12 @@ public:
         visitor.visit(*this);
     }
 
-    virtual void write(const void* src, uint32_t layoutSize) override;
+    virtual void write(const void* src, size_t size) override;
+    virtual const void* read(size_t size) const override;
 
     void assureDescriptorCount(uint32_t requiredCount);
     std::shared_ptr<ShaderResource::Descriptor> currentDescriptor();
+    const std::shared_ptr<ShaderResource::Descriptor> currentDescriptor() const;
 
 private:
     void nextDescriptor();

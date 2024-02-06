@@ -2,14 +2,10 @@
 
 #include <igraphics_context.hpp>
 
-Particles::Particles(const IGraphicsContext& context, std::span<const Particle> initialData)
+Particles::Particles(IGraphicsContext& context, std::span<const Particle> initialData)
     : m_currentIndex(0)
 {
-    IStorageBuffer::CreateInfo bufferInfo{
-        .elementLayoutSize = sizeof(Particle),
-        .size = initialData.size_bytes(),
-        .initialData = initialData.data(),
-    };
+    const auto bufferInfo = IStorageBuffer::CreateInfo{ initialData };
 
     m_particlesBuffers[0] = context.createStorageBuffer(bufferInfo);
     m_particlesBuffers[1] = context.createStorageBuffer(bufferInfo);
@@ -56,12 +52,13 @@ void Particles::accept(ComputerInfoVisitor& visitor) const
 
 bool Particles::prepare(OperationContext& context)
 {
+    context.setOperationTarget(*this);
     return m_particlesBuffers[m_currentIndex]->prepare(context);
 }
 
-void Particles::compute(OperationContext& context)
+void Particles::present(OperationContext& context)
 {
-    m_particlesBuffers[m_currentIndex]->compute(context);
+    m_particlesBuffers[m_currentIndex]->present(context);
 
     m_currentIndex = (m_currentIndex + 1) % m_particlesBuffers.size();
 }

@@ -15,14 +15,25 @@ ShaderInterfaceHandle::ShaderInterfaceHandle(ShaderResource& uniformAllocator)
 
 ShaderInterfaceHandle::~ShaderInterfaceHandle() {}
 
-void ShaderInterfaceHandle::write(const void* src, uint32_t layoutSize)
+void ShaderInterfaceHandle::write(const void* src, size_t size)
 {
     if (!currentDescriptor()->memory.expired())
     {
         nextDescriptor();
-        currentDescriptor()->memory.lock()->mapped->writeAndSync(src, layoutSize,
+        currentDescriptor()->memory.lock()->mapped->writeAndSync(src, size,
             currentDescriptor()->offset());
     }
+}
+
+const void* ShaderInterfaceHandle::read(size_t size) const
+{
+    if (!currentDescriptor()->memory.expired())
+    {
+        return currentDescriptor()->memory.lock()->mapped->read(size,
+            currentDescriptor()->offset());
+    }
+
+    return nullptr;
 }
 
 void ShaderInterfaceHandle::assureDescriptorCount(uint32_t requiredCount)
@@ -32,6 +43,11 @@ void ShaderInterfaceHandle::assureDescriptorCount(uint32_t requiredCount)
 }
 
 std::shared_ptr<ShaderResource::Descriptor> ShaderInterfaceHandle::currentDescriptor()
+{
+    return *m_currentDescriptor;
+}
+
+const std::shared_ptr<ShaderResource::Descriptor> ShaderInterfaceHandle::currentDescriptor() const
 {
     return *m_currentDescriptor;
 }

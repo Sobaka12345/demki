@@ -124,10 +124,10 @@ class Hero : public Renderable
 
 public:
     Hero(GraphicalApplication& app, Map& map)
-        : Renderable(app.context().resources())
+        : Renderable(app.context())
         , m_app(app)
         , m_map(map)
-        , m_camera(app.context().resources())
+        , m_camera(app.context())
         , m_up(0.0f, -1.0f, 0.0f)
         , m_currentPosition(s_startPosition)
     {
@@ -207,7 +207,7 @@ public:
         float kekX = diffX * sensitivity;
         float kekY = diffY * sensitivity;
 
-        m_yaw += kekX;
+        m_yaw -= kekX;
         m_pitch += kekY;
 
         if (m_pitch > 89.0f) m_pitch = 89.0f;
@@ -219,7 +219,7 @@ public:
         direction.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
         m_direction = glm::normalize(direction);
 
-        constexpr glm::vec3 up(0.f, -1.f, 0.f);
+        constexpr glm::vec3 up(0.f, 1.f, 0.f);
         glm::vec3 rightVector = glm::cross(up, m_direction);
         m_up = glm::normalize(glm::cross(m_direction, rightVector));
 
@@ -247,7 +247,7 @@ public:
                 if (idx.x != -1 && !m_map[idx.x][idx.y][idx.z].has_value())
                 {
                     auto& newBlock = m_map[idx.x][idx.y][idx.z];
-                    newBlock.emplace(m_app.context().resources());
+                    newBlock.emplace(m_app.context());
                     newBlock.value().setModel(block->model());
                     newBlock.value().setTexture(block->texture());
                     newBlock.value().setPosition(
@@ -265,7 +265,7 @@ public:
     }
 
 private:
-    const GraphicalApplication& m_app;
+    GraphicalApplication& m_app;
     Camera m_camera;
     Map& m_map;
 
@@ -277,8 +277,8 @@ private:
     glm::vec3 m_currentPosition;
 };
 
-Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
-    : GraphicalApplication("Cubic", windowWidth, windowHeight)
+Cubic::Cubic(CreateInfo createInfo)
+    : GraphicalApplication(std::move(createInfo))
     , m_movement(FALL)
     , xCursorPrev(0)
     , yCursorPrev(0)
@@ -315,9 +315,8 @@ Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
     m_map = std::make_unique<Map>();
     m_hero = std::make_unique<Hero>(*this, *m_map);
 
-    m_model = context().resources().createModel(executablePath() / "models" / "Erde mit Grass.obj");
-    m_texture = context().resources().createTexture(
-        { .path = executablePath() / "textures" / "Erde mit Grass.png" });
+    m_model = context().createModel(executablePath() / "models" / "Erde mit Grass.obj");
+    m_texture = context().createTexture({ executablePath() / "textures" / "Erde mit Grass.png" });
 
     for (size_t x = 0; x < m_map->size(); ++x)
         for (size_t y = 0; y < (*m_map)[x].size(); ++y)
@@ -330,7 +329,7 @@ Cubic::Cubic(uint32_t windowWidth, uint32_t windowHeight)
                 if (y == idx.y)
                 {
                     auto& block = (*m_map)[x][y][z];
-                    block.emplace(context().resources());
+                    block.emplace(context());
                     block->setModel(m_model);
                     block->setTexture(m_texture);
                     block->setPosition(glm::translate(glm::identity<glm::mat4>(),

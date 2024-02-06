@@ -1,6 +1,6 @@
 #include "cubic.hpp"
 
-int main()
+int main(int argc, char** argv)
 {
-    return Cubic{ 1920, 1080 }.exec();
+    return Cubic{ Cubic::CreateInfo::readFromCmd(argc, argv) }.exec();
 }

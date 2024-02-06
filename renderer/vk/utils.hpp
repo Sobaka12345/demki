@@ -37,22 +37,6 @@ inline VkSampleCountFlagBits toVkSampleFlagBits(Multisampling sampleCount)
     return VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
 }
 
-inline float toVkSampleShadingCoefficient(SampleShading sampleShading)
-{
-    switch (sampleShading)
-    {
-        case SampleShading::SS_0_PERCENT: return 0.0f;
-        case SampleShading::SS_20_PERCENT: return 0.2f;
-        case SampleShading::SS_40_PERCENT: return 0.4f;
-        case SampleShading::SS_60_PERCENT: return 0.6f;
-        case SampleShading::SS_80_PERCENT: return 0.8f;
-        case SampleShading::SS_100_PERCENT: return 1.0f;
-    }
-
-    ASSERT(false, "sample shading not declared");
-    return VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
-}
-
 template <typename T, VkStructureType sTypeArg>
 struct VkStruct : public T
 {
@@ -71,12 +55,11 @@ struct VkStruct : public T
 };
 
 template <typename T>
-concept IsVkStruct =
-    requires {
-        {
-            typename T::VkStructType{}
-            } -> std::convertible_to<T>;
-    };
+concept IsVkStruct = requires {
+    {
+        typename T::VkStructType{}
+    } -> std::convertible_to<T>;
+};
 
 }    //  namespace vk
 

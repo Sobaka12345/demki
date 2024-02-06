@@ -12,12 +12,23 @@ class ITexture : virtual public IResource
 public:
     struct CreateInfo
     {
-        std::filesystem::path path;
+        explicit CreateInfo(std::filesystem::path path);
+
+        CreateInfo(const CreateInfo& other) = delete;
+
+        CreateInfo(CreateInfo&& other);
+
+        ~CreateInfo();
+
+        void* pixels = nullptr;
+        size_t imageSize;
+        int textureChannels;
+        int width;
+        int height;
     };
 
 public:
     virtual ~ITexture() {}
 
-    virtual void bind(OperationContext& context) = 0;
     virtual std::shared_ptr<IShaderInterfaceHandle> uniformHandle() = 0;
 };

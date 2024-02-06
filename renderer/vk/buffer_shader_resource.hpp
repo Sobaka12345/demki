@@ -2,7 +2,6 @@
 
 #include "handles/buffer.hpp"
 
-#include "shader_interface_handle.hpp"
 #include "shader_resource.hpp"
 
 #include <map>

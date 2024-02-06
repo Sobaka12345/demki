@@ -32,7 +32,7 @@ private:
     const GraphicsContext& m_context;
 
     VkSampleCountFlagBits m_multisampling;
-    std::unordered_map<size_t, IRenderTarget&> m_targets;
+    glm::vec4 m_clearColor;
     std::map<const IRenderTarget*, handles::RenderPass> m_renderPasses;
 };
 

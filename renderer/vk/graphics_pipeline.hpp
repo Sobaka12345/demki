@@ -36,8 +36,11 @@ private:
         BindContext::DescriptorSetInfo descriptorSetInfo) const override;
 
 private:
+    VkCullModeFlags m_cullMode;
+    VkFrontFace m_frontFace;
+    VkPolygonMode m_polygonMode;
     VkPrimitiveTopology m_topology;
-    SampleShading m_sampleShading;
+    glm::float32_t m_sampleShading;
     std::vector<ShaderInfo> m_shaders;
     std::map<const handles::RenderPass*, handles::GraphicsPipeline> m_pipelines;
 };

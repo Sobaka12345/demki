@@ -27,6 +27,19 @@ public:
             *this);
     }
 
+    IOperationTarget& operationTarget()
+    {
+        IOperationTarget* result = nullptr;
+        std::visit([&](auto& context) { result = context.operationTarget(); }, *this);
+        ASSERT(result, "target is not bound");
+        return *result;
+    }
+
+    void setOperationTarget(IOperationTarget& target)
+    {
+        std::visit([&](auto& context) { context.mainTarget = &target; }, *this);
+    }
+
     IPipeline& pipeline()
     {
         IPipeline* result = nullptr;

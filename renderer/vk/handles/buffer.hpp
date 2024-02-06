@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include "handle.hpp"
+
 #include "simemory_accessor.hpp"
 
 #include "vk/utils.hpp"
@@ -24,17 +27,6 @@ class Buffer
     , public SIMemoryAccessor<Buffer>
 {
     HANDLE(Buffer);
-
-public:
-    struct Descriptor
-    {
-        const Buffer& buffer;
-        VkDeviceSize offset;
-        VkDeviceSize range;
-        size_t objectSize;
-
-        size_t objectCount() const { return range / objectSize; }
-    };
 
 public:
     static BufferCreateInfo staging();

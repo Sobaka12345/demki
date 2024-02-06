@@ -1,6 +1,6 @@
 #include "particles_application.hpp"
 
-int main()
+int main(int argc, char** argv)
 {
-    return ParticlesApplication{}.exec();
+    return ParticlesApplication{ ParticlesApplication::CreateInfo::readFromCmd(argc, argv) }.exec();
 }

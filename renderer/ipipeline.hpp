@@ -1,6 +1,5 @@
 #pragma once
 
-#include "types.hpp"
 #include "shader_interface.hpp"
 #include "vertex.hpp"
 
@@ -11,6 +10,7 @@
 #include <variant>
 #include <vector>
 #include <span>
+#include <type_utils.hpp>
 
 class OperationContext;
 class OperationContext;

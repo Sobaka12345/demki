@@ -5,55 +5,16 @@
 #include "handles/descriptor_set.hpp"
 #include "handles/descriptor_set_layout.hpp"
 #include "handles/pipeline_layout.hpp"
-#include "handles/render_pass.hpp"
-#include "handles/shader_module.hpp"
 
 #include "descriptor_set_provider.hpp"
 #include "graphics_context.hpp"
-#include "renderer.hpp"
-#include "computer.hpp"
-#include "ioperation_target.hpp"
+#include "ispecific_operation_target.hpp"
 
 #include <algorithm>
 
 namespace vk {
 
-struct ResourceIdVisitor : public ShaderInterfaceHandleVisitor
-{
-    void visit(ShaderInterfaceHandle& handle) override { result = &handle.currentDescriptor()->id; }
-
-    ShaderResource::Descriptor::Id* result = nullptr;
-};
-
-struct BufferInfoVisitor : public ShaderInterfaceHandleVisitor
-{
-    void visit(ShaderInterfaceHandle& handle) override
-    {
-        result = &handle.currentDescriptor()->descriptorBufferInfo;
-    }
-
-    DescriptorBufferInfo* result = nullptr;
-};
-
-struct ImageInfoVisitor : public ShaderInterfaceHandleVisitor
-{
-    void visit(ShaderInterfaceHandle& handle) override
-    {
-        result = &handle.currentDescriptor()->descriptorImageInfo;
-    }
-
-    DescriptorImageInfo* result = nullptr;
-};
-
-struct AssureDescriptorsVisitor : public ShaderInterfaceHandleVisitor
-{
-    AssureDescriptorsVisitor(uint32_t count)
-        : count(count){};
-
-    void visit(ShaderInterfaceHandle& handle) override { handle.assureDescriptorCount(count); }
-
-    uint32_t count = 1;
-};
+ShaderInterfaceHandle::TypeVisitor Pipeline::s_handleVisitor;
 
 Pipeline::BindContext::BindContext(DescriptorSetInfo descriptorSetInfo)
     : descriptorSetInfo(descriptorSetInfo)
@@ -62,12 +23,7 @@ Pipeline::BindContext::BindContext(DescriptorSetInfo descriptorSetInfo)
 void Pipeline::BindContext::bind(::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
-    static BufferInfoVisitor bufferInfoVisitor;
-    static ImageInfoVisitor imageInfoVisitor;
-    static ResourceIdVisitor resourceIdVisitor;
-
-    AssureDescriptorsVisitor assureDescriptorsVisitor(
-        get(context).operationTarget()->descriptorsRequired());
+    const uint32_t descriptorsRequired = get(context).specificTarget->descriptorsRequired();
 
     std::span descriptors = container.uniforms();
     std::vector<ShaderResource::Descriptor::Id> keyVector;
@@ -76,8 +32,11 @@ void Pipeline::BindContext::bind(::OperationContext& context,
     {
         DASSERT(!descriptor.handle.expired(),
             "descriptor handle is expired or was not initialized");
-        descriptor.handle.lock()->accept(resourceIdVisitor);
-        descriptor.handle.lock()->accept(assureDescriptorsVisitor);
+        descriptor.handle.lock()->accept(s_handleVisitor);
+
+        s_handleVisitor->assureDescriptorCount(descriptorsRequired);
+
+        const auto id = s_handleVisitor->currentDescriptor()->id;
 
         if (descriptor.binding.type == ShaderBlockType::UNIFORM_DYNAMIC)
         {
@@ -85,13 +44,13 @@ void Pipeline::BindContext::bind(::OperationContext& context,
                 //  dynamic descriptors use dynamic offsets and can
                 //  share same descriptor set given the same buffer ID
                 .descriptorId = 0,
-                .bufferId = resourceIdVisitor.result->bufferId,
-                .resourceId = resourceIdVisitor.result->resourceId,
+                .bufferId = id.bufferId,
+                .resourceId = id.resourceId,
             });
         }
         else
         {
-            keyVector.push_back(*resourceIdVisitor.result);
+            keyVector.push_back(id);
         }
     }
 
@@ -104,20 +63,19 @@ void Pipeline::BindContext::bind(::OperationContext& context,
         std::vector<handles::DescriptorSet::Write> writes;
         for (uint32_t i = 0; i < descriptors.size(); ++i)
         {
+            descriptors[i].handle.lock()->accept(s_handleVisitor);
             if (descriptors[i].binding.type == ShaderBlockType::SAMPLER)
             {
-                descriptors[i].handle.lock()->accept(imageInfoVisitor);
                 writes.push_back(handles::DescriptorSet::Write{
-                    .imageInfo = *imageInfoVisitor.result,
+                    .imageInfo = s_handleVisitor->currentDescriptor()->descriptorImageInfo,
                     .layoutBinding = descriptorSetInfo.descriptorSetLayout.binding(
                         descriptorSetInfo.bindingIndices[i]),
                 });
             }
             else
             {
-                descriptors[i].handle.lock()->accept(bufferInfoVisitor);
                 writes.push_back(handles::DescriptorSet::Write{
-                    .bufferInfo = *bufferInfoVisitor.result,
+                    .bufferInfo = s_handleVisitor->currentDescriptor()->descriptorBufferInfo,
                     .layoutBinding = descriptorSetInfo.descriptorSetLayout.binding(
                         descriptorSetInfo.bindingIndices[i]),
                 });
@@ -183,8 +141,6 @@ void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContaine
 
 Pipeline::~Pipeline()
 {
-    m_isInDestruction = true;
-
     m_bindContexts.clear();
     m_descriptorSetProviders.clear();
 }
@@ -202,19 +158,15 @@ FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
 
     auto& [setId, layout] = m_setLayouts.at(containerId);
 
-    BindContext* context = newBindContext({
-        .setId = setId,
-        .bindingIndices = m_bindingIndices.at(containerId),
-        .descriptorSetProvider = m_descriptorSetProviders.at(containerId),
-        .descriptorSetLayout = layout,
-    });
+    auto [contextIter, _] = m_bindContexts.emplace(containerTypeId, 
+        newBindContext({
+            .setId = setId,
+            .bindingIndices = m_bindingIndices.at(containerId),
+            .descriptorSetProvider = m_descriptorSetProviders.at(containerId),
+            .descriptorSetLayout = layout,
+    }));
 
-
-    auto [contextIter, _] = m_bindContexts.emplace(containerTypeId, context);
-
-    contextIter->second.registerDeleteCallback([&, containerTypeId](BindContext* context) {
-        if (!m_isInDestruction) m_bindContexts.erase(containerTypeId);
-    });
+    contextIter->second.setFragile(true);
 
     return contextIter->second;
 }

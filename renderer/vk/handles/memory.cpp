@@ -33,6 +33,12 @@ Memory::DeviceLocalMapped::DeviceLocalMapped(const Memory& memory, VkDeviceSize 
 
 Memory::DeviceLocalMapped::~DeviceLocalMapped() {}
 
+const void* Memory::DeviceLocalMapped::read(VkDeviceSize size, ptrdiff_t offset) const
+{
+    ASSERT(false, "not implemented");
+    return nullptr;
+}
+
 void Memory::DeviceLocalMapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
 {
     stagingBuffer->memory().lock()->mapped->writeAndSync(src, size, offset);
@@ -41,14 +47,12 @@ void Memory::DeviceLocalMapped::write(const void* src, VkDeviceSize size, ptrdif
 //  why ptrdiff?
 void Memory::DeviceLocalMapped::sync(VkDeviceSize size, ptrdiff_t offset)
 {
-    ASSERT(memory.bindedBuffer, "memory is not binded to any device local buffer");
-
-    VkBufferCopy copy = {
-        .srcOffset = static_cast<VkDeviceSize>(offset),
-        .dstOffset = this->offset + static_cast<VkDeviceSize>(offset),
-        .size = size,
-    };
-    stagingBuffer->copyTo(*memory.bindedBuffer, copy);
+    stagingBuffer->copyTo(memory.buffer(),
+        {
+            .srcOffset = static_cast<VkDeviceSize>(offset),
+            .dstOffset = this->offset + static_cast<VkDeviceSize>(offset),
+            .size = size,
+        });
 }
 
 Memory::HostVisibleMapped::HostVisibleMapped(
@@ -61,6 +65,13 @@ Memory::HostVisibleMapped::HostVisibleMapped(
 Memory::HostVisibleMapped::~HostVisibleMapped()
 {
     vkUnmapMemory(memory.device, memory);
+}
+
+const void* Memory::HostVisibleMapped::read(VkDeviceSize size, ptrdiff_t offset) const
+{
+    ASSERT(size + offset <= memory.size, "invalid memory range");
+
+    return (static_cast<char*>(data)) + offset;
 }
 
 void Memory::HostVisibleMapped::write(const void* src, VkDeviceSize size, ptrdiff_t offset)
@@ -92,6 +103,7 @@ void Memory::HostVisibleMapped::sync(VkDeviceSize size, ptrdiff_t offset)
 Memory::Memory(Memory&& other) noexcept
     : Handle(std::move(other))
     , device(other.device)
+    , bindedResource(std::move(other.bindedResource))
     , size(std::move(other.size))
     , mapped(std::move(other.mapped))
     , memoryType(std::move(other.memoryType))
@@ -114,6 +126,34 @@ Memory::~Memory()
 {
     mapped.reset();
     destroy(vkFreeMemory, device, handle(), nullptr);
+}
+
+bool Memory::bindImage(const Image& image, uint32_t offset)
+{
+    bindedResource = &image;
+    return vkBindImageMemory(device, image, *this, offset) == VK_SUCCESS;
+}
+
+bool Memory::bindBuffer(const Buffer& buffer, uint32_t offset)
+{
+    bindedResource = &buffer;
+    return vkBindBufferMemory(device, buffer, *this, offset) == VK_SUCCESS;
+}
+
+const Buffer& Memory::buffer() const
+{
+    DASSERT(std::holds_alternative<const Buffer*>(bindedResource) &&
+            std::get<const Buffer*>(bindedResource) != nullptr,
+        "invalid buffer value");
+    return *std::get<const Buffer*>(bindedResource);
+}
+
+const Image& Memory::image() const
+{
+    DASSERT(std::holds_alternative<const Image*>(bindedResource) &&
+            std::get<const Image*>(bindedResource) != nullptr,
+        "invalid image value");
+    return *std::get<const Image*>(bindedResource);
 }
 
 std::weak_ptr<Memory::Mapped> Memory::map(VkMemoryMapFlags flags, VkDeviceSize offset)
