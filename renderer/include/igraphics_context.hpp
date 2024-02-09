@@ -19,22 +19,6 @@ namespace renderer {
 class IGraphicsContext : public IShaderResourceProvider
 {
 public:
-    template <typename WindowT>
-    static std::unique_ptr<IGraphicsContext> create(WindowT& window, shell::IResources& resources)
-    {
-        if constexpr (std::derived_from<std::remove_reference_t<WindowT>, shell::IOpenGLWindow>)
-        {
-            return std::make_unique<ogl::GraphicsContext>(window, resources);
-        }
-        else if constexpr (
-            std::derived_from<std::remove_reference_t<WindowT>, shell::IVulkanWindow>)
-        {
-            return std::make_unique<vk::GraphicsContext>(window, resources);
-        }
-
-        return nullptr;
-    }
-
     static std::unique_ptr<IGraphicsContext> create(shell::IWindow& window,
         shell::IResources& resources);
 

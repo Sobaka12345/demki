@@ -31,7 +31,7 @@ public:
 
     uint32_t clientWidth() const;
     uint32_t clientHeight() const;
-    shell::IWindow& window();
+    virtual shell::IWindow& window() = 0;
 
     renderer::IGraphicsContext& context();
     const renderer::IGraphicsContext& context() const;
@@ -47,7 +47,6 @@ protected:
 protected:
     std::shared_ptr<renderer::ISwapchain> m_swapchain;
 
-    std::unique_ptr<shell::IWindow> m_window;
     std::unique_ptr<shell::IResources> m_resources;
     std::unique_ptr<renderer::IGraphicsContext> m_graphicsContext;
 };

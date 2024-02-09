@@ -10,39 +10,49 @@
 
 namespace engine {
 
-shell::IWindow* createInfoToWindow(AbstractApplication::CreateInfo createInfo)
-{
-    if (createInfo.gapi == GAPI::OpenGL)
-    {
-        return new shell::glfw::OpenGLWindow{ createInfo.windowWidth, createInfo.windowHeight,
-            createInfo.windowName };
-    }
-    else
-    {
-        return new shell::glfw::VulkanWindow{ createInfo.windowWidth, createInfo.windowHeight,
-            createInfo.windowName };
-    }
-
-    return nullptr;
-}
-
 GraphicalApplication::GraphicalApplication(int& argc, char** argv)
     : AbstractApplication()
 {
-    init(createInfoToWindow(CreateInfo::readFromCmd(argc, argv)));
+    m_resources = std::make_unique<shell::Resources>(renderer::executablePath());
+
+    const auto createInfo = CreateInfo::readFromCmd(argc, argv);
+    if (createInfo.gapi == GAPI::OpenGL)
+    {
+        m_mainWindow.reset(new shell::glfw::OpenGLWindow{
+            createInfo.windowWidth, createInfo.windowHeight, createInfo.windowName });
+    }
+    else
+    {
+        m_mainWindow.reset(new shell::glfw::VulkanWindow{
+            createInfo.windowWidth, createInfo.windowHeight, createInfo.windowName });
+    }
+
+    m_graphicsContext = renderer::IGraphicsContext::create(*m_mainWindow, *m_resources);
+
+    m_swapchain = m_graphicsContext->createSwapchain({ .framesInFlight = 2 });
 }
 
-GraphicalApplication::~GraphicalApplication() {}
+GraphicalApplication::~GraphicalApplication()
+{
+    m_swapchain.reset();
+    m_graphicsContext.reset();
+    m_mainWindow.reset();
+}
 
 int GraphicalApplication::exec()
 {
     return mainLoop();
 }
 
+shell::glfw::Window& GraphicalApplication::window()
+{
+    return *m_mainWindow;
+}
+
 int GraphicalApplication::mainLoop()
 {
     auto start = std::chrono::steady_clock::now();
-    while (!m_window->shouldClose())
+    while (!m_mainWindow->shouldClose())
     {
         auto end = std::chrono::steady_clock::now();
         update(

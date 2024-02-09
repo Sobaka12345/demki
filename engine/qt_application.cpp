@@ -3,34 +3,41 @@
 #include <qt/opengl_window.hpp>
 #include <qt/vulkan_window.hpp>
 
+#include <resources.hpp>
+
 #include <QTimer>
 
 namespace engine {
-
-shell::IWindow* createInfoToWindow(AbstractApplication::CreateInfo createInfo)
-{
-    if (createInfo.gapi == GAPI::OpenGL)
-    {
-        return new shell::qt::OpenGLWindow{ createInfo.windowWidth, createInfo.windowHeight,
-            createInfo.windowName };
-    }
-    else
-    {
-        return new shell::qt::VulkanWindow{ createInfo.windowWidth, createInfo.windowHeight,
-            createInfo.windowName };
-    }
-
-    return nullptr;
-}
 
 QtApplication::QtApplication(int& argc, char** argv)
     : QGuiApplication(argc, argv)
     , AbstractApplication()
 {
-    init(createInfoToWindow(CreateInfo::readFromCmd(argc, argv)));
+    m_resources = std::make_unique<shell::Resources>(renderer::executablePath());
+
+    const auto createInfo = CreateInfo::readFromCmd(argc, argv);
+    if (createInfo.gapi == GAPI::OpenGL)
+    {
+        m_mainWindow.reset(new shell::qt::OpenGLWindow{
+            createInfo.windowWidth, createInfo.windowHeight, createInfo.windowName });
+    }
+    else
+    {
+        m_mainWindow.reset(new shell::qt::VulkanWindow{
+            createInfo.windowWidth, createInfo.windowHeight, createInfo.windowName });
+    }
+
+    m_graphicsContext = renderer::IGraphicsContext::create(*m_mainWindow, *m_resources);
+
+    m_swapchain = m_graphicsContext->createSwapchain({ .framesInFlight = 2 });
 }
 
-QtApplication::~QtApplication() {}
+QtApplication::~QtApplication()
+{
+    m_swapchain.reset();
+    m_graphicsContext.reset();
+    m_mainWindow.reset();
+}
 
 int QtApplication::exec()
 {
@@ -49,6 +56,11 @@ int QtApplication::exec()
     timer->start();
 
     return QApplication::exec();
+}
+
+shell::qt::Window& QtApplication::window()
+{
+    return *m_mainWindow;
 }
 
 }    //  namespace engine

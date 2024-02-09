@@ -4,7 +4,8 @@
 
 #include <ivulkan_window.hpp>
 
-#include <QVulkanWindow>
+#include <QWindow>
+#include <QVulkanInstance>
 
 namespace shell::qt {
 class VulkanWindow

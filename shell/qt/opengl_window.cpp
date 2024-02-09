@@ -27,7 +27,10 @@ const QWindow* OpenGLWindow::qWindow() const
     return m_window;
 }
 
-void OpenGLWindow::init() {}
+void OpenGLWindow::init()
+{
+    m_window->makeCurrent();
+}
 
 void OpenGLWindow::destroy() {}
 

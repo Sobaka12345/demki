@@ -52,21 +52,8 @@ AbstractApplication::AbstractApplication()
     glfwInit();
 }
 
-void AbstractApplication::init(shell::IWindow* window)
-{
-    m_window.reset(window);
-    m_resources = std::make_unique<shell::Resources>(renderer::executablePath());
-    m_graphicsContext = renderer::IGraphicsContext::create(*m_window, *m_resources);
-
-    m_swapchain = m_graphicsContext->createSwapchain({ .framesInFlight = 2 });
-}
-
 AbstractApplication::~AbstractApplication()
 {
-    m_swapchain.reset();
-    m_graphicsContext.reset();
-    m_window.reset();
-
     glfwTerminate();
 }
 
@@ -88,11 +75,6 @@ uint32_t AbstractApplication::clientWidth() const
 uint32_t AbstractApplication::clientHeight() const
 {
     return m_swapchain->height();
-}
-
-shell::IWindow& AbstractApplication::window()
-{
-    return *m_window;
 }
 
 

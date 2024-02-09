@@ -189,7 +189,7 @@ private:
     bool m_isFragile;
     std::function<void(T*)> m_deleteCallback;
     ReferenceBlock* m_referenceBlock = nullptr;
-    std::list<FragileSharedPtr<T>*>::iterator m_listPos;
+    typename std::list<FragileSharedPtr<T>*>::iterator m_listPos;
 };
 
 template <typename KeyT, typename PtrT>

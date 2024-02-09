@@ -50,7 +50,7 @@ public:
 static uint64_t s_particleCount = 4096;
 
 ParticlesApplication::ParticlesApplication(int& argc, char** argv)
-    : GraphicalApplication(argc, argv)
+    : QtApplication(argc, argv)
 {
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
     m_computer = context().createComputer({});

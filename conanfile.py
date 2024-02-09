@@ -6,13 +6,13 @@ class DemkiConan(ConanFile):
 	settings = "os", "compiler", "build_type", "arch"
 	requires = ["qt/6.6.1",
 	            "glfw/3.3.8",
-				"tinyobjloader/2.0.0-rc10",
-				"vulkan-loader/1.3.268.0",
-				"glad/0.1.36",
-				"glm/0.9.9.8",
-				"stb/cci.20220909",
-				"pfr/2.1.0",
-				"tclap/1.2.5"]
+		    "tinyobjloader/2.0.0-rc10",
+		    "vulkan-loader/1.3.268.0",
+		    "glad/0.1.36",
+		    "glm/0.9.9.8",
+		    "stb/cci.20220909",
+		    "pfr/2.1.0",
+		    "tclap/1.2.5"]
 	generators = "CMakeDeps"
 
 	def requirements(self):
@@ -37,11 +37,12 @@ class DemkiConan(ConanFile):
 		self.options["qt"]["with_vulkan"] = True
 
 		if self.settings.os == "Windows":
-			self.options["qt"]["opengl"] = "dynamic"
+		        self.options["qt"]["opengl"] = "dynamic"
 		elif self.settings.os == "Linux":
-			self.options["qt"]["opengl"] = "desktop"
+		        self.options["qt"]["opengl"] = "desktop"
 
 		# Disabled
+		#self.options["qt"]["opengl"] = "no"
 		self.options["qt"]["qt3d"] = False
 		self.options["qt"]["qtdoc"] = False
 		self.options["qt"]["qtsvg"] = False

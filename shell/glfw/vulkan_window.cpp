@@ -13,7 +13,7 @@ VulkanWindow::~VulkanWindow() {}
 void VulkanWindow::init(VkInstance instance)
 {
     m_instance = instance;
-    glfwCreateWindowSurface(instance, glfwWindow(), nullptr, &m_surface);
+    glfwCreateWindowSurface(instance, glfwHandle(), nullptr, &m_surface);
 }
 
 void VulkanWindow::destroy()

@@ -16,7 +16,7 @@ OpenGLWindow::~OpenGLWindow() {}
 
 void OpenGLWindow::init()
 {
-    glfwMakeContextCurrent(glfwWindow());
+    glfwMakeContextCurrent(glfwHandle());
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);

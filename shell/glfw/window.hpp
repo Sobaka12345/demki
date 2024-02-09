@@ -35,8 +35,8 @@ public:
     virtual void registerOnKeyPressedCallback(
         std::function<void(int key, int scancode, int action, int mods)> callback) const override;
 
-    GLFWwindow* glfwWindow();
-    const GLFWwindow* glfwWindow() const;
+    GLFWwindow* glfwHandle();
+    const GLFWwindow* glfwHandle() const;
 
 private:
     bool m_iconified;

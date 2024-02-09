@@ -2,6 +2,8 @@
 
 #include "abstract_application.hpp"
 
+#include <qt/window.hpp>
+
 #include <QApplication>
 
 namespace engine {
@@ -15,9 +17,13 @@ public:
     ~QtApplication();
 
     virtual int exec() override;
+    virtual shell::qt::Window& window() override;
 
 private:
     using QGuiApplication::exec;
+
+private:
+    std::unique_ptr<shell::qt::Window> m_mainWindow;
 };
 
-}
+}    //  namespace engine

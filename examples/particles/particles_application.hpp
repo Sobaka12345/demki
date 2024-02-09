@@ -1,6 +1,7 @@
 #pragma once
 
 #include <graphical_application.hpp>
+#include <qt_application.hpp>
 #include <update_timer.hpp>
 
 namespace renderer {
@@ -15,7 +16,7 @@ class Renderable;
 
 class DeltaTime;
 
-class ParticlesApplication : public engine::GraphicalApplication
+class ParticlesApplication : public engine::QtApplication
 {
 public:
     ParticlesApplication(int& argc, char** argv);

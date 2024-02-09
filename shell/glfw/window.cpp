@@ -118,12 +118,12 @@ void Window::registerOnKeyPressedCallback(
     m_onKeyPressedCallback.push_back(callback);
 }
 
-GLFWwindow* Window::glfwWindow()
+GLFWwindow* Window::glfwHandle()
 {
     return m_window;
 }
 
-const GLFWwindow* Window::glfwWindow() const
+const GLFWwindow* Window::glfwHandle() const
 {
     return m_window;
 }
