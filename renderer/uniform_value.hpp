@@ -1,9 +1,12 @@
 #pragma once
 
+#include "../operation_context.hpp"
+
 #include <ishader_interface_handle.hpp>
-#include <operation_context.hpp>
 
 #include <memory>
+
+namespace renderer {
 
 template <typename LayoutType>
 class UniformValue
@@ -25,3 +28,5 @@ public:
 private:
     std::shared_ptr<IShaderInterfaceHandle> m_uniformHandle;
 };
+
+}    //  namespace renderer

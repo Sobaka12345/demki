@@ -4,7 +4,7 @@
 
 #include "vk/types.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(RenderPassCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -49,4 +49,4 @@ private:
     std::vector<AttachmentDescription> m_attachments;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

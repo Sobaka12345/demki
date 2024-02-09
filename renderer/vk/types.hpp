@@ -5,7 +5,7 @@
 
 #include "vk/utils.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(DeviceQueueCreateInfo, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -104,4 +104,4 @@ BEGIN_DECLARE_UNTYPED_VKSTRUCT(SubpassDependency)
     VKSTRUCT_PROPERTY(VkDependencyFlags, dependencyFlags)
 END_DECLARE_VKSTRUCT()
 
-}    //  namespace vk
+}    //  namespace renderer::vk

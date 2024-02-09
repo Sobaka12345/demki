@@ -8,7 +8,7 @@
 
 #include <glad/glad.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
 Renderer::Renderer(const GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
@@ -16,9 +16,9 @@ Renderer::Renderer(const GraphicsContext& context, CreateInfo createInfo)
     , m_multisampling(createInfo.multisampling)
 {}
 
-::OperationContext Renderer::start(::IRenderTarget& target)
+renderer::OperationContext Renderer::start(renderer::IRenderTarget& target)
 {
-    ::OperationContext result;
+    renderer::OperationContext result;
     result.emplace<ogl::OperationContext>(this);
 
     if (!target.prepare(result))
@@ -82,7 +82,7 @@ Renderer::Renderer(const GraphicsContext& context, CreateInfo createInfo)
     return result;
 }
 
-void Renderer::finish(::OperationContext& context)
+void Renderer::finish(renderer::OperationContext& context)
 {
     if (m_multisampling != Multisampling::MSA_1X)
     {
@@ -99,4 +99,4 @@ void Renderer::finish(::OperationContext& context)
     context.operationTarget().present(context);
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

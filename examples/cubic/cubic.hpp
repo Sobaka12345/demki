@@ -3,18 +3,20 @@
 #include <graphical_application.hpp>
 #include <update_timer.hpp>
 
+namespace renderer {
 class IModel;
 class ITexture;
 class Camera;
 class Renderable;
+}
 
 class Hero;
 class Map;
 
-class Cubic : public GraphicalApplication
+class Cubic : public engine::GraphicalApplication
 {
 public:
-    Cubic(CreateInfo createInfo);
+    Cubic(int& argc, char** argv);
     ~Cubic();
 
 private:
@@ -34,13 +36,13 @@ private:
     UpdateTimer<TimeResolution> m_turnTimer;
     UpdateTimer<TimeResolution> m_movementTimer;
 
-    std::shared_ptr<IRenderer> m_renderer;
-    std::shared_ptr<IPipeline> m_pipeline;
+    std::shared_ptr<renderer::IRenderer> m_renderer;
+    std::shared_ptr<renderer::IPipeline> m_pipeline;
 
     std::unique_ptr<Hero> m_hero;
     std::unique_ptr<Map> m_map;
 
-    std::shared_ptr<IModel> m_model;
-    std::shared_ptr<ITexture> m_texture;
-    std::shared_ptr<Renderable> m_renderable;
+    std::shared_ptr<renderer::IModel> m_model;
+    std::shared_ptr<renderer::ITexture> m_texture;
+    std::shared_ptr<renderer::Renderable> m_renderable;
 };

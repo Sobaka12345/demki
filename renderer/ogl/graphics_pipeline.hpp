@@ -2,7 +2,7 @@
 
 #include "pipeline.hpp"
 
-namespace ogl {
+namespace renderer::ogl {
 
 class GraphicsContext;
 
@@ -16,7 +16,7 @@ public:
 
     int primitiveTopology() const;
 
-    virtual void bind(::OperationContext& context) override;
+    virtual void bind(renderer::OperationContext& context) override;
 
 private:
     glm::float32_t m_sampleShading;
@@ -26,4 +26,4 @@ private:
     int m_polygonMode;
 };
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

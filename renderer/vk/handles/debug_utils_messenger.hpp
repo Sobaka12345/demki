@@ -4,7 +4,7 @@
 
 #include "vk/utils.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(DebugUtilsMessengerCreateInfoEXT,
     VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT)
@@ -46,4 +46,4 @@ private:
     const Instance& m_app;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

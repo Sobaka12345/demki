@@ -1,8 +1,10 @@
 #pragma once
 
-class IOperationTarget;
-
 #include <glad/glad.h>
+
+namespace renderer {
+
+class IOperationTarget;
 
 namespace ogl {
 
@@ -13,7 +15,7 @@ class ISpecificOperationTarget
 public:
     virtual ~ISpecificOperationTarget() {}
 
-    virtual IOperationTarget* toBase() = 0;
+    virtual renderer::IOperationTarget* toBase() = 0;
     virtual GLuint framebuffer() = 0;
 };
 
@@ -26,3 +28,4 @@ class SpecificOperationTarget
 };
 
 }    //  namespace ogl
+}    //  namespace renderer

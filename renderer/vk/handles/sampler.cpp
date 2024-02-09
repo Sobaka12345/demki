@@ -2,7 +2,7 @@
 
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 Sampler::Sampler(Sampler&& other) noexcept
 	: Handle(std::move(other))
@@ -26,4 +26,4 @@ Sampler::~Sampler()
 	destroy(vkDestroySampler, m_device, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

@@ -2,7 +2,7 @@
 
 #include <ranges>
 
-namespace vk {
+namespace renderer::vk {
 
 BufferShaderResource::BufferShaderResource(
     const handles::Device& device, uint32_t alignment, uint32_t chunkObjectCount)
@@ -123,4 +123,4 @@ VkMemoryPropertyFlags StorageBufferShaderResource::memoryProperties() const
     return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

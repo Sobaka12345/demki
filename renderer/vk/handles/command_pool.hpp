@@ -5,7 +5,7 @@
 
 #include <memory>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(CommandPoolCreateInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -36,4 +36,4 @@ private:
     const Device& m_device;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

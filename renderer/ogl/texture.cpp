@@ -2,7 +2,7 @@
 
 #include "shader_interface_handle.hpp"
 
-namespace ogl {
+namespace renderer::ogl {
 
 Texture::Texture(GraphicsContext& context, CreateInfo createInfo) noexcept
     : m_context(context)
@@ -29,4 +29,4 @@ std::shared_ptr<IShaderInterfaceHandle> Texture::uniformHandle()
     return m_handle;
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

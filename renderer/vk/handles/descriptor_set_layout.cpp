@@ -2,7 +2,7 @@
 
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) noexcept
     : Handle(std::move(other))
@@ -40,4 +40,4 @@ handles::DescriptorSetLayoutBinding DescriptorSetLayout::binding(int32_t binding
     return m_bindings.at(bindingId);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

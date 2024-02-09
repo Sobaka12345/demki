@@ -7,7 +7,7 @@
 
 #include "vk/utils.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(BufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -57,4 +57,4 @@ private:
     VkDeviceSize m_size;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

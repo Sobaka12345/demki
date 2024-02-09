@@ -5,12 +5,13 @@
 #include <camera.hpp>
 #include <imodel.hpp>
 #include <renderable.hpp>
-#include <utils.hpp>
 
 #include <GLFW/glfw3.h>
 
 #include <iostream>
 #include <iomanip>
+
+using namespace renderer;
 
 static constexpr float s_visibleRange = 50.f;
 static constexpr glm::vec3 s_startPosition = { 0.0f, 0.0f, 4.0f };
@@ -123,7 +124,7 @@ class Hero : public Renderable
     static constexpr float s_velocity = 0.1f;
 
 public:
-    Hero(GraphicalApplication& app, Map& map)
+    Hero(engine::GraphicalApplication& app, Map& map)
         : Renderable(app.context())
         , m_app(app)
         , m_map(map)
@@ -265,8 +266,8 @@ public:
     }
 
 private:
-    GraphicalApplication& m_app;
-    Camera m_camera;
+    engine::GraphicalApplication& m_app;
+    renderer::Camera m_camera;
     Map& m_map;
 
     float m_yaw = -90.0f;
@@ -277,8 +278,8 @@ private:
     glm::vec3 m_currentPosition;
 };
 
-Cubic::Cubic(CreateInfo createInfo)
-    : GraphicalApplication(std::move(createInfo))
+Cubic::Cubic(int& argc, char** argv)
+    : GraphicalApplication(argc, argv)
     , m_movement(FALL)
     , xCursorPrev(0)
     , yCursorPrev(0)

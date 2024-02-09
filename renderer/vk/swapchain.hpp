@@ -12,9 +12,11 @@
 
 #include <memory>
 
-class Window;
+namespace shell {
+class IWindow;
+}
 
-namespace vk {
+namespace renderer::vk {
 
 class GraphicsContext;
 
@@ -32,7 +34,7 @@ class Swapchain : public SpecificOperationTarget<ISwapchain>
     };
 
     static VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities,
-        const Window& window);
+        const shell::IWindow& window);
     static VkSurfaceFormatKHR chooseSurfaceFormat(
         const std::vector<VkSurfaceFormatKHR>& availableFormats);
     static VkPresentModeKHR choosePresentMode(
@@ -44,8 +46,8 @@ public:
     Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo createInfo);
     ~Swapchain();
 
-    virtual bool prepare(::OperationContext& context) override;
-    virtual void present(::OperationContext& context) override;
+    virtual bool prepare(renderer::OperationContext& context) override;
+    virtual void present(renderer::OperationContext& context) override;
 
     virtual void accept(RenderInfoVisitor& visitor) const override;
 
@@ -109,4 +111,4 @@ private:
     mutable handles::HandleVector<handles::Framebuffer> m_swapChainFramebuffers;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

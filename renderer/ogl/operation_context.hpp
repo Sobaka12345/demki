@@ -3,6 +3,8 @@
 #include <ipipeline.hpp>
 #include <types.hpp>
 
+namespace renderer {
+
 struct OperationContext;
 struct IOperationTarget;
 
@@ -25,7 +27,7 @@ struct OperationContext
     OperationContext(const OperationContext& other) = delete;
     ~OperationContext();
 
-    void submit(::OperationContext& context);
+    void submit(renderer::OperationContext& context);
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;
     void setViewport(Viewport viewport) const;
@@ -44,3 +46,5 @@ struct OperationContext
 };
 
 }    //  namespace ogl
+
+}    //  namespace renderer

@@ -2,5 +2,5 @@
 
 int main(int argc, char** argv)
 {
-    return Tetris{ Tetris::CreateInfo::readFromCmd(argc, argv) }.exec();
+    return Tetris{ argc, argv }.exec();
 }

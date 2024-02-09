@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-namespace vk {
+namespace renderer::vk {
 
 namespace handles {
 class Memory;
@@ -23,8 +23,8 @@ public:
 public:
     Model(GraphicsContext& context, IModel::CreateInfo createInfo);
 
-    virtual void draw(::OperationContext& context) override;
-    virtual void bind(::OperationContext& context) override;
+    virtual void draw(renderer::OperationContext& context) override;
+    virtual void bind(renderer::OperationContext& context) override;
 
 private:
     GraphicsContext& m_context;
@@ -37,4 +37,4 @@ private:
     std::weak_ptr<handles::Memory> m_memory;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

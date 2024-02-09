@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace vk {
+namespace renderer::vk {
 
 class GraphicsContext;
 
@@ -45,4 +45,4 @@ private:
     std::unique_ptr<handles::Sampler> m_sampler;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

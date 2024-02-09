@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+namespace renderer {
 class IOperationTarget;
 
 namespace vk {
@@ -29,3 +30,4 @@ class SpecificOperationTarget
 };
 
 }    //  namespace vk
+}    //  namespace renderer

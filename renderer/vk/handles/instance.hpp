@@ -4,7 +4,7 @@
 
 #include "vk/utils.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(ApplicationInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -39,4 +39,4 @@ protected:
     Instance() noexcept;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

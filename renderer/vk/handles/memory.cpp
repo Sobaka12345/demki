@@ -5,7 +5,7 @@
 
 #include <cstring>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 Memory::Mapped::Mapped(const Memory& memory)
     : memory(memory)
@@ -180,4 +180,4 @@ void Memory::unmap()
 }
 
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

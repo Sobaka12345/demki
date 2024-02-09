@@ -8,7 +8,7 @@
 
 #include <span>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(CommandBufferAllocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
     VKSTRUCT_PROPERTY(VkStructureType, sType)
@@ -118,4 +118,4 @@ private:
     mutable Resources m_resourcesInUse;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

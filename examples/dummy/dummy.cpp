@@ -5,7 +5,8 @@
 #include <camera.hpp>
 #include <imodel.hpp>
 #include <renderable.hpp>
-#include <utils.hpp>
+
+using namespace renderer;
 
 static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
     Vertex3DColoredTextured{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
@@ -21,8 +22,8 @@ static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
 static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
     2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
 
-Dummy::Dummy(CreateInfo createInfo)
-    : GraphicalApplication(std::move(createInfo))
+Dummy::Dummy(int& argc, char** argv)
+    : QtApplication(argc, argv)
 {
     m_timer.setIntervalMS(50);
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });

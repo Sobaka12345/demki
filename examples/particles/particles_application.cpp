@@ -9,6 +9,8 @@
 
 #include <random>
 
+using namespace renderer;
+
 struct DeltaTime : public SIShaderInterfaceContainer<DeltaTime>
 {
 public:
@@ -47,8 +49,8 @@ public:
 
 static uint64_t s_particleCount = 4096;
 
-ParticlesApplication::ParticlesApplication(CreateInfo createInfo)
-    : GraphicalApplication(std::move(createInfo))
+ParticlesApplication::ParticlesApplication(int& argc, char** argv)
+    : GraphicalApplication(argc, argv)
 {
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
     m_computer = context().createComputer({});

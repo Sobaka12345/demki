@@ -6,7 +6,7 @@
 
 #include <map>
 
-namespace vk {
+namespace renderer::vk {
 
 class GraphicsContext;
 
@@ -18,8 +18,8 @@ class Renderer : public IRenderer
 {
 public:
     Renderer(const GraphicsContext& context, IRenderer::CreateInfo createInfo);
-    virtual ::OperationContext start(IRenderTarget& target) override;
-    virtual void finish(::OperationContext& context) override;
+    virtual renderer::OperationContext start(IRenderTarget& target) override;
+    virtual void finish(renderer::OperationContext& context) override;
 
     const handles::Device& device() const;
     VkSampleCountFlagBits sampleCount() const;
@@ -36,4 +36,4 @@ private:
     std::map<const IRenderTarget*, handles::RenderPass> m_renderPasses;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

@@ -1,14 +1,14 @@
-#include "shader_interface.hpp"
+#include <ishader_interface.hpp>
 
 #include <operation_context.hpp>
 
 #include <ipipeline.hpp>
 
+namespace renderer {
+
 uint32_t IShaderInterfaceContainer::s_id = 0;
 
-IShaderInterfaceContainer::~IShaderInterfaceContainer()
-{
-}
+IShaderInterfaceContainer::~IShaderInterfaceContainer() {}
 
 void IShaderInterfaceContainer::bind(OperationContext& context)
 {
@@ -16,8 +16,7 @@ void IShaderInterfaceContainer::bind(OperationContext& context)
 
     if (auto iter = m_contexts.find(pipeline); iter == m_contexts.end())
     {
-        auto [newEl, _] = 
-            m_contexts.emplace(pipeline, pipeline->bindContext(*this));
+        auto [newEl, _] = m_contexts.emplace(pipeline, pipeline->bindContext(*this));
         newEl->second->bind(context, *this);
     }
     else
@@ -30,3 +29,5 @@ uint32_t IShaderInterfaceContainer::createId()
 {
     return s_id++;
 }
+
+}    //  namespace renderer

@@ -1,17 +1,20 @@
 #pragma once
 
+#include <qt_application.hpp>
 #include <graphical_application.hpp>
 #include <update_timer.hpp>
 
+namespace renderer {
 class IModel;
 class ITexture;
 class Camera;
 class Renderable;
+}
 
-class Dummy : public GraphicalApplication
+class Dummy : public engine::QtApplication
 {
 public:
-    Dummy(CreateInfo createInfo);
+    Dummy(int& argc, char** argv);
     ~Dummy();
 
 private:
@@ -21,12 +24,12 @@ private:
 private:
     UpdateTimer<TimeResolution> m_timer;
 
-    std::shared_ptr<IRenderer> m_renderer;
-    std::shared_ptr<IPipeline> m_pipeline;
+    std::shared_ptr<renderer::IRenderer> m_renderer;
+    std::shared_ptr<renderer::IPipeline> m_pipeline;
 
-    std::shared_ptr<Camera> m_camera;
+    std::shared_ptr<renderer::Camera> m_camera;
 
-    std::shared_ptr<IModel> m_model;
-    std::shared_ptr<ITexture> m_texture;
-    std::shared_ptr<Renderable> m_renderable;
+    std::shared_ptr<renderer::IModel> m_model;
+    std::shared_ptr<renderer::ITexture> m_texture;
+    std::shared_ptr<renderer::Renderable> m_renderable;
 };

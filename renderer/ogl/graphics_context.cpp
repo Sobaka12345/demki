@@ -10,11 +10,7 @@
 #include "storage_buffer.hpp"
 #include "texture.hpp"
 
-#include <window.hpp>
-
-#include <GLFW/glfw3.h>
-
-namespace ogl {
+namespace renderer::ogl {
 
 GLenum memoryUsage(ShaderBlockType sbt)
 {
@@ -43,22 +39,19 @@ void GLAPIENTRY MessageCallback(GLenum source,
     }
 }
 
-GraphicsContext::GraphicsContext(Window& window, Resources& resources)
-    : IGraphicsContext(window, GAPI::OpenGL)
-    , m_window(window)
+GraphicsContext::GraphicsContext(shell::IOpenGLWindow& window, shell::IResources& resources)
+    : m_window(window)
 {
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-
-    ASSERT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "failed to initialize opengl");
+    m_window.init();
 
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(MessageCallback, 0);
 }
 
-GraphicsContext::~GraphicsContext() {}
+GraphicsContext::~GraphicsContext()
+{
+    m_window.destroy();
+}
 
 std::shared_ptr<IShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlockType sbt,
     uint32_t layoutSize)
@@ -112,7 +105,12 @@ Multisampling GraphicsContext::maxSampleCount() const
 
 void GraphicsContext::waitIdle() {}
 
-const Window& GraphicsContext::window() const
+const shell::IWindow& GraphicsContext::window() const
+{
+    return m_window;
+}
+
+shell::IWindow& GraphicsContext::window()
 {
     return m_window;
 }
@@ -138,4 +136,4 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo cr
 }
 
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

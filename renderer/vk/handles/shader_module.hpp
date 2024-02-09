@@ -6,7 +6,7 @@
 
 #include <filesystem>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(ShaderModuleCreateInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -39,4 +39,4 @@ private:
     const Device& m_device;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

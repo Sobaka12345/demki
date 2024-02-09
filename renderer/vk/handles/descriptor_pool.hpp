@@ -8,7 +8,7 @@
 #include <span>
 #include <memory>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorPoolSize)
     VKSTRUCT_PROPERTY(VkDescriptorType, type)
@@ -56,4 +56,4 @@ private:
     uint32_t m_currentSetCount;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

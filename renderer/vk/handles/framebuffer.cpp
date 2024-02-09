@@ -1,6 +1,6 @@
 #include "framebuffer.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 Framebuffer::Framebuffer(Framebuffer&& other) noexcept
     : Handle(std::move(other))
@@ -25,4 +25,4 @@ Framebuffer::~Framebuffer()
     destroy(vkDestroyFramebuffer, m_device, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

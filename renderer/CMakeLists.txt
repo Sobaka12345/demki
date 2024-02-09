@@ -115,47 +115,39 @@ add_library(${PROJECT_NAME} STATIC
 	vk/shader_interface_handle.cpp
 	vk/buffer_shader_resource.hpp
 	vk/buffer_shader_resource.cpp
-    vk/utils.hpp
-    assert.hpp
-	camera.hpp
+	vk/utils.hpp
+	include/icomputer.hpp
+	include/icompute_pipeline.hpp
+	include/icompute_target.hpp
+	include/igraphics_context.hpp
+	include/igraphics_pipeline.hpp
+	include/imodel.hpp
+	include/ipipeline.hpp
+	include/irenderable.hpp
+	include/irenderer.hpp
+	include/irender_target.hpp
+	include/ioperation_target.hpp
+	include/istorage_buffer.hpp
+	include/ishader_interface_handle.hpp
+	include/iswapchain.hpp
+	include/itexture.hpp
+	include/types.hpp
+	include/ishader_interface.hpp
+	include/camera.hpp
+	include/particles.hpp
+	include/renderable.hpp
 	camera.cpp
 	create_info.cpp
-    graphical_application.hpp
-    graphical_application.cpp
-	icomputer.hpp
-	igraphics_context.hpp
-	igraphics_pipeline.hpp
-	imodel.hpp
-    ipipeline.hpp
-    irenderable.hpp
-    irenderer.hpp
-	irender_target.hpp
-	ioperation_target.hpp
-	istorage_buffer.hpp
-	icompute_pipeline.hpp
-	icompute_target.hpp
-	iresource.hpp
-    iswapchain.hpp
-    itexture.hpp
-	ishader_interface_handle.hpp
-	particles.hpp
+	graphics_context.cpp
 	particles.cpp
-	resources.hpp
-	resources.cpp
-	renderable.hpp
 	renderable.cpp
 	operation_context.hpp
 	storage_buffer_value.hpp
-    types.hpp
-    update_timer.hpp
-    utils.hpp
-	shader_interface.hpp
+	utils.hpp
 	shader_interface.cpp
-	type_utils.hpp
     uniform_value.hpp
-    vertex.hpp
-    window.hpp
-    window.cpp
+	vertex.hpp
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC .)
+target_include_directories(${PROJECT_NAME} PUBLIC ./include/)
+target_include_directories(${PROJECT_NAME} PRIVATE .)

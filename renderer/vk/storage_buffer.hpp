@@ -5,7 +5,7 @@
 
 #include <istorage_buffer.hpp>
 
-namespace vk {
+namespace renderer::vk {
 
 namespace handles {
 class Semaphore;
@@ -18,11 +18,11 @@ public:
     StorageBuffer(GraphicsContext& context, IStorageBuffer::CreateInfo createInfo);
 
     virtual void accept(ComputerInfoVisitor& visitor) const override;
-    virtual bool prepare(::OperationContext& context) override;
-    virtual void present(::OperationContext& context) override;
+    virtual bool prepare(renderer::OperationContext& context) override;
+    virtual void present(renderer::OperationContext& context) override;
 
-    virtual void bind(::OperationContext& context) const override;
-    virtual void draw(::OperationContext& context) const override;
+    virtual void bind(renderer::OperationContext& context) const override;
+    virtual void draw(renderer::OperationContext& context) const override;
     virtual std::weak_ptr<IShaderInterfaceHandle> handle() const override;
 
     virtual void waitFor(OperationContext& context) override;
@@ -43,4 +43,4 @@ private:
     std::shared_ptr<ShaderInterfaceHandle> m_handle;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

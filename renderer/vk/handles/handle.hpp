@@ -1,7 +1,8 @@
 #pragma once
 
-#include "assert.hpp"
-#include "vk/utils.hpp"
+#include "../utils.hpp"
+
+#include <assert.hpp>
 
 #include <span>
 #include <vector>
@@ -9,7 +10,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 #define HANDLE(type)           \
     friend class Handle<type>; \
@@ -390,4 +391,4 @@ private:
     std::vector<typename T::VkHandleType> m_vkHandles;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

@@ -3,7 +3,7 @@
 
 #include <operation_context.hpp>
 
-namespace ogl {
+namespace renderer::ogl {
 
 Model::Model(GraphicsContext& context, CreateInfo createInfo) noexcept
     : m_context(context)
@@ -42,15 +42,15 @@ Model::~Model()
     glDeleteVertexArrays(1, &m_vao);
 }
 
-void Model::bind(::OperationContext& context)
+void Model::bind(renderer::OperationContext& context)
 {
     glBindVertexArray(m_vao);
 }
 
-void Model::draw(::OperationContext& context)
+void Model::draw(renderer::OperationContext& context)
 {
     glDrawElements(get(context).graphicsPipeline->primitiveTopology(), m_indexCount,
         GL_UNSIGNED_INT, 0);
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

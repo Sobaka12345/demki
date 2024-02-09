@@ -13,7 +13,7 @@ namespace {
 constexpr auto s_imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
 }
 
-namespace vk {
+namespace renderer::vk {
 
 Texture::Texture(const GraphicsContext& context, ITexture::CreateInfo createInfo)
     : m_context(context)
@@ -223,4 +223,4 @@ void Texture::generateMipmaps()
         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, std::span{ &barrier, 1 });
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

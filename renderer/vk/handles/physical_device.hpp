@@ -2,7 +2,7 @@
 
 #include "handle.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 class PhysicalDevice : public Handle<VkPhysicalDevice>
 {

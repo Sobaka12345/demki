@@ -9,7 +9,7 @@
 
 #include "compute_pipeline.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
@@ -35,7 +35,7 @@ void StorageBuffer::accept(ComputerInfoVisitor& visitor) const
     visitor.populateComputerInfo(*this);
 }
 
-bool StorageBuffer::prepare(::OperationContext& context)
+bool StorageBuffer::prepare(renderer::OperationContext& context)
 {
     vkWaitForFences(
         m_context.device(), 1, m_computeInFlightFence->handlePtr(), VK_TRUE, UINT64_MAX);
@@ -50,7 +50,7 @@ bool StorageBuffer::prepare(::OperationContext& context)
     return m_commandBuffer->begin() == VK_SUCCESS;
 }
 
-void StorageBuffer::present(::OperationContext& context)
+void StorageBuffer::present(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
     auto [x, y, z] = specContext.computePipeline->computeDimensions();
@@ -84,14 +84,14 @@ void StorageBuffer::present(::OperationContext& context)
         "failed to submit compute command buffer!");
 }
 
-void StorageBuffer::bind(::OperationContext& context) const
+void StorageBuffer::bind(renderer::OperationContext& context) const
 {
     VkBuffer buf = m_handle->currentDescriptor()->descriptorBufferInfo.buffer();
     VkDeviceSize offset = m_handle->currentDescriptor()->descriptorBufferInfo.offset();
     get(context).commandBuffer->bindVertexBuffer(0, 1, &buf, &offset);
 }
 
-void StorageBuffer::draw(::OperationContext& context) const
+void StorageBuffer::draw(renderer::OperationContext& context) const
 {
     get(context).commandBuffer->draw(m_elementCount, 1, 0, 0);
 }
@@ -119,4 +119,4 @@ uint32_t StorageBuffer::descriptorsRequired() const
     return 1;
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

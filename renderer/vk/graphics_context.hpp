@@ -10,10 +10,12 @@
 
 #include <memory>
 
-class Window;
-class Resources;
+namespace shell {
+class IVulkanWindow;
+class IResources;
+}
 
-namespace vk {
+namespace renderer { namespace vk {
 
 namespace handles {
 class RenderPass;
@@ -32,7 +34,7 @@ public:
     const static std::vector<const char*> s_validationLayers;
 
 public:
-    GraphicsContext(Window& window, Resources& resources);
+    GraphicsContext(shell::IVulkanWindow& window, shell::IResources& resources);
     GraphicsContext(GraphicsContext&& other) = delete;
     GraphicsContext(const GraphicsContext& other) = delete;
     virtual ~GraphicsContext();
@@ -66,9 +68,9 @@ public:
 
     virtual Multisampling maxSampleCount() const override;
 
-    const handles::Surface& surface() const;
+    VkSurfaceKHR surface() const;
     const handles::Device& device() const;
-    const Window& window() const;
+    const shell::IWindow& window() const;
 
     VkFormat findDepthFormat() const;
 
@@ -80,8 +82,8 @@ private:
     uint32_t dynamicAlignment(uint32_t layoutSize) const;
 
 private:
-    Window& m_window;
-    Resources& m_resources;
+    shell::IVulkanWindow& m_window;
+    shell::IResources& m_resources;
 
     handles::HandleVector<handles::Buffer> m_buffers;
 
@@ -95,4 +97,4 @@ private:
     std::unique_ptr<handles::DebugUtilsMessenger> m_debugMessenger;
 };
 
-}    //  namespace vk
+}}    //  namespace renderer::vk

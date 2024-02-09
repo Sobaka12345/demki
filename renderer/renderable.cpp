@@ -1,8 +1,9 @@
 #include "renderable.hpp"
 
-
 #include <imodel.hpp>
 #include <itexture.hpp>
+
+namespace renderer {
 
 Renderable::Renderable(IShaderResourceProvider& provider)
     : m_shaderResourceProvider(provider)
@@ -87,3 +88,5 @@ void Renderable::setTexture(std::weak_ptr<ITexture> texture)
 
     m_texture = texture;
 }
+
+}    //  namespace renderer

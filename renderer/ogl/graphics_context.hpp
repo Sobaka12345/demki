@@ -1,18 +1,17 @@
 #pragma once
 
 #include <igraphics_context.hpp>
-#include <resources.hpp>
+#include <iresources.hpp>
+#include <iopengl_window.hpp>
 
-class Window;
-
-namespace ogl {
+namespace renderer::ogl {
 
 class ResourceManager;
 
 class GraphicsContext : public IGraphicsContext
 {
 public:
-    GraphicsContext(Window& window, Resources& resources);
+    GraphicsContext(shell::IOpenGLWindow& window, shell::IResources& resources);
     GraphicsContext(GraphicsContext&& other) = delete;
     GraphicsContext(const GraphicsContext& other) = delete;
     virtual ~GraphicsContext();
@@ -35,7 +34,8 @@ public:
 
     virtual void waitIdle() override;
 
-    const Window& window() const;
+    const shell::IWindow& window() const;
+    shell::IWindow& window();
 
     virtual std::shared_ptr<IModel> createModel(std::filesystem::path path) override;
     virtual std::shared_ptr<IModel> createModel(IModel::CreateInfo createInfo) override;
@@ -44,7 +44,7 @@ public:
 
 
 private:
-    Window& m_window;
+    shell::IOpenGLWindow& m_window;
 };
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

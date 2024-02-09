@@ -7,9 +7,9 @@
 
 #include <operation_context.hpp>
 
-namespace vk {
+namespace renderer::vk {
 
-struct RenderInfoVisitor : public ::RenderInfoVisitor
+struct RenderInfoVisitor : public renderer::RenderInfoVisitor
 {
     virtual void populateRenderInfo(const vk::Swapchain& swapchain) override
     {
@@ -26,9 +26,9 @@ Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createI
     , m_multisampling(toVkSampleFlagBits(createInfo.multisampling))
 {}
 
-::OperationContext Renderer::start(IRenderTarget& target)
+renderer::OperationContext Renderer::start(IRenderTarget& target)
 {
-    ::OperationContext result;
+    renderer::OperationContext result;
     result.emplace<vk::OperationContext>(this);
 
     auto& kek = get(result);
@@ -59,7 +59,7 @@ Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createI
     return result;
 }
 
-void Renderer::finish(::OperationContext& context)
+void Renderer::finish(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
     vkCmdEndRenderPass(*specContext.commandBuffer);
@@ -185,4 +185,4 @@ handles::RenderPass& Renderer::renderPass(IRenderTarget& target)
     return m_renderPasses.at(&target);
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

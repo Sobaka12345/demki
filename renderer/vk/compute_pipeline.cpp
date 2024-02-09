@@ -12,9 +12,9 @@
 #include "handles/render_pass.hpp"
 #include "handles/shader_module.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
-void ComputePipeline::BindContext::bind(::OperationContext& context,
+void ComputePipeline::BindContext::bind(renderer::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
     Pipeline::BindContext::bind(context, container);
@@ -49,7 +49,7 @@ IComputePipeline::ComputeDimensions ComputePipeline::computeDimensions() const
     return m_computeDimensions;
 }
 
-void ComputePipeline::bind(::OperationContext& context)
+void ComputePipeline::bind(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
     specContext.commandBuffer->bindPipeline(pipeline(specContext), VK_PIPELINE_BIND_POINT_COMPUTE);
@@ -88,4 +88,4 @@ ComputePipeline::BindContext* ComputePipeline::newBindContext(
     return new BindContext(std::move(descriptorSetInfo));
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

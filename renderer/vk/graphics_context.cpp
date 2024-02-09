@@ -12,8 +12,9 @@
 #include "storage_buffer.hpp"
 
 #include <operation_context.hpp>
-#include <window.hpp>
-#include <resources.hpp>
+
+#include <ivulkan_window.hpp>
+#include <iresources.hpp>
 
 #include <cstring>
 #include <iostream>
@@ -21,7 +22,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-namespace vk {
+namespace renderer::vk {
 
 static bool requiredExtensionsSupported(const std::vector<const char*>& required)
 {
@@ -125,7 +126,7 @@ std::vector<const char*> getRequiredExtensions()
 {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);    //!!!!!!!
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
@@ -137,9 +138,8 @@ std::vector<const char*> getRequiredExtensions()
     return extensions;
 }
 
-GraphicsContext::GraphicsContext(Window& window, Resources& resources)
-    : IGraphicsContext(window, GAPI::Vulkan)
-    , m_window(window)
+GraphicsContext::GraphicsContext(shell::IVulkanWindow& window, shell::IResources& resources)
+    : m_window(window)
     , m_resources(resources)
 {
     auto appInfo =
@@ -172,8 +172,9 @@ GraphicsContext::GraphicsContext(Window& window, Resources& resources)
 
     createInfo.enabledExtensionCount(extensions.size()).ppEnabledExtensionNames(extensions.data());
 
-    ASSERT(create(vkCreateInstance, &createInfo, nullptr) == VK_SUCCESS,
+    ASSERT(Instance::create(vkCreateInstance, &createInfo, nullptr) == VK_SUCCESS,
         "failed to create instance ;c");
+
 
     if (s_enableValidationLayers)
     {
@@ -181,8 +182,9 @@ GraphicsContext::GraphicsContext(Window& window, Resources& resources)
             std::make_unique<handles::DebugUtilsMessenger>(*this, s_debugMessengerCreateInfo);
     }
 
-    m_surface = std::make_unique<handles::Surface>(*this, m_window.glfwHandle());
-    m_device = std::make_unique<handles::Device>(handle(), *m_surface);
+    m_window.init(handle());
+
+    m_device = std::make_unique<handles::Device>(handle(), m_window.surfaceKHR());
 }
 
 GraphicsContext::~GraphicsContext()
@@ -193,7 +195,7 @@ GraphicsContext::~GraphicsContext()
     m_storageShaderResources.clear();
     m_device.reset();
     m_debugMessenger.reset();
-    m_surface.reset();
+    m_window.destroy();
 }
 
 std::weak_ptr<vk::handles::Memory> GraphicsContext::fetchMemory(
@@ -287,9 +289,9 @@ uint32_t GraphicsContext::dynamicAlignment(uint32_t layoutSize) const
     return layoutSize;
 }
 
-const handles::Surface& GraphicsContext::surface() const
+VkSurfaceKHR GraphicsContext::surface() const
 {
-    return *m_surface;
+    return m_window.surfaceKHR();
 }
 
 const handles::Device& GraphicsContext::device() const
@@ -297,7 +299,7 @@ const handles::Device& GraphicsContext::device() const
     return *m_device;
 }
 
-const Window& GraphicsContext::window() const
+const shell::IWindow& GraphicsContext::window() const
 {
     return m_window;
 }
@@ -340,10 +342,17 @@ std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
     return createModel(IModel::CreateInfo{ path });
 }
 
+template <typename T, typename... Args>
+inline std::shared_ptr<T> createAndRegisterResource(shell::IResources& resources, Args&&... info)
+{
+    std::shared_ptr<T> result(new T{ std::forward<Args>(info)... });
+    resources.registerResource(result);
+    return result;
+}
+
 std::shared_ptr<IModel> GraphicsContext::createModel(IModel::CreateInfo createInfo)
 {
-    return std::shared_ptr<IModel>(
-        m_resources.registerResource(new Model(*this, std::move(createInfo))));
+    return createAndRegisterResource<Model>(m_resources, *this, std::move(createInfo));
 }
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path path)
@@ -353,10 +362,8 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path p
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo createInfo)
 {
-    return std::shared_ptr<ITexture>(
-        m_resources.registerResource(new Texture(*this, std::move(createInfo))));
+    return createAndRegisterResource<Texture>(m_resources, *this, std::move(createInfo));
 }
-
 
 void GraphicsContext::waitIdle()
 {
@@ -396,4 +403,4 @@ Multisampling GraphicsContext::maxSampleCount() const
     return Multisampling::MSA_1X;
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

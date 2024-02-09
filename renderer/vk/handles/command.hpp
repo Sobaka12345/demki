@@ -4,7 +4,7 @@
 
 #include <functional>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 class Queue;
 class Device;
@@ -26,4 +26,4 @@ private:
 	CommandBuffer m_commandBuffer;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

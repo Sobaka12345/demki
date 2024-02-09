@@ -1,6 +1,6 @@
 #include "instance.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 Instance::Instance() noexcept
     : Handle(static_cast<VkHandleType*>(nullptr))
@@ -18,4 +18,4 @@ Instance::~Instance()
     destroy(vkDestroyInstance, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

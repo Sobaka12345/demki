@@ -1,6 +1,6 @@
 #pragma once
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 class Device;
 class Memory;
@@ -70,4 +70,4 @@ protected:
     std::shared_ptr<Memory> m_memory;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

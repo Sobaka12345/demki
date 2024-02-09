@@ -2,14 +2,13 @@
 
 #include "graphics_context.hpp"
 
-#include <window.hpp>
+#include <iwindow.hpp>
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
-Swapchain::Swapchain(const GraphicsContext& context, CreateInfo createInfo)
+Swapchain::Swapchain(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
     , m_framebufferSize(context.window().framebufferSize())
 {
@@ -35,7 +34,7 @@ void Swapchain::accept(RenderInfoVisitor& visitor) const
     visitor.populateRenderInfo(*this);
 }
 
-bool Swapchain::prepare(::OperationContext& context)
+bool Swapchain::prepare(renderer::OperationContext& context)
 {
     get(context).specificTarget = this;
 
@@ -44,9 +43,9 @@ bool Swapchain::prepare(::OperationContext& context)
     return true;
 }
 
-void Swapchain::present(::OperationContext& context)
+void Swapchain::present(renderer::OperationContext& context)
 {
-    glfwSwapBuffers(m_context.window().glfwHandle());
+    m_context.window().swapBuffers();
 }
 
 uint32_t Swapchain::framesInFlight() const
@@ -59,4 +58,4 @@ GLuint Swapchain::framebuffer()
     return 0;
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

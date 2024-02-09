@@ -10,8 +10,10 @@
 
 #include <GLFW/glfw3.h>
 
-Tetris::Tetris(CreateInfo createInfo)
-    : GraphicalApplication(std::move(createInfo))
+using namespace renderer;
+
+Tetris::Tetris(int& argc, char** argv)
+    : GraphicalApplication(argc, argv)
     , m_dx(0)
     , m_rotate(false)
     , m_flushedTotal(0)

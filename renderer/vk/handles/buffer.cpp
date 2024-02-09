@@ -4,7 +4,7 @@
 #include "image.hpp"
 #include "memory.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BufferCreateInfo Buffer::staging()
 {
@@ -68,4 +68,4 @@ std::weak_ptr<Memory> Buffer::allocateMemoryImpl(VkMemoryPropertyFlags propertie
     return m_memory;
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

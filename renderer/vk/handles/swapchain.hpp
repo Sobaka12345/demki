@@ -3,7 +3,7 @@
 #include "utils.hpp"
 #include "image.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(SwapchainCreateInfoKHR, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -55,4 +55,4 @@ public:
     VkFormat m_imageFormat;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

@@ -8,6 +8,8 @@
 
 #include <tiny_obj_loader.h>
 
+namespace renderer {
+
 IModel::CreateInfo::CreateInfo(std::filesystem::path path)
 {
     tinyobj::attrib_t attrib;
@@ -75,3 +77,5 @@ ITexture::CreateInfo::~CreateInfo()
         stbi_image_free(pixels);
     }
 }
+
+}    //  namespace renderer

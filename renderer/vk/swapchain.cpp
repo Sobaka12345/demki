@@ -8,14 +8,14 @@
 #include "handles/surface.hpp"
 
 #include <irenderer.hpp>
-#include <window.hpp>
+#include <iwindow.hpp>
 
 #include <GLFW/glfw3.h>
 
-namespace vk {
+namespace renderer::vk {
 
 VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities,
-    const Window& window)
+    const shell::IWindow& window)
 {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
     {
@@ -257,7 +257,7 @@ void Swapchain::populateOperationContext(OperationContext& context)
     context.framebuffer = &currentFramebuffer();
 }
 
-bool Swapchain::prepare(::OperationContext& context)
+bool Swapchain::prepare(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
 
@@ -291,7 +291,7 @@ bool Swapchain::prepare(::OperationContext& context)
     return true;
 }
 
-void Swapchain::present(::OperationContext& context)
+void Swapchain::present(renderer::OperationContext& context)
 {
     const auto& commandBuffer = *get(context).commandBuffer;
     ASSERT(commandBuffer.end() == VK_SUCCESS, "failed to record command buffer!");
@@ -482,4 +482,4 @@ void Swapchain::create()
     }
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

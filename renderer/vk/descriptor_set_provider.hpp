@@ -5,7 +5,7 @@
 #include <list>
 #include <memory>
 
-namespace vk {
+namespace renderer::vk {
 
 class GraphicsContext;
 
@@ -31,4 +31,4 @@ private:
     std::list<handles::DescriptorPool> m_poolList;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

@@ -9,7 +9,7 @@
 #include <span>
 #include <optional>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(DescriptorSetAllocateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -84,4 +84,4 @@ protected:
     HandlePtr<DescriptorPool> m_pool;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

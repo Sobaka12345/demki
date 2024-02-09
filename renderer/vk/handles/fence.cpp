@@ -2,7 +2,7 @@
 
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 Fence::Fence(Fence&& other) noexcept
     : Handle(std::move(other))
@@ -26,4 +26,4 @@ Fence::~Fence()
     destroy(vkDestroyFence, m_device, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

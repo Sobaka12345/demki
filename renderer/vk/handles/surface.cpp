@@ -4,7 +4,7 @@
 
 #include <GLFW/glfw3.h>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 Surface::Surface(Surface&& other) noexcept
     : Handle(std::move(other))
@@ -28,4 +28,4 @@ Surface::~Surface()
     destroy(vkDestroySurfaceKHR, m_instance, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

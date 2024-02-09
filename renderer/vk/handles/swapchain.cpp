@@ -2,7 +2,7 @@
 
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 Swapchain::Swapchain(Swapchain&& other) noexcept
     : Handle(std::move(other))
@@ -35,4 +35,4 @@ HandleVector<Image> Swapchain::images() const
 }
 
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

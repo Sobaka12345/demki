@@ -13,7 +13,7 @@
 #include <operation_context.hpp>
 #include <ipipeline.hpp>
 
-namespace vk {
+namespace renderer::vk {
 
 OperationContext::OperationContext(Computer* computer)
     : computer(computer)
@@ -58,7 +58,7 @@ IOperationTarget* OperationContext::operationTarget()
     return specificTarget->toBase();
 }
 
-void OperationContext::submit(::OperationContext& context)
+void OperationContext::submit(renderer::OperationContext& context)
 {
     if (renderer) renderer->finish(context);
     if (computer) computer->finish(context);
@@ -108,4 +108,4 @@ void OperationContext::setViewport(Viewport viewport) const
     commandBuffer->setViewport(toVkViewport(viewport));
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

@@ -6,13 +6,16 @@
 #include <cstdint>
 #include <memory>
 
-class Block;
-class Figure;
+namespace renderer {
 class OperationContext;
 
 class IModel;
 class ITexture;
 class IGraphicsContext;
+}
+
+class Block;
+class Figure;
 
 class Field
 {
@@ -28,7 +31,7 @@ public:
     using FieldType = std::array<RowType, s_height>;
 
 public:
-    Field(IGraphicsContext& resources);
+    Field(renderer::IGraphicsContext& resources);
     std::shared_ptr<Block> createBlock() const;
 
     int32_t flushRowsAndSpawnFigure();
@@ -38,17 +41,17 @@ public:
 
     bool isBlocksOverflow() const;
 
-    void draw(OperationContext& context) const;
+    void draw(renderer::OperationContext& context) const;
 
 private:
     int flushRows(int32_t topRowBound, int32_t bottomRowBound);
 
 private:
-    IGraphicsContext& m_context;
+    renderer::IGraphicsContext& m_context;
 
     FieldType m_blocks;
-    std::shared_ptr<IModel> m_cube;
-    std::shared_ptr<ITexture> m_cubeTexture;
+    std::shared_ptr<renderer::IModel> m_cube;
+    std::shared_ptr<renderer::ITexture> m_cubeTexture;
 
     std::shared_ptr<Figure> m_figure;
 };

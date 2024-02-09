@@ -6,7 +6,7 @@
 
 #include <igraphics_pipeline.hpp>
 
-namespace vk {
+namespace renderer::vk {
 
 class GraphicsPipeline
     : public Pipeline
@@ -16,7 +16,7 @@ class GraphicsPipeline
     {
         using Pipeline::BindContext::BindContext;
 
-        virtual void bind(::OperationContext& context,
+        virtual void bind(renderer::OperationContext& context,
             const IShaderInterfaceContainer& container) override;
     };
 
@@ -27,7 +27,7 @@ public:
     GraphicsPipeline(const GraphicsContext& context, CreateInfo createInfo);
     ~GraphicsPipeline();
 
-    virtual void bind(::OperationContext& context) override;
+    virtual void bind(renderer::OperationContext& context) override;
 
 private:
     const handles::Pipeline& pipeline(const vk::OperationContext& context);
@@ -45,4 +45,4 @@ private:
     std::map<const handles::RenderPass*, handles::GraphicsPipeline> m_pipelines;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

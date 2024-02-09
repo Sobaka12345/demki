@@ -2,9 +2,10 @@
 
 #include "figure.hpp"
 
-#include <utils.hpp>
 #include <renderable.hpp>
 #include <igraphics_context.hpp>
+
+using namespace renderer;
 
 static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
     Vertex3DColoredTextured{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
@@ -153,7 +154,7 @@ void Field::tryRotateFigure()
     }
 }
 
-void Field::draw(OperationContext& context) const
+void Field::draw(renderer::OperationContext& context) const
 {
     if (m_figure)
     {

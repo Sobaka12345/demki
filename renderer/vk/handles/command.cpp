@@ -3,7 +3,7 @@
 #include "device.hpp"
 #include "queue.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 OneTimeCommand::OneTimeCommand(const Queue& queue, const CommandPool& pool)
 	: m_queue(queue)
@@ -37,4 +37,4 @@ const CommandBuffer& OneTimeCommand::operator()(void)
 	return m_commandBuffer;
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

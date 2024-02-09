@@ -1,6 +1,6 @@
 #include "command_pool.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 CommandPool::CommandPool(
     const Device& device, CommandPoolCreateInfo poolInfo, VkHandleType* handlePtr) noexcept
@@ -44,4 +44,4 @@ HandleVector<CommandBuffer> CommandPool::allocateBuffers(uint32_t count,
     return result;
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

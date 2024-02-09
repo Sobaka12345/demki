@@ -13,7 +13,7 @@
 
 #include <boost/pfr.hpp>
 
-namespace {
+namespace renderer {
 
 float toVkSampleShadingCoefficient(IGraphicsPipeline::CreateInfo::SampleShading sampleShading)
 {
@@ -97,11 +97,10 @@ VkFormat toVkAttrubuteFormat(IGraphicsPipeline::CreateInfo::Attribute::Format at
         default: return VK_FORMAT_UNDEFINED;
     };
 }
-}    //  namespace
 
 namespace vk {
 
-void GraphicsPipeline::BindContext::bind(::OperationContext& context,
+void GraphicsPipeline::BindContext::bind(renderer::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
     Pipeline::BindContext::bind(context, container);
@@ -235,7 +234,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsContext& context, CreateInfo cr
 
 GraphicsPipeline::~GraphicsPipeline() {}
 
-void GraphicsPipeline::bind(::OperationContext& context)
+void GraphicsPipeline::bind(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
     specContext.commandBuffer->bindPipeline(pipeline(specContext), VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -317,3 +316,4 @@ GraphicsPipeline::BindContext* GraphicsPipeline::newBindContext(
 }
 
 }    //  namespace vk
+}    //  namespace renderer

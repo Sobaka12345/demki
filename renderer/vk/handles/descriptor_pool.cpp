@@ -4,7 +4,7 @@
 #include "descriptor_set.hpp"
 #include "descriptor_set_layout.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 DescriptorPool::DescriptorPool(DescriptorPool&& other) noexcept
     : Handle(std::move(other))
@@ -68,4 +68,4 @@ bool DescriptorPool::isEmpty() const
 }
 
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

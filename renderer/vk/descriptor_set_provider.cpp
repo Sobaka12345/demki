@@ -2,7 +2,7 @@
 
 #include "graphics_context.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 DescriptorSetProvider::DescriptorSetProvider(const GraphicsContext& context,
     handles::DescriptorPoolCreateInfo poolCreateInfo,
@@ -62,4 +62,4 @@ std::shared_ptr<handles::DescriptorSet> DescriptorSetProvider::sets(
 }
 
 
-}    //  namespace vk
+}    //  namespace renderer::vk

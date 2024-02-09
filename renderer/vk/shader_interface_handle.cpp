@@ -4,7 +4,7 @@
 
 #include <operation_context.hpp>
 
-namespace vk {
+namespace renderer::vk {
 
 ShaderInterfaceHandle::ShaderInterfaceHandle(ShaderResource& uniformAllocator)
     : m_uniformAllocator(uniformAllocator)
@@ -62,4 +62,4 @@ std::shared_ptr<ShaderInterfaceHandle> ShaderInterfaceHandle::create(ShaderResou
     return std::shared_ptr<ShaderInterfaceHandle>{ new ShaderInterfaceHandle(allocator) };
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

@@ -4,7 +4,7 @@
 
 #include <glad/glad.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
 struct ShaderInterfaceHandle : public IShaderInterfaceHandle
 {
@@ -123,4 +123,4 @@ struct StorageBufferInterfaceHandle : public ShaderInterfaceHandle
     GLuint storageBuffer;
 };
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

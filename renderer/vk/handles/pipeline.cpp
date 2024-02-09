@@ -2,7 +2,7 @@
 
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 Pipeline::Pipeline(Pipeline&& other) noexcept
     : Handle(std::move(other))
     , m_device(other.m_device)
@@ -22,4 +22,4 @@ Pipeline::~Pipeline()
     destroy(vkDestroyPipeline, m_device, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

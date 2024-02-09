@@ -1,14 +1,14 @@
 #include "computer.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 Computer::Computer(const GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
 {}
 
-::OperationContext Computer::start(IComputeTarget& target)
+renderer::OperationContext Computer::start(IComputeTarget& target)
 {
-    ::OperationContext result;
+    renderer::OperationContext result;
     result.emplace<vk::OperationContext>(this);
 
     if (!target.prepare(result))
@@ -20,9 +20,9 @@ Computer::Computer(const GraphicsContext& context, CreateInfo createInfo)
     return result;
 }
 
-void Computer::finish(::OperationContext& context)
+void Computer::finish(renderer::OperationContext& context)
 {
     context.operationTarget().present(context);
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

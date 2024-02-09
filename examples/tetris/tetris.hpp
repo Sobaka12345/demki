@@ -9,13 +9,16 @@
 #include <memory>
 #include <functional>
 
+namespace renderer {
 class Camera;
+}
+
 class Field;
 
-class Tetris : public GraphicalApplication
+class Tetris : public engine::GraphicalApplication
 {
 public:
-    Tetris(CreateInfo createInfo);
+    Tetris(int& argc, char** argv);
     ~Tetris();
 
     void onKeyPressed(int key, int scancode, int action, int mods);
@@ -24,9 +27,9 @@ public:
     virtual void perform() override;
 
 private:
-    std::shared_ptr<Camera> m_camera;
-    std::shared_ptr<IRenderer> m_renderer;
-    std::shared_ptr<IPipeline> m_pipeline;
+    std::shared_ptr<renderer::Camera> m_camera;
+    std::shared_ptr<renderer::IRenderer> m_renderer;
+    std::shared_ptr<renderer::IPipeline> m_pipeline;
 
     bool m_rotate;
     int32_t m_dx;
