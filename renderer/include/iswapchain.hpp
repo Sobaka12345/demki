@@ -4,7 +4,6 @@
 #include <types.hpp>
 
 #include <cstdint>
-#include <functional>
 
 namespace renderer {
 

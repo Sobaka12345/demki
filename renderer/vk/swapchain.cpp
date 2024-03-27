@@ -5,17 +5,17 @@
 #include "handles/command_pool.hpp"
 #include "handles/queue.hpp"
 #include "handles/render_pass.hpp"
-#include "handles/surface.hpp"
 
 #include <irenderer.hpp>
-#include <iwindow.hpp>
+
+#include <ivulkan_surface.hpp>
 
 #include <GLFW/glfw3.h>
 
 namespace renderer::vk {
 
 VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities,
-    const shell::IWindow& window)
+    const IVulkanSurface& window)
 {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
     {
@@ -93,8 +93,10 @@ Swapchain::SwapChainSupportDetails Swapchain::supportDetails(VkPhysicalDevice ph
     return details;
 }
 
-Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _createInfo)
+Swapchain::Swapchain(
+    const GraphicsContext& context, IVulkanSurface& surface, ISwapchain::CreateInfo _createInfo)
     : m_context(context)
+    , m_surface(surface)
     , m_swapchainInfo(std::move(_createInfo))
     , m_depthFormat(context.findDepthFormat())
     , m_currentFrame(0)
@@ -102,9 +104,7 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
     , m_needRecreate(false)
 {
     m_maxFramesInFlight = m_swapchainInfo.framesInFlight;
-    m_context.window().registerFramebufferResizeCallback([this](int, int) {
-        m_needRecreate = true;
-    });
+    m_surface.registerFramebufferResizeCallback([this](int, int) { m_needRecreate = true; });
 
     m_resourcesInUse.resize(m_maxFramesInFlight);
 
@@ -126,11 +126,11 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
             ->allocateBuffers(m_maxFramesInFlight);
 
     const auto supportDetails =
-        Swapchain::supportDetails(m_context.device().physicalDevice(), m_context.surface());
+        Swapchain::supportDetails(m_context.device().physicalDevice(), m_surface.surfaceKHR());
 
     VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(supportDetails.formats);
     VkPresentModeKHR presentMode = choosePresentMode(supportDetails.presentModes);
-    VkExtent2D extent = chooseExtent(supportDetails.capabilities, m_context.window());
+    VkExtent2D extent = chooseExtent(supportDetails.capabilities, m_surface);
     uint32_t imageCount = supportDetails.capabilities.minImageCount + 1;
     if (supportDetails.capabilities.maxImageCount > 0 &&
         imageCount > supportDetails.capabilities.maxImageCount)
@@ -151,7 +151,7 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
 
     m_swapchainCreateInfo =
         handles::SwapchainCreateInfoKHR{}
-            .surface(m_context.surface())
+            .surface(m_surface.surfaceKHR())
             .minImageCount(imageCount)
             .imageFormat(surfaceFormat.format)
             .imageColorSpace(surfaceFormat.colorSpace)
@@ -172,6 +172,8 @@ Swapchain::Swapchain(const GraphicsContext& context, ISwapchain::CreateInfo _cre
 
 Swapchain::~Swapchain()
 {
+    m_context.device().waitIdle();
+
     destroy();
 
     m_inFlightFences.clear();
@@ -341,7 +343,7 @@ void Swapchain::present(renderer::OperationContext& context)
                     .pImageIndices(&m_currentImage));
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_needRecreate ||
-        m_context.window().iconified())
+        !m_surface.available())
     {
         recreate();
         m_needRecreate = false;
@@ -441,7 +443,7 @@ handles::ImageViewCreateInfo Swapchain::imageViewCreateInfo() const
 
 void Swapchain::recreate()
 {
-    while (m_context.window().iconified())
+    while (!m_surface.available())
     {
         glfwWaitEvents();
     }
@@ -449,9 +451,8 @@ void Swapchain::recreate()
 
     destroy();
     const auto supportDetails =
-        Swapchain::supportDetails(m_context.device().physicalDevice(), m_context.surface());
-    m_swapchainCreateInfo.imageExtent(
-        chooseExtent(supportDetails.capabilities, m_context.window()));
+        Swapchain::supportDetails(m_context.device().physicalDevice(), m_surface.surfaceKHR());
+    m_swapchainCreateInfo.imageExtent(chooseExtent(supportDetails.capabilities, m_surface));
     create();
 }
 

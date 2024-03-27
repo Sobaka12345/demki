@@ -48,7 +48,7 @@ Dummy::Dummy(int& argc, char** argv)
     viewProjection.view = glm::lookAt(
         glm::vec3(0.0f, 3.0f, -4.f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     viewProjection.projection = glm::perspective(
-        glm::radians(45.0f), clientWidth() / static_cast<float>(clientHeight()), 0.1f, 8.0f);
+        glm::radians(45.0f), window().width() / static_cast<float>(window().height()), 0.1f, 8.0f);
 
     m_camera->setViewProjection(viewProjection);
 
@@ -75,12 +75,12 @@ void Dummy::update(int64_t dt)
 
 void Dummy::perform()
 {
-    auto context = m_renderer->start(*m_swapchain);
+    auto context = m_renderer->start(window());
     context.setViewport({
         .x = 0,
         .y = 0,
-        .width = static_cast<float>(m_swapchain->width()),
-        .height = static_cast<float>(m_swapchain->height()),
+        .width = static_cast<float>(window().width()),
+        .height = static_cast<float>(window().height()),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
@@ -88,8 +88,8 @@ void Dummy::perform()
     context.setScissors({
         .x = 0,
         .y = 0,
-        .width = m_swapchain->width(),
-        .height = m_swapchain->height(),
+        .width = window().width(),
+        .height = window().height(),
     });
 
     m_pipeline->bind(context);

@@ -7,7 +7,17 @@
 #include <memory>
 #include <ratio>
 
+namespace shell {
+class IWindow;
+}
+
 namespace engine {
+
+enum class GAPI
+{
+    OpenGL,
+    Vulkan
+};
 
 class AbstractApplication
 {
@@ -29,12 +39,10 @@ public:
     AbstractApplication();
     virtual ~AbstractApplication();
 
-    uint32_t clientWidth() const;
-    uint32_t clientHeight() const;
     virtual shell::IWindow& window() = 0;
 
+
     renderer::IGraphicsContext& context();
-    const renderer::IGraphicsContext& context() const;
 
     virtual int exec() = 0;
 
@@ -45,10 +53,7 @@ protected:
     virtual void perform() = 0;
 
 protected:
-    std::shared_ptr<renderer::ISwapchain> m_swapchain;
-
     std::unique_ptr<shell::IResources> m_resources;
-    std::unique_ptr<renderer::IGraphicsContext> m_graphicsContext;
 };
 
 }    //  namespace engine

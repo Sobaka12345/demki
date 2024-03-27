@@ -1,38 +1,78 @@
 #include "opengl_window.hpp"
 
+#include <assert.hpp>
+#include <glad/glad.h>
+
 #include <QOpenGLWindow>
+#include <QOpenGLContext>
+#include <QSurfaceFormat>
 
 namespace shell::qt {
 
 OpenGLWindow::OpenGLWindow(int width, int height, std::string name, QWindow* parent)
+    : Window(width, height, name, parent)
 {
-    m_window = new QOpenGLWindow(QOpenGLWindow::NoPartialUpdate, parent);
+    setSurfaceType(QWindow::OpenGLSurface);
 }
 
 OpenGLWindow::~OpenGLWindow()
 {
-    if (!m_window->parent())
+    m_swapchain.reset();
+    m_graphicsContext.reset();
+}
+
+void OpenGLWindow::swapBuffers()
+{
+    m_context->swapBuffers(this);
+}
+
+renderer::IGraphicsContext& OpenGLWindow::graphicsContext()
+{
+    if (m_graphicsContext)
     {
-        delete m_window;
+        return *m_graphicsContext;
     }
+
+    create();
+    show();
+
+    m_context = new QOpenGLContext(this);
+
+    QSurfaceFormat format;
+    format.setMajorVersion(4);
+    format.setMinorVersion(6);
+    format.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
+    format.setOption(QSurfaceFormat::FormatOption::DebugContext);
+    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::DoubleBuffer);
+    m_context->setFormat(format);
+    m_context->create();
+
+    ASSERT(m_context->makeCurrent(this), "can't make context current");
+    ASSERT(gladLoadGL(), "failed to initialize opengl");
+
+    auto newContext = createContext();
+
+    m_graphicsContext.reset(newContext);
+    m_swapchain = newContext->createSwapchain(*this, {});
+
+    return *m_graphicsContext;
 }
 
-QWindow* OpenGLWindow::qWindow()
+bool OpenGLWindow::prepare(renderer::OperationContext& context)
 {
-    return m_window;
+    m_context->makeCurrent(this);
+    return m_swapchain->prepare(context);
 }
 
-const QWindow* OpenGLWindow::qWindow() const
+void OpenGLWindow::present(renderer::OperationContext& context)
 {
-    return m_window;
+    m_swapchain->present(context);
 }
 
-void OpenGLWindow::init()
+void OpenGLWindow::accept(renderer::RenderInfoVisitor& visitor) const
 {
-    m_window->makeCurrent();
+    m_swapchain->accept(visitor);
 }
-
-void OpenGLWindow::destroy() {}
 
 
 }    //  namespace shell::qt

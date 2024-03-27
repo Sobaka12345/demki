@@ -133,12 +133,14 @@ add_library(${PROJECT_NAME} STATIC
 	include/itexture.hpp
 	include/types.hpp
 	include/ishader_interface.hpp
+	include/isurface.hpp
+	include/ivulkan_surface.hpp
+	include/iopengl_surface.hpp
 	include/camera.hpp
 	include/particles.hpp
 	include/renderable.hpp
 	camera.cpp
 	create_info.cpp
-	graphics_context.cpp
 	particles.cpp
 	renderable.cpp
 	operation_context.hpp

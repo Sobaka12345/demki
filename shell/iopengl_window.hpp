@@ -2,19 +2,13 @@
 
 #include "iwindow.hpp"
 
-namespace renderer::ogl {
-class GraphicsContext;
-}
+#include <iopengl_surface.hpp>
 
 namespace shell {
 
-class IOpenGLWindow : virtual public IWindow
-{
-private:
-    virtual void init() = 0;
-    virtual void destroy() = 0;
-
-    friend class renderer::ogl::GraphicsContext;
-};
+class IOpenGLWindow
+    : virtual public IWindow
+    , public renderer::IOpenGLSurface
+{};
 
 }

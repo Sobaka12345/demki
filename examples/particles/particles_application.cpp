@@ -63,7 +63,7 @@ ParticlesApplication::ParticlesApplication(int& argc, char** argv)
     {
         float r = 0.25f * sqrt(rndDist(rndEngine));
         float theta = rndDist(rndEngine) * 2 * 3.14159265358979323846;
-        float x = r * cos(theta) * m_swapchain->height() / m_swapchain->width();
+        float x = r * cos(theta) * window().height() / window().width();
         float y = r * sin(theta);
         particle.pos = glm::vec2(x, y);
         particle.velocity = glm::normalize(glm::vec2(x, y)) * 0.00025f;
@@ -108,13 +108,13 @@ void ParticlesApplication::perform()
     m_deltaTime->bind(computeContext);
     m_particles->bind(computeContext);
 
-    auto renderContext = m_renderer->start(*m_swapchain);
+    auto renderContext = m_renderer->start(window());
 
     renderContext.setViewport({
         .x = 0,
         .y = 0,
-        .width = static_cast<float>(m_swapchain->width()),
-        .height = static_cast<float>(m_swapchain->height()),
+        .width = static_cast<float>(window().width()),
+        .height = static_cast<float>(window().height()),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
@@ -122,8 +122,8 @@ void ParticlesApplication::perform()
     renderContext.setScissors({
         .x = 0,
         .y = 0,
-        .width = m_swapchain->width(),
-        .height = m_swapchain->height(),
+        .width = window().width(),
+        .height = window().height(),
     });
 
     renderContext.waitForOperation(computeContext);

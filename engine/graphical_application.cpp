@@ -16,26 +16,20 @@ GraphicalApplication::GraphicalApplication(int& argc, char** argv)
     m_resources = std::make_unique<shell::Resources>(renderer::executablePath());
 
     const auto createInfo = CreateInfo::readFromCmd(argc, argv);
-    if (createInfo.gapi == GAPI::OpenGL)
+    if (createInfo.gapi == GAPI::Vulkan)
     {
-        m_mainWindow.reset(new shell::glfw::OpenGLWindow{
-            createInfo.windowWidth, createInfo.windowHeight, createInfo.windowName });
+        m_mainWindow.reset(new shell::glfw::VulkanWindow(createInfo.windowWidth,
+            createInfo.windowHeight, createInfo.windowName));
     }
-    else
+    else if (createInfo.gapi == GAPI::OpenGL)
     {
-        m_mainWindow.reset(new shell::glfw::VulkanWindow{
-            createInfo.windowWidth, createInfo.windowHeight, createInfo.windowName });
+        m_mainWindow.reset(new shell::glfw::OpenGLWindow(createInfo.windowWidth,
+            createInfo.windowHeight, createInfo.windowName));
     }
-
-    m_graphicsContext = renderer::IGraphicsContext::create(*m_mainWindow, *m_resources);
-
-    m_swapchain = m_graphicsContext->createSwapchain({ .framesInFlight = 2 });
 }
 
 GraphicalApplication::~GraphicalApplication()
 {
-    m_swapchain.reset();
-    m_graphicsContext.reset();
     m_mainWindow.reset();
 }
 
@@ -63,7 +57,7 @@ int GraphicalApplication::mainLoop()
         perform();
     }
 
-    m_graphicsContext->waitIdle();
+    context().waitIdle();
 
     return 0;
 }

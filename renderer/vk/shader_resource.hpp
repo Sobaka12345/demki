@@ -2,11 +2,11 @@
 
 #include "handles/memory.hpp"
 
-#include "vk/types.hpp"
+#include "types.hpp"
 
 #include "iresource.hpp"
 
-#include <utils.hpp>
+#include "../utils.hpp"
 
 #include <memory>
 #include <type_traits>

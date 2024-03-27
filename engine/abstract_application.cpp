@@ -1,5 +1,6 @@
 #include "abstract_application.hpp"
 
+#include <iwindow.hpp>
 #include <resources.hpp>
 
 #include <tclap/CmdLine.h>
@@ -59,22 +60,7 @@ AbstractApplication::~AbstractApplication()
 
 renderer::IGraphicsContext& AbstractApplication::context()
 {
-    return *m_graphicsContext;
-}
-
-const renderer::IGraphicsContext& AbstractApplication::context() const
-{
-    return *m_graphicsContext;
-}
-
-uint32_t AbstractApplication::clientWidth() const
-{
-    return m_swapchain->width();
-}
-
-uint32_t AbstractApplication::clientHeight() const
-{
-    return m_swapchain->height();
+    return window().graphicsContext();
 }
 
 

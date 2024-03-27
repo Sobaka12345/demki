@@ -13,7 +13,7 @@
 
 #include <operation_context.hpp>
 
-#include <ivulkan_window.hpp>
+#include <ivulkan_surface.hpp>
 #include <iresources.hpp>
 
 #include <cstring>
@@ -138,18 +138,8 @@ std::vector<const char*> getRequiredExtensions()
     return extensions;
 }
 
-GraphicsContext::GraphicsContext(shell::IVulkanWindow& window, shell::IResources& resources)
-    : m_window(window)
-    , m_resources(resources)
+GraphicsContext::GraphicsContext(handles::ApplicationInfo appInfo)
 {
-    auto appInfo =
-        handles::ApplicationInfo()
-            .pApplicationName(window.name().c_str())
-            .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .pEngineName("DemkiEngine")
-            .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .apiVersion(VK_API_VERSION_1_3);
-
     auto createInfo = handles::InstanceCreateInfo().pApplicationInfo(&appInfo);
 
     if (s_enableValidationLayers)
@@ -181,10 +171,6 @@ GraphicsContext::GraphicsContext(shell::IVulkanWindow& window, shell::IResources
         m_debugMessenger =
             std::make_unique<handles::DebugUtilsMessenger>(*this, s_debugMessengerCreateInfo);
     }
-
-    m_window.init(handle());
-
-    m_device = std::make_unique<handles::Device>(handle(), m_window.surfaceKHR());
 }
 
 GraphicsContext::~GraphicsContext()
@@ -195,7 +181,11 @@ GraphicsContext::~GraphicsContext()
     m_storageShaderResources.clear();
     m_device.reset();
     m_debugMessenger.reset();
-    m_window.destroy();
+}
+
+void GraphicsContext::init(IVulkanSurface& surface)
+{
+    m_device = std::make_unique<handles::Device>(handle(), surface.surfaceKHR());
 }
 
 std::weak_ptr<vk::handles::Memory> GraphicsContext::fetchMemory(
@@ -289,19 +279,15 @@ uint32_t GraphicsContext::dynamicAlignment(uint32_t layoutSize) const
     return layoutSize;
 }
 
-VkSurfaceKHR GraphicsContext::surface() const
-{
-    return m_window.surfaceKHR();
-}
-
 const handles::Device& GraphicsContext::device() const
 {
     return *m_device;
 }
 
-const shell::IWindow& GraphicsContext::window() const
+std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(IVulkanSurface& surface,
+    ISwapchain::CreateInfo createInfo)
 {
-    return m_window;
+    return std::make_shared<Swapchain>(*this, surface, std::move(createInfo));
 }
 
 std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo createInfo)
@@ -332,27 +318,14 @@ std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
     return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(ISwapchain::CreateInfo createInfo)
-{
-    return std::make_shared<Swapchain>(*this, std::move(createInfo));
-}
-
 std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
 {
     return createModel(IModel::CreateInfo{ path });
 }
 
-template <typename T, typename... Args>
-inline std::shared_ptr<T> createAndRegisterResource(shell::IResources& resources, Args&&... info)
-{
-    std::shared_ptr<T> result(new T{ std::forward<Args>(info)... });
-    resources.registerResource(result);
-    return result;
-}
-
 std::shared_ptr<IModel> GraphicsContext::createModel(IModel::CreateInfo createInfo)
 {
-    return createAndRegisterResource<Model>(m_resources, *this, std::move(createInfo));
+    return std::make_shared<Model>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path path)
@@ -362,7 +335,7 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path p
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo createInfo)
 {
-    return createAndRegisterResource<Texture>(m_resources, *this, std::move(createInfo));
+    return std::make_shared<Texture>(*this, std::move(createInfo));
 }
 
 void GraphicsContext::waitIdle()

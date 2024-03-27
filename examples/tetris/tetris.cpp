@@ -6,7 +6,6 @@
 #include <renderable.hpp>
 
 #include <iostream>
-#include <variant>
 
 #include <GLFW/glfw3.h>
 
@@ -37,7 +36,7 @@ Tetris::Tetris(int& argc, char** argv)
             glm::vec3(1.0f * Field::s_width / 2.0f, 1.0f * Field::s_height / 2.0f, 0.0f),
             glm::vec3(0.0f, -1.0f, 0.0f));
         viewProjection.projection = glm::perspective(glm::radians(fov),
-            clientWidth() / static_cast<float>(clientHeight()),
+            window().width() / static_cast<float>(window().height()),
             0.1f,
             distance + 1.0f);
         m_camera->setViewProjection(viewProjection);
@@ -138,12 +137,12 @@ void Tetris::update(int64_t dt)
 
 void Tetris::perform()
 {
-    auto context = m_renderer->start(*m_swapchain);
+    auto context = m_renderer->start(window());
     context.setViewport({
         .x = 0,
         .y = 0,
-        .width = static_cast<float>(clientWidth()),
-        .height = static_cast<float>(clientHeight()),
+        .width = static_cast<float>(window().width()),
+        .height = static_cast<float>(window().height()),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
@@ -151,8 +150,8 @@ void Tetris::perform()
     context.setScissors({
         .x = 0,
         .y = 0,
-        .width = clientWidth(),
-        .height = clientHeight(),
+        .width = window().width(),
+        .height = window().height(),
     });
 
     m_pipeline->bind(context);

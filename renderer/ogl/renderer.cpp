@@ -34,9 +34,10 @@ renderer::OperationContext Renderer::start(renderer::IRenderTarget& target)
     {
         return result;
     }
-    else if (auto iter = m_samples.find(&target); iter == m_samples.end())
+    else if (auto iter = m_samples.find(get(result).specificTarget->framebuffer());
+             iter == m_samples.end())
     {
-        SampleInfo& info = m_samples[&target];
+        SampleInfo& info = m_samples[get(result).specificTarget->framebuffer()];
         info.width = target.width();
         info.height = target.height();
         glEnable(GL_DEPTH_TEST);
@@ -88,7 +89,7 @@ void Renderer::finish(renderer::OperationContext& context)
     {
         auto& specContext = get(context);
         GLuint targetFramebuffer = specContext.specificTarget->framebuffer();
-        auto& sample = m_samples[specContext.operationTarget()];
+        auto& sample = m_samples[targetFramebuffer];
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, sample.framebuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFramebuffer);

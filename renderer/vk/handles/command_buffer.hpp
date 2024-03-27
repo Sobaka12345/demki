@@ -2,7 +2,7 @@
 
 #include "image.hpp"
 
-#include "vk/utils.hpp"
+#include "../utils.hpp"
 
 #include <vulkan/vulkan.h>
 

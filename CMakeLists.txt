@@ -32,9 +32,10 @@ find_package(tclap REQUIRED)
 
 set(SHARED_SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
 
+add_subdirectory(resources)
+add_subdirectory(renderer)
 add_subdirectory(shell)
 add_subdirectory(engine)
-add_subdirectory(renderer)
 add_subdirectory(utils)
 
 #examples
@@ -43,9 +44,10 @@ add_subdirectory(examples/particles)
 add_subdirectory(examples/tetris)
 add_subdirectory(examples/dummy)
 
-target_link_libraries(shell PUBLIC utils glfw qt::qt glad::glad)
-target_link_libraries(renderer PUBLIC shell glm::glm stb::stb tinyobjloader::tinyobjloader pfr::pfr tclap::tclap)
-target_link_libraries(engine PUBLIC renderer)
+target_link_libraries(resources utils)
+target_link_libraries(renderer PUBLIC resources glad::glad glm::glm stb::stb tinyobjloader::tinyobjloader pfr::pfr tclap::tclap)
+target_link_libraries(shell PUBLIC renderer glfw qt::qt)
+target_link_libraries(engine PUBLIC shell)
 target_link_libraries(tetris PRIVATE engine)
 target_link_libraries(cubic PRIVATE engine)
 target_link_libraries(dummy PRIVATE engine)

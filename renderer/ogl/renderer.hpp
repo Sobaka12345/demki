@@ -31,7 +31,7 @@ private:
         int width, height;
     };
 
-    std::unordered_map<IOperationTarget*, SampleInfo> m_samples;
+    std::unordered_map<GLuint, SampleInfo> m_samples;
 };
 
 }    //  namespace renderer::ogl

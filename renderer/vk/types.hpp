@@ -3,7 +3,7 @@
 #include <array>
 #include <concepts>
 
-#include "vk/utils.hpp"
+#include "utils.hpp"
 
 namespace renderer::vk {
 

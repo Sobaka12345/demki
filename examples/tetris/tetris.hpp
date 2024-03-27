@@ -5,9 +5,7 @@
 
 #include <graphical_application.hpp>
 
-#include <list>
 #include <memory>
-#include <functional>
 
 namespace renderer {
 class Camera;

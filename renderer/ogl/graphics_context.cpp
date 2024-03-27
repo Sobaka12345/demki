@@ -39,24 +39,24 @@ void GLAPIENTRY MessageCallback(GLenum source,
     }
 }
 
-GraphicsContext::GraphicsContext(shell::IOpenGLWindow& window, shell::IResources& resources)
-    : m_window(window)
+GraphicsContext::GraphicsContext(IOpenGLSurface& defaultSurface)
 {
-    m_window.init();
-
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(MessageCallback, 0);
 }
 
-GraphicsContext::~GraphicsContext()
-{
-    m_window.destroy();
-}
+GraphicsContext::~GraphicsContext() {}
 
 std::shared_ptr<IShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlockType sbt,
     uint32_t layoutSize)
 {
     return std::make_shared<UniformBufferInterfaceHandle>(layoutSize, memoryUsage(sbt));
+}
+
+std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(IOpenGLSurface& surface,
+    ISwapchain::CreateInfo createInfo)
+{
+    return std::make_shared<Swapchain>(*this, surface, std::move(createInfo));
 }
 
 std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo createInfo)
@@ -87,11 +87,6 @@ std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
     return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(ISwapchain::CreateInfo createInfo)
-{
-    return std::make_shared<Swapchain>(*this, std::move(createInfo));
-}
-
 Multisampling GraphicsContext::maxSampleCount() const
 {
     static const GLint value = []() {
@@ -104,16 +99,6 @@ Multisampling GraphicsContext::maxSampleCount() const
 }
 
 void GraphicsContext::waitIdle() {}
-
-const shell::IWindow& GraphicsContext::window() const
-{
-    return m_window;
-}
-
-shell::IWindow& GraphicsContext::window()
-{
-    return m_window;
-}
 
 std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
 {

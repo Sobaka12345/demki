@@ -137,7 +137,7 @@ public:
         m_direction = glm::normalize(map.center - m_currentPosition);
         vp.view = glm::lookAt(m_currentPosition, m_currentPosition + m_direction, m_up);
         vp.projection = glm::perspective(glm::radians(45.0f),
-            app.clientWidth() / static_cast<float>(app.clientHeight()), 0.1f, s_visibleRange);
+            app.window().width() / static_cast<float>(app.window().height()), 0.1f, s_visibleRange);
         m_camera.setViewProjection(vp);
     }
 
@@ -413,12 +413,12 @@ void Cubic::update(int64_t dt)
 
 void Cubic::perform()
 {
-    auto context = m_renderer->start(*m_swapchain);
+    auto context = m_renderer->start(window());
     context.setViewport({
         .x = 0,
         .y = 0,
-        .width = static_cast<float>(m_swapchain->width()),
-        .height = static_cast<float>(m_swapchain->height()),
+        .width = static_cast<float>(window().width()),
+        .height = static_cast<float>(window().height()),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
@@ -426,8 +426,8 @@ void Cubic::perform()
     context.setScissors({
         .x = 0,
         .y = 0,
-        .width = m_swapchain->width(),
-        .height = m_swapchain->height(),
+        .width = window().width(),
+        .height = window().height(),
     });
 
     m_pipeline->bind(context);

@@ -3,15 +3,20 @@
 #include "ispecific_operation_target.hpp"
 
 #include <iswapchain.hpp>
+#include <utility>
 
-namespace renderer::ogl {
+namespace renderer {
+
+class IOpenGLSurface;
+
+namespace ogl {
 
 class GraphicsContext;
 
 class Swapchain : public SpecificOperationTarget<ISwapchain>
 {
 public:
-    Swapchain(GraphicsContext& context, ISwapchain::CreateInfo createInfo);
+    Swapchain(GraphicsContext& context, IOpenGLSurface& surface, ISwapchain::CreateInfo createInfo);
     ~Swapchain();
 
     virtual uint32_t width() const override;
@@ -26,7 +31,9 @@ public:
 
 private:
     GraphicsContext& m_context;
+    IOpenGLSurface& m_surface;
     std::pair<uint32_t, uint32_t> m_framebufferSize;
 };
 
-}    //  namespace renderer::ogl
+}    //  namespace ogl
+}    //  namespace renderer

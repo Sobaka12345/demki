@@ -5,7 +5,7 @@
 
 #include "simemory_accessor.hpp"
 
-#include "vk/utils.hpp"
+#include "../utils.hpp"
 
 namespace renderer::vk { namespace handles {
 

@@ -2,7 +2,7 @@
 
 #include "handle.hpp"
 
-#include "vk/utils.hpp"
+#include "../utils.hpp"
 
 #include "buffer.hpp"
 #include "image.hpp"

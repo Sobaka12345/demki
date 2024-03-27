@@ -16,19 +16,21 @@ public:
     VulkanWindow(int width, int height, std::string name, QWindow* parent = nullptr);
     ~VulkanWindow();
 
+public:
     virtual VkSurfaceKHR surfaceKHR() const override;
 
-    virtual QWindow* qWindow() override;
-    virtual const QWindow* qWindow() const override;
+    virtual bool prepare(renderer::OperationContext& context) override;
+    virtual void present(renderer::OperationContext& context) override;
+    virtual renderer::IGraphicsContext& graphicsContext() override;
 
-private:
-    virtual void init(VkInstance instance) override;
-    virtual void destroy() override;
+    virtual void accept(renderer::RenderInfoVisitor& visitor) const override;
 
 private:
     VkSurfaceKHR m_surface;
     QVulkanInstance m_instance;
-    QWindow* m_window;
+
+    std::shared_ptr<renderer::ISwapchain> m_swapchain;
+    std::shared_ptr<renderer::IGraphicsContext> m_graphicsContext;
 };
 
 }    //  namespace shell::qt

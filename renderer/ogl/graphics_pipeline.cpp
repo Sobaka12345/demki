@@ -108,7 +108,7 @@ void GraphicsPipeline::bind(renderer::OperationContext& context)
     glEnable(GL_CULL_FACE);
     glCullFace(m_cullMode);
     glFrontFace(m_frontFace);
-    glPolygonMode(m_cullMode, m_polygonMode);
+    glPolygonMode(GL_FRONT_AND_BACK, m_polygonMode);
 
     glUseProgram(m_shaderProgram);
 }

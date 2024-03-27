@@ -8,53 +8,68 @@
 namespace shell::qt {
 
 VulkanWindow::VulkanWindow(int width, int height, std::string name, QWindow* parent)
+    : Window(width, height, name, parent)
 {
-    m_window = new QWindow(parent);
-    m_window->setSurfaceType(QWindow::VulkanSurface);
-    m_window->setWidth(width);
-    m_window->setHeight(height);
-    m_window->setTitle(QString::fromStdString(name));
-}
+    setSurfaceType(QWindow::VulkanSurface);
 
-void VulkanWindow::init(VkInstance instance)
-{
-    m_instance.setVkInstance(instance);
-    ASSERT(m_instance.create(), "failed to create qt vulkan instance");
-
-    m_window->create();
-    m_window->show();
-    m_window->setVulkanInstance(&m_instance);
-
-    m_surface = m_instance.surfaceForWindow(m_window);
-}
-
-void VulkanWindow::destroy()
-{
-    m_window->destroy();
-    m_instance.destroy();
+    connect(this, &Window::aboutToClose, this, [this]() { m_swapchain.reset(); });
 }
 
 VulkanWindow::~VulkanWindow()
 {
-    if (!m_window->parent())
-    {
-        delete m_window;
-    }
-}
-
-QWindow* VulkanWindow::qWindow()
-{
-    return m_window;
-}
-
-const QWindow* VulkanWindow::qWindow() const
-{
-    return m_window;
+    m_graphicsContext.reset();
 }
 
 VkSurfaceKHR VulkanWindow::surfaceKHR() const
 {
     return m_surface;
+}
+
+bool VulkanWindow::prepare(renderer::OperationContext& context)
+{
+    return m_swapchain->prepare(context);
+}
+
+void VulkanWindow::present(renderer::OperationContext& context)
+{
+    m_swapchain->present(context);
+}
+
+renderer::IGraphicsContext& VulkanWindow::graphicsContext()
+{
+    if (m_graphicsContext)
+    {
+        return *m_graphicsContext;
+    }
+
+    auto newContext = createContext(
+        renderer::vk::handles::ApplicationInfo()
+            .pApplicationName(name().c_str())
+            .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
+            .pEngineName("DemkiEngine")
+            .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
+            .apiVersion(VK_API_VERSION_1_3));
+
+    m_instance.setVkInstance(*newContext);
+    ASSERT(m_instance.create(), "failed to create qt vulkan instance");
+
+    create();
+    show();
+    setVulkanInstance(&m_instance);
+
+    m_surface = m_instance.surfaceForWindow(this);
+
+    m_graphicsContext.reset(newContext);
+    newContext->init(*this);
+
+    m_swapchain = newContext->createSwapchain(*this, {});
+
+    return *m_graphicsContext;
+}
+
+void VulkanWindow::accept(renderer::RenderInfoVisitor& visitor) const
+{
+    return m_swapchain->accept(visitor);
 }
 
 }    //  namespace shell::qt

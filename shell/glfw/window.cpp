@@ -58,13 +58,6 @@ Window::Window(int clientApi, int width, int height, std::string name)
 {
     glfwWindowHint(GLFW_CLIENT_API, clientApi);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    m_window = glfwCreateWindow(width, height, m_name.c_str(), nullptr, nullptr);
-
-    glfwSetWindowUserPointer(m_window, this);
-    glfwSetCursorPosCallback(m_window, cursorPosCallback);
-    glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
-    glfwSetKeyCallback(m_window, onKeyPressedCallback);
-    glfwSetWindowIconifyCallback(m_window, windowIconifyCallback);
 }
 
 Window::~Window()
@@ -72,14 +65,14 @@ Window::~Window()
     if (m_window) glfwDestroyWindow(m_window);
 }
 
+bool Window::available() const
+{
+    return !m_iconified;
+}
+
 std::string Window::name() const
 {
     return m_name;
-}
-
-void Window::swapBuffers()
-{
-    glfwSwapBuffers(m_window);
 }
 
 void Window::close()
@@ -95,6 +88,16 @@ bool Window::shouldClose() const
 std::pair<int, int> Window::framebufferSize() const
 {
     return { m_width, m_height };
+}
+
+uint32_t Window::width() const
+{
+    return m_width;
+}
+
+uint32_t Window::height() const
+{
+    return m_height;
 }
 
 void Window::registerCursorPosCallback(std::function<void(double, double)> callback) const
@@ -125,6 +128,19 @@ GLFWwindow* Window::glfwHandle()
 
 const GLFWwindow* Window::glfwHandle() const
 {
+    return m_window;
+}
+
+GLFWwindow* Window::create()
+{
+    m_window = glfwCreateWindow(m_width, m_height, m_name.c_str(), nullptr, nullptr);
+
+    glfwSetWindowUserPointer(m_window, this);
+    glfwSetCursorPosCallback(m_window, cursorPosCallback);
+    glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
+    glfwSetKeyCallback(m_window, onKeyPressedCallback);
+    glfwSetWindowIconifyCallback(m_window, windowIconifyCallback);
+
     return m_window;
 }
 

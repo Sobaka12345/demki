@@ -19,13 +19,17 @@ public:
     Window(int clientApi, int width, int height, std::string name);
     ~Window();
 
+    virtual bool available() const override;
+
     virtual std::string name() const override;
 
-    virtual void swapBuffers() override;
     virtual void close() override;
     virtual bool shouldClose() const override;
     virtual std::pair<int, int> framebufferSize() const override;
     virtual bool iconified() const override;
+
+    virtual uint32_t width() const override;
+    virtual uint32_t height() const override;
 
     virtual void registerCursorPosCallback(
         std::function<void(double, double)> callback) const override;
@@ -37,6 +41,9 @@ public:
 
     GLFWwindow* glfwHandle();
     const GLFWwindow* glfwHandle() const;
+
+protected:
+    GLFWwindow* create();
 
 private:
     bool m_iconified;

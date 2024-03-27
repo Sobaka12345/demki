@@ -2,17 +2,18 @@
 
 #include "graphics_context.hpp"
 
-#include <iwindow.hpp>
+#include <iopengl_surface.hpp>
 
 #include <glad/glad.h>
 
 namespace renderer::ogl {
 
-Swapchain::Swapchain(GraphicsContext& context, CreateInfo createInfo)
+Swapchain::Swapchain(GraphicsContext& context, IOpenGLSurface& surface, CreateInfo createInfo)
     : m_context(context)
-    , m_framebufferSize(context.window().framebufferSize())
+    , m_surface(surface)
+    , m_framebufferSize(surface.framebufferSize())
 {
-    m_context.window().registerFramebufferResizeCallback([this](int width, int height) {
+    surface.registerFramebufferResizeCallback([this](int width, int height) {
         m_framebufferSize = { width, height };
     });
 }
@@ -45,7 +46,7 @@ bool Swapchain::prepare(renderer::OperationContext& context)
 
 void Swapchain::present(renderer::OperationContext& context)
 {
-    m_context.window().swapBuffers();
+    m_surface.swapBuffers();
 }
 
 uint32_t Swapchain::framesInFlight() const

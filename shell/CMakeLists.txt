@@ -1,11 +1,7 @@
 declare_project()
 
 add_library(${PROJECT_NAME} STATIC
-	iresources.hpp
-	iresource.hpp
 	iwindow.hpp
-	resources.hpp
-	resources.cpp
 	iopengl_window.hpp
 	ivulkan_window.hpp
 
@@ -15,6 +11,7 @@ add_library(${PROJECT_NAME} STATIC
 	glfw/vulkan_window.cpp
 	glfw/opengl_window.hpp
 	glfw/opengl_window.cpp
+
 	qt/window.hpp
 	qt/window.cpp
 	qt/vulkan_window.hpp
@@ -22,6 +19,8 @@ add_library(${PROJECT_NAME} STATIC
 	qt/opengl_window.hpp
 	qt/opengl_window.cpp
 )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC TRUE)
 
 target_include_directories(${PROJECT_NAME}
 	PUBLIC .

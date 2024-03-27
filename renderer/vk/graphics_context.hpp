@@ -11,15 +11,17 @@
 #include <memory>
 
 namespace shell {
-class IVulkanWindow;
 class IResources;
+}
+
+namespace renderer {
+class IVulkanSurface;
 }
 
 namespace renderer { namespace vk {
 
 namespace handles {
 class RenderPass;
-class Surface;
 class Swapchain;
 }
 
@@ -34,10 +36,13 @@ public:
     const static std::vector<const char*> s_validationLayers;
 
 public:
-    GraphicsContext(shell::IVulkanWindow& window, shell::IResources& resources);
+    GraphicsContext(handles::ApplicationInfo appInfo);
     GraphicsContext(GraphicsContext&& other) = delete;
     GraphicsContext(const GraphicsContext& other) = delete;
     virtual ~GraphicsContext();
+
+    //  TO DO: rework to provide device picking logic for any surface
+    void init(IVulkanSurface& surface);
 
 public:
 	std::weak_ptr<handles::Memory> fetchMemory(size_t size,
@@ -49,6 +54,8 @@ public:
     virtual std::shared_ptr<IShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt,
         uint32_t layoutSize) override;
 
+    std::shared_ptr<ISwapchain> createSwapchain(IVulkanSurface& surface,
+        ISwapchain::CreateInfo createInfo);
     virtual std::shared_ptr<IComputer> createComputer(IComputer::CreateInfo createInfo) override;
     virtual std::shared_ptr<IComputePipeline> createComputePipeline(
         IComputePipeline::CreateInfo createInfo) override;
@@ -57,7 +64,6 @@ public:
     virtual std::shared_ptr<IRenderer> createRenderer(IRenderer::CreateInfo createInfo) override;
     virtual std::shared_ptr<IStorageBuffer> createStorageBuffer(
         IStorageBuffer::CreateInfo createInfo) override;
-    virtual std::shared_ptr<ISwapchain> createSwapchain(ISwapchain::CreateInfo createInfo) override;
 
     virtual std::shared_ptr<IModel> createModel(std::filesystem::path path) override;
     virtual std::shared_ptr<IModel> createModel(IModel::CreateInfo createInfo) override;
@@ -68,9 +74,7 @@ public:
 
     virtual Multisampling maxSampleCount() const override;
 
-    VkSurfaceKHR surface() const;
     const handles::Device& device() const;
-    const shell::IWindow& window() const;
 
     VkFormat findDepthFormat() const;
 
@@ -82,9 +86,6 @@ private:
     uint32_t dynamicAlignment(uint32_t layoutSize) const;
 
 private:
-    shell::IVulkanWindow& m_window;
-    shell::IResources& m_resources;
-
     handles::HandleVector<handles::Buffer> m_buffers;
 
     std::unordered_map<uint32_t, StaticUniformBufferShaderResource> m_staticUniformShaderResources;
@@ -92,7 +93,6 @@ private:
         m_dynamicUniformShaderResources;
     std::unordered_map<uint32_t, StorageBufferShaderResource> m_storageShaderResources;
 
-    std::unique_ptr<handles::Surface> m_surface;
     std::unique_ptr<handles::Device> m_device;
     std::unique_ptr<handles::DebugUtilsMessenger> m_debugMessenger;
 };
