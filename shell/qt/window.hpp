@@ -23,7 +23,6 @@ public:
 
     virtual std::string name() const override;
     virtual void close() override;
-    virtual bool shouldClose() const override;
     virtual std::pair<int, int> framebufferSize() const override;
     virtual uint32_t width() const override;
     virtual uint32_t height() const override;

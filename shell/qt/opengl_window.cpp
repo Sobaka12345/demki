@@ -48,6 +48,8 @@ renderer::IGraphicsContext& OpenGLWindow::graphicsContext()
     m_context->create();
 
     ASSERT(m_context->makeCurrent(this), "can't make context current");
+
+    //  change to Qt loader
     ASSERT(gladLoadGL(), "failed to initialize opengl");
 
     auto newContext = createContext();

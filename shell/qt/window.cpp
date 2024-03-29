@@ -52,8 +52,6 @@ void Window::close()
     QWindow::close();
 }
 
-bool Window::shouldClose() const {}
-
 std::pair<int, int> Window::framebufferSize() const
 {
     return { QWindow::width(), QWindow::height() };

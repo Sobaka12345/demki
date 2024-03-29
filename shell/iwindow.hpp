@@ -12,7 +12,6 @@ public:
     virtual std::string name() const = 0;
 
     virtual void close() = 0;
-    virtual bool shouldClose() const = 0;
 
     virtual bool iconified() const = 0;
 

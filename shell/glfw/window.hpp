@@ -24,7 +24,7 @@ public:
     virtual std::string name() const override;
 
     virtual void close() override;
-    virtual bool shouldClose() const override;
+    virtual bool shouldClose() const;
     virtual std::pair<int, int> framebufferSize() const override;
     virtual bool iconified() const override;
 
