@@ -12,12 +12,19 @@ add_library(${PROJECT_NAME} STATIC
 	glfw/opengl_window.hpp
 	glfw/opengl_window.cpp
 
-	qt/window.hpp
-	qt/window.cpp
-	qt/vulkan_window.hpp
-	qt/vulkan_window.cpp
-	qt/opengl_window.hpp
-	qt/opengl_window.cpp
+	qt/widget/widget.hpp
+	qt/widget/widget.cpp
+	qt/widget/vulkan_widget.hpp
+	qt/widget/vulkan_widget.cpp
+	qt/widget/opengl_widget.hpp
+	qt/widget/opengl_widget.cpp
+
+	qt/window/window.hpp
+	qt/window/window.cpp
+	qt/window/vulkan_window.hpp
+	qt/window/vulkan_window.cpp
+	qt/window/opengl_window.hpp
+	qt/window/opengl_window.cpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC TRUE)

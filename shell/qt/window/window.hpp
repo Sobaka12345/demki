@@ -17,6 +17,8 @@ public:
     ~Window();
 
     virtual bool event(QEvent* e) override;
+
+    virtual bool eventFilter(QObject* watched, QEvent* event) override;
     virtual void exposeEvent(QExposeEvent*) override;
 
     virtual bool available() const override;
@@ -38,6 +40,13 @@ public:
 signals:
     void render();
     void aboutToClose();
+
+private:
+    mutable std::vector<std::function<void(double xPos, double yPos)>> m_cursorPosCallback;
+    mutable std::vector<std::function<void(int, int)>> m_framebufferResizeCallbacks;
+    mutable std::vector<std::function<void(bool)>> m_windowIconifiedCallbacks;
+    mutable std::vector<std::function<void(int key, int scancode, int action, int mods)>>
+        m_onKeyPressedCallback;
 };
 
 }    //  namespace shell::qt

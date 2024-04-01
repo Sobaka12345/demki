@@ -15,7 +15,6 @@ public:
 
     virtual bool iconified() const = 0;
 
-    virtual renderer::IGraphicsContext& graphicsContext() = 0;
 
     virtual void registerWindowIconifiedCallback(std::function<void(bool)> callback) const = 0;
     virtual void registerOnKeyPressedCallback(

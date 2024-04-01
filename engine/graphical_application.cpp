@@ -1,8 +1,6 @@
 #include "graphical_application.hpp"
 
 #include <resources.hpp>
-#include <qt/vulkan_window.hpp>
-#include <qt/opengl_window.hpp>
 #include <glfw/vulkan_window.hpp>
 #include <glfw/opengl_window.hpp>
 

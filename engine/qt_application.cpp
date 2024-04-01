@@ -1,7 +1,7 @@
 #include "qt_application.hpp"
 
-#include <qt/vulkan_window.hpp>
-#include <qt/opengl_window.hpp>
+#include <qt/window/vulkan_window.hpp>
+#include <qt/window/opengl_window.hpp>
 
 #include <resources.hpp>
 

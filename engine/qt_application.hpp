@@ -2,7 +2,7 @@
 
 #include "abstract_application.hpp"
 
-#include <qt/window.hpp>
+#include <qt/window/window.hpp>
 
 #include <QApplication>
 

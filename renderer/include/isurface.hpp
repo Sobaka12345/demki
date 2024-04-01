@@ -13,6 +13,8 @@ class ISurface : public IRenderTarget
 public:
     virtual ~ISurface() {}
 
+    virtual IGraphicsContext& graphicsContext() = 0;
+
     virtual std::pair<int, int> framebufferSize() const = 0;
     virtual bool available() const = 0;
 
