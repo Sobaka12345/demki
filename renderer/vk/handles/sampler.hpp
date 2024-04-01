@@ -4,7 +4,7 @@
 
 #include "vk/utils.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 class Device;
 
@@ -45,4 +45,4 @@ private:
 	const Device& m_device;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

@@ -4,7 +4,7 @@
 
 #include "vk/utils.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(SubmitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -51,4 +51,4 @@ protected:
         VkHandleType* handlePtr) noexcept;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

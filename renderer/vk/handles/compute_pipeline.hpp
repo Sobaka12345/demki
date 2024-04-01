@@ -2,7 +2,7 @@
 
 #include "pipeline.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(ComputePipelineCreateInfo, VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -40,4 +40,4 @@ protected:
 };
 
 }    //  namespace handles
-}    //  namespace vk
+}    //  namespace renderer::vk

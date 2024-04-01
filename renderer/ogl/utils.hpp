@@ -69,7 +69,7 @@ IS_GLM_VEC(4);
     EACH_VEC_PAIR(3)      \
     EACH_VEC_PAIR(4)
 
-namespace ogl {
+namespace renderer::ogl {
 
 template <typename T>
 inline constexpr GLenum toGLType()
@@ -157,4 +157,4 @@ inline std::tuple<size_t, GLenum> toGLCompoundTypeSize(std::type_index typeIndex
     return { 1, toGLType(typeIndex) };
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

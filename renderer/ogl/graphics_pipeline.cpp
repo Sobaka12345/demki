@@ -3,7 +3,7 @@
 #include <operation_context.hpp>
 #include <utils.hpp>
 
-namespace ogl {
+namespace renderer::ogl {
 
 float toGLSampleShadingCoefficient(IGraphicsPipeline::CreateInfo::SampleShading sampleShading)
 {
@@ -88,7 +88,7 @@ int GraphicsPipeline::primitiveTopology() const
     return m_primitiveTopology;
 }
 
-void GraphicsPipeline::bind(::OperationContext& context)
+void GraphicsPipeline::bind(renderer::OperationContext& context)
 {
     get(context).graphicsPipeline = this;
 
@@ -108,9 +108,9 @@ void GraphicsPipeline::bind(::OperationContext& context)
     glEnable(GL_CULL_FACE);
     glCullFace(m_cullMode);
     glFrontFace(m_frontFace);
-    glPolygonMode(m_cullMode, m_polygonMode);
+    glPolygonMode(GL_FRONT_AND_BACK, m_polygonMode);
 
     glUseProgram(m_shaderProgram);
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

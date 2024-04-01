@@ -4,7 +4,7 @@
 
 class GLFWwindow;
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 class Instance;
 
@@ -25,4 +25,4 @@ private:
     const Instance& m_instance;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

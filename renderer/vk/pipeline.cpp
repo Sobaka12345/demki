@@ -12,7 +12,7 @@
 
 #include <algorithm>
 
-namespace vk {
+namespace renderer::vk {
 
 ShaderInterfaceHandle::TypeVisitor Pipeline::s_handleVisitor;
 
@@ -20,7 +20,7 @@ Pipeline::BindContext::BindContext(DescriptorSetInfo descriptorSetInfo)
     : descriptorSetInfo(descriptorSetInfo)
 {}
 
-void Pipeline::BindContext::bind(::OperationContext& context,
+void Pipeline::BindContext::bind(renderer::OperationContext& context,
     const IShaderInterfaceContainer& container)
 {
     const uint32_t descriptorsRequired = get(context).specificTarget->descriptorsRequired();
@@ -171,4 +171,4 @@ FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
     return contextIter->second;
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

@@ -13,7 +13,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(DeviceCreateInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -126,4 +126,4 @@ private:
     VkPhysicalDeviceMemoryProperties m_physicalDeviceMemoryProperties;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

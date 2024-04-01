@@ -2,7 +2,7 @@
 
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 HandleVector<GraphicsPipeline> GraphicsPipeline::create(const Device& device,
     VkPipelineCache cache,
@@ -38,4 +38,4 @@ GraphicsPipeline::GraphicsPipeline(
 {}
 
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

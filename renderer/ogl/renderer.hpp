@@ -4,7 +4,7 @@
 
 #include <glad/glad.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
 class GraphicsContext;
 
@@ -14,8 +14,8 @@ public:
     Renderer(const GraphicsContext& context, IRenderer::CreateInfo createInfo);
 
 public:
-    virtual ::OperationContext start(IRenderTarget& target) override;
-    virtual void finish(::OperationContext& context) override;
+    virtual renderer::OperationContext start(IRenderTarget& target) override;
+    virtual void finish(renderer::OperationContext& context) override;
 
 private:
     const GraphicsContext& m_context;
@@ -31,7 +31,7 @@ private:
         int width, height;
     };
 
-    std::unordered_map<IOperationTarget*, SampleInfo> m_samples;
+    std::unordered_map<GLuint, SampleInfo> m_samples;
 };
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

@@ -5,7 +5,7 @@
 
 #include "simemory_accessor.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(ImageSubresourceLayers)
     VKSTRUCT_PROPERTY(VkImageAspectFlags, aspectMask)
@@ -96,4 +96,4 @@ private:
 };
 
 }    //  namespace handles
-}    //  namespace vk
+}    //  namespace renderer::vk

@@ -4,7 +4,7 @@
 
 #include "vk/utils.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(ImageSubresourceRange)
     VKSTRUCT_PROPERTY(VkImageAspectFlags, aspectMask)
@@ -44,4 +44,4 @@ private:
     const Device& m_device;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

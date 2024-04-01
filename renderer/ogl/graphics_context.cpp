@@ -10,11 +10,7 @@
 #include "storage_buffer.hpp"
 #include "texture.hpp"
 
-#include <window.hpp>
-
-#include <GLFW/glfw3.h>
-
-namespace ogl {
+namespace renderer::ogl {
 
 GLenum memoryUsage(ShaderBlockType sbt)
 {
@@ -43,17 +39,8 @@ void GLAPIENTRY MessageCallback(GLenum source,
     }
 }
 
-GraphicsContext::GraphicsContext(Window& window, Resources& resources)
-    : IGraphicsContext(window, GAPI::OpenGL)
-    , m_window(window)
+GraphicsContext::GraphicsContext(IOpenGLSurface& defaultSurface)
 {
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-
-    ASSERT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "failed to initialize opengl");
-
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(MessageCallback, 0);
 }
@@ -64,6 +51,12 @@ std::shared_ptr<IShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlock
     uint32_t layoutSize)
 {
     return std::make_shared<UniformBufferInterfaceHandle>(layoutSize, memoryUsage(sbt));
+}
+
+std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(IOpenGLSurface& surface,
+    ISwapchain::CreateInfo createInfo)
+{
+    return std::make_shared<Swapchain>(*this, surface, std::move(createInfo));
 }
 
 std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo createInfo)
@@ -94,11 +87,6 @@ std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
     return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(ISwapchain::CreateInfo createInfo)
-{
-    return std::make_shared<Swapchain>(*this, std::move(createInfo));
-}
-
 Multisampling GraphicsContext::maxSampleCount() const
 {
     static const GLint value = []() {
@@ -111,11 +99,6 @@ Multisampling GraphicsContext::maxSampleCount() const
 }
 
 void GraphicsContext::waitIdle() {}
-
-const Window& GraphicsContext::window() const
-{
-    return m_window;
-}
 
 std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
 {
@@ -138,4 +121,4 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo cr
 }
 
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

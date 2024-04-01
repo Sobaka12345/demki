@@ -2,7 +2,7 @@
 
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 RenderPass::RenderPass(RenderPass&& other) noexcept
     : Handle(std::move(other))
@@ -35,4 +35,4 @@ std::span<const AttachmentDescription> RenderPass::attachments()
     return m_attachments;
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

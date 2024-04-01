@@ -5,7 +5,8 @@
 #include <camera.hpp>
 #include <imodel.hpp>
 #include <renderable.hpp>
-#include <utils.hpp>
+
+using namespace renderer;
 
 static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
     Vertex3DColoredTextured{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
@@ -21,8 +22,8 @@ static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
 static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
     2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
 
-Dummy::Dummy(CreateInfo createInfo)
-    : GraphicalApplication(std::move(createInfo))
+Dummy::Dummy(int& argc, char** argv)
+    : QtApplication(argc, argv)
 {
     m_timer.setIntervalMS(50);
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
@@ -47,7 +48,7 @@ Dummy::Dummy(CreateInfo createInfo)
     viewProjection.view = glm::lookAt(
         glm::vec3(0.0f, 3.0f, -4.f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     viewProjection.projection = glm::perspective(
-        glm::radians(45.0f), clientWidth() / static_cast<float>(clientHeight()), 0.1f, 8.0f);
+        glm::radians(45.0f), window().width() / static_cast<float>(window().height()), 0.1f, 8.0f);
 
     m_camera->setViewProjection(viewProjection);
 
@@ -74,12 +75,12 @@ void Dummy::update(int64_t dt)
 
 void Dummy::perform()
 {
-    auto context = m_renderer->start(*m_swapchain);
+    auto context = m_renderer->start(window());
     context.setViewport({
         .x = 0,
         .y = 0,
-        .width = static_cast<float>(m_swapchain->width()),
-        .height = static_cast<float>(m_swapchain->height()),
+        .width = static_cast<float>(window().width()),
+        .height = static_cast<float>(window().height()),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
@@ -87,8 +88,8 @@ void Dummy::perform()
     context.setScissors({
         .x = 0,
         .y = 0,
-        .width = m_swapchain->width(),
-        .height = m_swapchain->height(),
+        .width = window().width(),
+        .height = window().height(),
     });
 
     m_pipeline->bind(context);

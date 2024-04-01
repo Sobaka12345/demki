@@ -4,7 +4,7 @@
 
 #include <glad/glad.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
 class GraphicsContext;
 
@@ -14,8 +14,8 @@ public:
     explicit Model(GraphicsContext& context, IModel::CreateInfo createInfo) noexcept;
     virtual ~Model();
 
-    virtual void bind(::OperationContext& context) override;
-    virtual void draw(::OperationContext& context) override;
+    virtual void bind(renderer::OperationContext& context) override;
+    virtual void draw(renderer::OperationContext& context) override;
 
 private:
     GraphicsContext& m_context;
@@ -27,4 +27,4 @@ private:
     GLuint m_vao;
 };
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

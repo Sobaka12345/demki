@@ -4,7 +4,7 @@
 
 #include <cstdlib>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 class Allocator
 {
@@ -67,4 +67,4 @@ private:
     virtual void free(void* pMemory) { std::free(pMemory); }
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

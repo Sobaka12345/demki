@@ -2,7 +2,7 @@
 
 #include "shader_interface_handle.hpp"
 
-namespace ogl {
+namespace renderer::ogl {
 
 GLenum toGLShaderType(IPipeline::ShaderType type)
 {
@@ -114,4 +114,4 @@ FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
     return iter->second;
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

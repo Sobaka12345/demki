@@ -2,7 +2,7 @@
 
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 ImageView::ImageView(ImageView&& other) noexcept
     : Handle(std::move(other))
@@ -27,4 +27,4 @@ ImageView::~ImageView()
     destroy(vkDestroyImageView, m_device, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

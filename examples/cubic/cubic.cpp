@@ -5,12 +5,13 @@
 #include <camera.hpp>
 #include <imodel.hpp>
 #include <renderable.hpp>
-#include <utils.hpp>
 
 #include <GLFW/glfw3.h>
 
 #include <iostream>
 #include <iomanip>
+
+using namespace renderer;
 
 static constexpr float s_visibleRange = 50.f;
 static constexpr glm::vec3 s_startPosition = { 0.0f, 0.0f, 4.0f };
@@ -123,7 +124,7 @@ class Hero : public Renderable
     static constexpr float s_velocity = 0.1f;
 
 public:
-    Hero(GraphicalApplication& app, Map& map)
+    Hero(engine::GraphicalApplication& app, Map& map)
         : Renderable(app.context())
         , m_app(app)
         , m_map(map)
@@ -136,7 +137,7 @@ public:
         m_direction = glm::normalize(map.center - m_currentPosition);
         vp.view = glm::lookAt(m_currentPosition, m_currentPosition + m_direction, m_up);
         vp.projection = glm::perspective(glm::radians(45.0f),
-            app.clientWidth() / static_cast<float>(app.clientHeight()), 0.1f, s_visibleRange);
+            app.window().width() / static_cast<float>(app.window().height()), 0.1f, s_visibleRange);
         m_camera.setViewProjection(vp);
     }
 
@@ -265,8 +266,8 @@ public:
     }
 
 private:
-    GraphicalApplication& m_app;
-    Camera m_camera;
+    engine::GraphicalApplication& m_app;
+    renderer::Camera m_camera;
     Map& m_map;
 
     float m_yaw = -90.0f;
@@ -277,8 +278,8 @@ private:
     glm::vec3 m_currentPosition;
 };
 
-Cubic::Cubic(CreateInfo createInfo)
-    : GraphicalApplication(std::move(createInfo))
+Cubic::Cubic(int& argc, char** argv)
+    : GraphicalApplication(argc, argv)
     , m_movement(FALL)
     , xCursorPrev(0)
     , yCursorPrev(0)
@@ -412,12 +413,12 @@ void Cubic::update(int64_t dt)
 
 void Cubic::perform()
 {
-    auto context = m_renderer->start(*m_swapchain);
+    auto context = m_renderer->start(window());
     context.setViewport({
         .x = 0,
         .y = 0,
-        .width = static_cast<float>(m_swapchain->width()),
-        .height = static_cast<float>(m_swapchain->height()),
+        .width = static_cast<float>(window().width()),
+        .height = static_cast<float>(window().height()),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
@@ -425,8 +426,8 @@ void Cubic::perform()
     context.setScissors({
         .x = 0,
         .y = 0,
-        .width = m_swapchain->width(),
-        .height = m_swapchain->height(),
+        .width = window().width(),
+        .height = window().height(),
     });
 
     m_pipeline->bind(context);

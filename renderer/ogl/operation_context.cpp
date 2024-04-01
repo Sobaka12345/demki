@@ -8,7 +8,7 @@
 
 #include <operation_context.hpp>
 
-namespace ogl {
+namespace renderer::ogl {
 
 
 OperationContext::OperationContext(Computer* computer)
@@ -31,7 +31,7 @@ OperationContext::OperationContext(OperationContext&& other)
 
 OperationContext::~OperationContext() {}
 
-void OperationContext::submit(::OperationContext& context)
+void OperationContext::submit(renderer::OperationContext& context)
 {
     if (renderer) renderer->finish(context);
     if (computer) computer->finish(context);
@@ -69,4 +69,4 @@ IOperationTarget* OperationContext::operationTarget()
     return specificTarget->toBase();
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

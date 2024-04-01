@@ -2,18 +2,18 @@
 
 #include "handles/memory.hpp"
 
-#include "vk/types.hpp"
+#include "types.hpp"
 
 #include "iresource.hpp"
 
-#include <utils.hpp>
+#include "../utils.hpp"
 
 #include <memory>
 #include <type_traits>
 
-namespace vk {
+namespace renderer::vk {
 
-class ShaderResource : virtual public IResource
+class ShaderResource : virtual public shell::IResource
 {
 public:
     struct Descriptor : public std::enable_shared_from_this<Descriptor>
@@ -74,4 +74,4 @@ private:
     friend class ShaderResource::Descriptor;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

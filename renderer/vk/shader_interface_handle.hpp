@@ -9,7 +9,7 @@
 #include <list>
 #include <memory>
 
-namespace vk {
+namespace renderer::vk {
 
 namespace handles {
 class Memory;
@@ -60,4 +60,4 @@ private:
     std::list<std::shared_ptr<ShaderResource::Descriptor>>::const_iterator m_currentDescriptor;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

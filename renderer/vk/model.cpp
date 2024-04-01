@@ -5,7 +5,7 @@
 
 #include "graphics_context.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 Model::Model(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
@@ -24,12 +24,12 @@ Model::Model(GraphicsContext& context, CreateInfo createInfo)
 	m_memory.lock()->unmap();
 }
 
-void Model::draw(::OperationContext& context)
+void Model::draw(renderer::OperationContext& context)
 {
     get(context).commandBuffer->drawIndexed(m_indicesSize / m_indexSize, 1, 0, 0, 0);
 }
 
-void Model::bind(::OperationContext& context)
+void Model::bind(renderer::OperationContext& context)
 {
     if (m_memory.expired()) return;
 
@@ -40,4 +40,4 @@ void Model::bind(::OperationContext& context)
         VK_INDEX_TYPE_UINT32);
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

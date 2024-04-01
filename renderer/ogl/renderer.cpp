@@ -8,7 +8,7 @@
 
 #include <glad/glad.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
 Renderer::Renderer(const GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
@@ -16,9 +16,9 @@ Renderer::Renderer(const GraphicsContext& context, CreateInfo createInfo)
     , m_multisampling(createInfo.multisampling)
 {}
 
-::OperationContext Renderer::start(::IRenderTarget& target)
+renderer::OperationContext Renderer::start(renderer::IRenderTarget& target)
 {
-    ::OperationContext result;
+    renderer::OperationContext result;
     result.emplace<ogl::OperationContext>(this);
 
     if (!target.prepare(result))
@@ -34,9 +34,10 @@ Renderer::Renderer(const GraphicsContext& context, CreateInfo createInfo)
     {
         return result;
     }
-    else if (auto iter = m_samples.find(&target); iter == m_samples.end())
+    else if (auto iter = m_samples.find(get(result).specificTarget->framebuffer());
+             iter == m_samples.end())
     {
-        SampleInfo& info = m_samples[&target];
+        SampleInfo& info = m_samples[get(result).specificTarget->framebuffer()];
         info.width = target.width();
         info.height = target.height();
         glEnable(GL_DEPTH_TEST);
@@ -82,13 +83,13 @@ Renderer::Renderer(const GraphicsContext& context, CreateInfo createInfo)
     return result;
 }
 
-void Renderer::finish(::OperationContext& context)
+void Renderer::finish(renderer::OperationContext& context)
 {
     if (m_multisampling != Multisampling::MSA_1X)
     {
         auto& specContext = get(context);
         GLuint targetFramebuffer = specContext.specificTarget->framebuffer();
-        auto& sample = m_samples[specContext.operationTarget()];
+        auto& sample = m_samples[targetFramebuffer];
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, sample.framebuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFramebuffer);
@@ -99,4 +100,4 @@ void Renderer::finish(::OperationContext& context)
     context.operationTarget().present(context);
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

@@ -2,7 +2,7 @@
 
 #include "instance.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 VkResult DebugUtilsMessenger::createMessenger(const Instance& app,
     const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -58,4 +58,4 @@ DebugUtilsMessenger::~DebugUtilsMessenger()
     destroy(destroyMessenger, m_app, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

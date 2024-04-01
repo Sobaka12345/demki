@@ -4,7 +4,7 @@
 
 #include <utils.hpp>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 ShaderModule::ShaderModule(ShaderModule&& other) noexcept
     : Handle(std::move(other))
@@ -50,4 +50,4 @@ ShaderModule::~ShaderModule()
     destroy(vkDestroyShaderModule, m_device, handle(), nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

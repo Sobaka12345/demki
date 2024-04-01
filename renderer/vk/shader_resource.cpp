@@ -1,6 +1,6 @@
 #include "shader_resource.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 std::shared_ptr<ShaderResource::Descriptor> ShaderResource::Descriptor::create(
     ShaderResource& shaderResource)
@@ -36,4 +36,4 @@ std::shared_ptr<ShaderResource::Descriptor> ShaderResource::fetchDescriptor()
 
 void ShaderResource::freeDescriptor(const Descriptor& descriptor) {}
 
-}    //  namespace vk
+}    //  namespace renderer::vk

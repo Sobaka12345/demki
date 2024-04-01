@@ -2,7 +2,7 @@
 
 #include <operation_context.hpp>
 
-namespace ogl {
+namespace renderer::ogl {
 
 ComputePipeline::ComputePipeline(const GraphicsContext& context, CreateInfo createInfo)
     : Pipeline(context, createInfo)
@@ -13,7 +13,7 @@ ComputePipeline::ComputePipeline(const GraphicsContext& context, CreateInfo crea
 
 ComputePipeline::~ComputePipeline() {}
 
-void ComputePipeline::bind(::OperationContext& context)
+void ComputePipeline::bind(renderer::OperationContext& context)
 {
     get(context).computePipeline = this;
 
@@ -26,4 +26,4 @@ IComputePipeline::ComputeDimensions ComputePipeline::computeDimensions() const
 }
 
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

@@ -8,11 +8,11 @@
 
 #include <boost/pfr.hpp>
 
-namespace ogl {
+namespace renderer::ogl {
 
 class GraphicsContext;
 
-class StorageBuffer : public SpecificOperationTarget<IStorageBuffer>
+class StorageBuffer : public SpecificOperationTarget<renderer::IStorageBuffer>
 {
 public:
     StorageBuffer(GraphicsContext& context, CreateInfo createInfo);
@@ -20,12 +20,12 @@ public:
 
 public:
     virtual void accept(ComputerInfoVisitor& visitor) const override;
-    virtual bool prepare(::OperationContext& context) override;
-    virtual void present(::OperationContext& context) override;
+    virtual bool prepare(renderer::OperationContext& context) override;
+    virtual void present(renderer::OperationContext& context) override;
 
     virtual std::weak_ptr<IShaderInterfaceHandle> handle() const override;
-    virtual void bind(::OperationContext& context) const override;
-    virtual void draw(::OperationContext& context) const override;
+    virtual void bind(renderer::OperationContext& context) const override;
+    virtual void draw(renderer::OperationContext& context) const override;
 
     virtual GLuint framebuffer() override;
 
@@ -42,4 +42,4 @@ private:
     std::shared_ptr<IShaderInterfaceHandle> m_handle;
 };
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

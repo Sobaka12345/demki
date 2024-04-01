@@ -5,6 +5,8 @@
 
 #include <variant>
 
+namespace renderer {
+
 class OperationContext : public std::variant<vk::OperationContext, ogl::OperationContext>
 {
 public:
@@ -71,28 +73,30 @@ private:
 
 namespace vk {
 
-inline const OperationContext& get(const ::OperationContext& context) noexcept
+inline const vk::OperationContext& get(const renderer::OperationContext& context) noexcept
 {
-    return std::get<OperationContext>(context);
+    return std::get<vk::OperationContext>(context);
 }
 
-inline OperationContext& get(::OperationContext& context) noexcept
+inline vk::OperationContext& get(renderer::OperationContext& context) noexcept
 {
-    return std::get<OperationContext>(context);
+    return std::get<vk::OperationContext>(context);
 }
 
 }
 
 namespace ogl {
 
-inline const OperationContext& get(const ::OperationContext& context) noexcept
+inline const ogl::OperationContext& get(const renderer::OperationContext& context) noexcept
 {
-    return std::get<OperationContext>(context);
+    return std::get<ogl::OperationContext>(context);
 }
 
-inline OperationContext& get(::OperationContext& context) noexcept
+inline ogl::OperationContext& get(renderer::OperationContext& context) noexcept
 {
-    return std::get<OperationContext>(context);
+    return std::get<ogl::OperationContext>(context);
 }
 
 }
+
+}    //  namespace renderer

@@ -2,6 +2,8 @@
 
 #include "field.hpp"
 
+using namespace renderer;
+
 Block::Block(Renderable renderable)
     : m_renderable(std::move(renderable))
 {}

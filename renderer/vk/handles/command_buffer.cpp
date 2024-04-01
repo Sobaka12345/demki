@@ -5,7 +5,7 @@
 #include "graphics_pipeline.hpp"
 #include "pipeline_layout.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 CommandBuffer::CommandBuffer(const Device& device,
     const CommandPool& pool,
@@ -177,4 +177,4 @@ CommandBuffer::Resources& CommandBuffer::resourcesInUse() const
 }
 
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

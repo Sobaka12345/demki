@@ -1,5 +1,7 @@
 #include "camera.hpp"
 
+namespace renderer {
+
 Camera::Camera(IShaderResourceProvider& provider)
     : m_viewProjection(
           provider.fetchHandle(ShaderBlockType::UNIFORM_DYNAMIC, m_viewProjection.s_layoutSize))
@@ -46,3 +48,5 @@ std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Camera::dynamicU
 {
     return m_descriptors;
 }
+
+}    //  namespace renderer

@@ -2,7 +2,7 @@
 
 #include "handle.hpp"
 
-#include "vk/utils.hpp"
+#include "../utils.hpp"
 
 #include "buffer.hpp"
 #include "image.hpp"
@@ -10,7 +10,7 @@
 #include <memory>
 #include <variant>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(MappedMemoryRange, VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -96,4 +96,4 @@ private:
     std::variant<const Buffer*, const Image*> bindedResource;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

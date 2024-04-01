@@ -4,7 +4,7 @@
 
 #include <glad/glad.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
 class GraphicsContext;
 class ShaderInterfaceHandle;
@@ -24,4 +24,4 @@ private:
     std::shared_ptr<ShaderInterfaceHandle> m_handle;
 };
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

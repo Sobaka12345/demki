@@ -6,7 +6,7 @@
 
 #include <unordered_map>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(DescriptorSetLayoutCreateInfo,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO)
@@ -47,4 +47,4 @@ private:
     std::unordered_map<int32_t, handles::DescriptorSetLayoutBinding> m_bindings;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

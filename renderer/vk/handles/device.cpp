@@ -10,7 +10,7 @@
 #include <functional>
 #include <stdexcept>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 const std::array<const char* const, 1> Device::s_deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -269,4 +269,4 @@ OneTimeCommand Device::oneTimeCommand(QueueFamilyType type, uint32_t queueIdx) c
     return OneTimeCommand{ *this, type, queueIdx };
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

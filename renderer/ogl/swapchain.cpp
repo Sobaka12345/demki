@@ -2,18 +2,18 @@
 
 #include "graphics_context.hpp"
 
-#include <window.hpp>
+#include <iopengl_surface.hpp>
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
-Swapchain::Swapchain(const GraphicsContext& context, CreateInfo createInfo)
+Swapchain::Swapchain(GraphicsContext& context, IOpenGLSurface& surface, CreateInfo createInfo)
     : m_context(context)
-    , m_framebufferSize(context.window().framebufferSize())
+    , m_surface(surface)
+    , m_framebufferSize(surface.framebufferSize())
 {
-    m_context.window().registerFramebufferResizeCallback([this](int width, int height) {
+    surface.registerFramebufferResizeCallback([this](int width, int height) {
         m_framebufferSize = { width, height };
     });
 }
@@ -35,7 +35,7 @@ void Swapchain::accept(RenderInfoVisitor& visitor) const
     visitor.populateRenderInfo(*this);
 }
 
-bool Swapchain::prepare(::OperationContext& context)
+bool Swapchain::prepare(renderer::OperationContext& context)
 {
     get(context).specificTarget = this;
 
@@ -44,9 +44,9 @@ bool Swapchain::prepare(::OperationContext& context)
     return true;
 }
 
-void Swapchain::present(::OperationContext& context)
+void Swapchain::present(renderer::OperationContext& context)
 {
-    glfwSwapBuffers(m_context.window().glfwHandle());
+    m_surface.swapBuffers();
 }
 
 uint32_t Swapchain::framesInFlight() const
@@ -59,4 +59,4 @@ GLuint Swapchain::framebuffer()
     return 0;
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

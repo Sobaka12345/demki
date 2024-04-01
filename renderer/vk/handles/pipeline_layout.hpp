@@ -4,7 +4,7 @@
 
 #include "vk/utils.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 BEGIN_DECLARE_VKSTRUCT(PipelineLayoutCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -36,4 +36,4 @@ private:
     const Device& m_device;
 };
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

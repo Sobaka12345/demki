@@ -6,7 +6,7 @@
 
 #include <icompute_pipeline.hpp>
 
-namespace vk {
+namespace renderer::vk {
 
 class ComputePipeline
     : public Pipeline
@@ -16,7 +16,7 @@ class ComputePipeline
     {
         using Pipeline::BindContext::BindContext;
 
-        virtual void bind(::OperationContext& context,
+        virtual void bind(renderer::OperationContext& context,
             const IShaderInterfaceContainer& container) override;
     };
 
@@ -29,7 +29,7 @@ public:
 
     virtual ComputeDimensions computeDimensions() const override;
 
-    virtual void bind(::OperationContext& context) override;
+    virtual void bind(renderer::OperationContext& context) override;
 
 private:
     const handles::Pipeline& pipeline(const vk::OperationContext& context);
@@ -43,4 +43,4 @@ private:
     std::map<const handles::RenderPass*, handles::ComputePipeline> m_pipelines;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

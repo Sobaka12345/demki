@@ -2,13 +2,18 @@
 
 #include "assert.hpp"
 
-#include <functional>
 #include <filesystem>
 #include <fstream>
-#include <type_traits>
-#include <vector>
+#include <functional>
 #include <list>
 #include <map>
+#include <typeindex>
+#include <typeinfo>
+#include <type_traits>
+#include <variant>
+#include <vector>
+
+#include <boost/pfr.hpp>
 
 #ifdef _WIN32
 #	include <windows.h>    //GetModuleFileNameW
@@ -16,6 +21,46 @@
 #	include <limits.h>
 #	include <unistd.h>    //readlink
 #endif
+
+#define CREATE_INFO_PROPERTY(type, name, def) \
+                                              \
+public:                                       \
+    CreateInfo& name(type value)              \
+    {                                         \
+        m_##name = value;                     \
+        return *this;                         \
+    }                                         \
+    const auto& name() const                  \
+    {                                         \
+        return m_##name;                      \
+    }                                         \
+    auto& name()                              \
+    {                                         \
+        return m_##name;                      \
+    }                                         \
+                                              \
+private:                                      \
+    type m_##name = def;
+
+namespace std {
+template <typename T, typename = void>
+struct is_iterable : std::false_type
+{};
+
+//  this gets used only when we can call std::begin() and std::end() on that type
+template <typename T>
+struct is_iterable<T,
+    std::void_t<decltype(std::begin(std::declval<T&>())), decltype(std::end(std::declval<T&>()))>>
+    : std::true_type
+{};
+
+//  Here is a helper:
+template <typename T>
+constexpr bool is_iterable_v = is_iterable<T>::value;
+
+}
+
+namespace renderer {
 
 inline std::filesystem::path executablePath()
 {
@@ -54,25 +99,6 @@ inline std::vector<char> readFile(std::filesystem::path filePath)
     file.close();
     return buffer;
 }
-
-namespace std {
-template <typename T, typename = void>
-struct is_iterable : std::false_type
-{};
-
-//  this gets used only when we can call std::begin() and std::end() on that type
-template <typename T>
-struct is_iterable<T,
-    std::void_t<decltype(std::begin(std::declval<T&>())), decltype(std::end(std::declval<T&>()))>>
-    : std::true_type
-{};
-
-//  Here is a helper:
-template <typename T>
-constexpr bool is_iterable_v = is_iterable<T>::value;
-
-}
-
 
 template <typename KeyT, typename PtrT>
 class FragileSharedPtrMap;
@@ -163,7 +189,7 @@ private:
     bool m_isFragile;
     std::function<void(T*)> m_deleteCallback;
     ReferenceBlock* m_referenceBlock = nullptr;
-    std::list<FragileSharedPtr<T>*>::iterator m_listPos;
+    typename std::list<FragileSharedPtr<T>*>::iterator m_listPos;
 };
 
 template <typename KeyT, typename PtrT>
@@ -235,3 +261,55 @@ private:
     bool m_isInDestruction;
     MapType m_map;
 };
+
+template <typename T, typename... Ts>
+struct Unique : std::type_identity<T>
+{};
+
+template <typename... Ts, typename U, typename... Us>
+struct Unique<std::tuple<Ts...>, U, Us...>
+    : std::conditional_t<(std::is_same_v<U, Ts> || ...),
+          Unique<std::tuple<Ts...>, Us...>,
+          Unique<std::tuple<Ts..., U>, Us...>>
+{};
+
+template <typename... Ts>
+using UniqueTuple = typename Unique<std::tuple<>, Ts...>::type;
+
+template <typename... Ts>
+using UniqueVariant = typename Unique<std::variant<>, Ts...>::type;
+
+struct StructMetaInfo
+{
+    struct Field
+    {
+        ptrdiff_t shift = 0;
+        size_t typeSize = 0;
+        std::type_index typeId;
+    };
+
+    template <typename T>
+        requires std::is_trivial_v<T> && std::is_standard_layout_v<T>
+    static StructMetaInfo fromType()
+    {
+        StructMetaInfo result;
+        result.typeSize = sizeof(T);
+        result.alignment = std::alignment_of_v<T>;
+
+        T value;
+        boost::pfr::for_each_field(value, [&result, &value](auto& subValue) {
+            result.fields.push_back(StructMetaInfo::Field{
+                .shift = reinterpret_cast<uint8_t*>(&subValue) - reinterpret_cast<uint8_t*>(&value),
+                .typeSize = sizeof(decltype(subValue)),
+                .typeId = std::type_index{ typeid(decltype(subValue)) } });
+        });
+
+        return result;
+    }
+
+    size_t alignment = 0;
+    size_t typeSize = 0;
+    std::vector<Field> fields;
+};
+
+}    //  namespace renderer

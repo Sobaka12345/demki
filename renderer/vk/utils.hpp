@@ -18,7 +18,7 @@ struct is_std_span<std::span<Item, N>> : std::true_type
 {};
 }
 
-namespace vk {
+namespace renderer::vk {
 
 inline VkSampleCountFlagBits toVkSampleFlagBits(Multisampling sampleCount)
 {
@@ -61,7 +61,7 @@ concept IsVkStruct = requires {
     } -> std::convertible_to<T>;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk
 
 #define COMMA ,
 

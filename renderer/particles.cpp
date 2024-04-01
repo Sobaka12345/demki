@@ -2,6 +2,8 @@
 
 #include <igraphics_context.hpp>
 
+namespace renderer {
+
 Particles::Particles(IGraphicsContext& context, std::span<const Particle> initialData)
     : m_currentIndex(0)
 {
@@ -62,3 +64,5 @@ void Particles::present(OperationContext& context)
 
     m_currentIndex = (m_currentIndex + 1) % m_particlesBuffers.size();
 }
+
+}    //  namespace renderer

@@ -12,8 +12,9 @@
 #include "storage_buffer.hpp"
 
 #include <operation_context.hpp>
-#include <window.hpp>
-#include <resources.hpp>
+
+#include <ivulkan_surface.hpp>
+#include <iresources.hpp>
 
 #include <cstring>
 #include <iostream>
@@ -21,7 +22,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-namespace vk {
+namespace renderer::vk {
 
 static bool requiredExtensionsSupported(const std::vector<const char*>& required)
 {
@@ -125,7 +126,7 @@ std::vector<const char*> getRequiredExtensions()
 {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);    //!!!!!!!
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
@@ -137,19 +138,8 @@ std::vector<const char*> getRequiredExtensions()
     return extensions;
 }
 
-GraphicsContext::GraphicsContext(Window& window, Resources& resources)
-    : IGraphicsContext(window, GAPI::Vulkan)
-    , m_window(window)
-    , m_resources(resources)
+GraphicsContext::GraphicsContext(handles::ApplicationInfo appInfo)
 {
-    auto appInfo =
-        handles::ApplicationInfo()
-            .pApplicationName(window.name().c_str())
-            .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .pEngineName("DemkiEngine")
-            .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .apiVersion(VK_API_VERSION_1_3);
-
     auto createInfo = handles::InstanceCreateInfo().pApplicationInfo(&appInfo);
 
     if (s_enableValidationLayers)
@@ -172,17 +162,15 @@ GraphicsContext::GraphicsContext(Window& window, Resources& resources)
 
     createInfo.enabledExtensionCount(extensions.size()).ppEnabledExtensionNames(extensions.data());
 
-    ASSERT(create(vkCreateInstance, &createInfo, nullptr) == VK_SUCCESS,
+    ASSERT(Instance::create(vkCreateInstance, &createInfo, nullptr) == VK_SUCCESS,
         "failed to create instance ;c");
+
 
     if (s_enableValidationLayers)
     {
         m_debugMessenger =
             std::make_unique<handles::DebugUtilsMessenger>(*this, s_debugMessengerCreateInfo);
     }
-
-    m_surface = std::make_unique<handles::Surface>(*this, m_window.glfwHandle());
-    m_device = std::make_unique<handles::Device>(handle(), *m_surface);
 }
 
 GraphicsContext::~GraphicsContext()
@@ -193,7 +181,11 @@ GraphicsContext::~GraphicsContext()
     m_storageShaderResources.clear();
     m_device.reset();
     m_debugMessenger.reset();
-    m_surface.reset();
+}
+
+void GraphicsContext::init(IVulkanSurface& surface)
+{
+    m_device = std::make_unique<handles::Device>(handle(), surface.surfaceKHR());
 }
 
 std::weak_ptr<vk::handles::Memory> GraphicsContext::fetchMemory(
@@ -287,19 +279,15 @@ uint32_t GraphicsContext::dynamicAlignment(uint32_t layoutSize) const
     return layoutSize;
 }
 
-const handles::Surface& GraphicsContext::surface() const
-{
-    return *m_surface;
-}
-
 const handles::Device& GraphicsContext::device() const
 {
     return *m_device;
 }
 
-const Window& GraphicsContext::window() const
+std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(IVulkanSurface& surface,
+    ISwapchain::CreateInfo createInfo)
 {
-    return m_window;
+    return std::make_shared<Swapchain>(*this, surface, std::move(createInfo));
 }
 
 std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo createInfo)
@@ -330,11 +318,6 @@ std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
     return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(ISwapchain::CreateInfo createInfo)
-{
-    return std::make_shared<Swapchain>(*this, std::move(createInfo));
-}
-
 std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
 {
     return createModel(IModel::CreateInfo{ path });
@@ -342,8 +325,7 @@ std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
 
 std::shared_ptr<IModel> GraphicsContext::createModel(IModel::CreateInfo createInfo)
 {
-    return std::shared_ptr<IModel>(
-        m_resources.registerResource(new Model(*this, std::move(createInfo))));
+    return std::make_shared<Model>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path path)
@@ -353,10 +335,8 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path p
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo createInfo)
 {
-    return std::shared_ptr<ITexture>(
-        m_resources.registerResource(new Texture(*this, std::move(createInfo))));
+    return std::make_shared<Texture>(*this, std::move(createInfo));
 }
-
 
 void GraphicsContext::waitIdle()
 {
@@ -396,4 +376,4 @@ Multisampling GraphicsContext::maxSampleCount() const
     return Multisampling::MSA_1X;
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk

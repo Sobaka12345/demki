@@ -9,7 +9,7 @@
 
 #include <operation_context.hpp>
 
-namespace ogl {
+namespace renderer::ogl {
 
 StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
@@ -48,14 +48,14 @@ void StorageBuffer::accept(ComputerInfoVisitor& visitor) const
     visitor.populateComputerInfo(*this);
 }
 
-bool StorageBuffer::prepare(::OperationContext& context)
+bool StorageBuffer::prepare(renderer::OperationContext& context)
 {
     get(context).specificTarget = this;
 
     return true;
 }
 
-void StorageBuffer::present(::OperationContext& context)
+void StorageBuffer::present(renderer::OperationContext& context)
 {
     auto [x, y, z] = get(context).computePipeline->computeDimensions();
 
@@ -67,12 +67,12 @@ std::weak_ptr<IShaderInterfaceHandle> StorageBuffer::handle() const
     return m_handle;
 }
 
-void StorageBuffer::bind(::OperationContext& context) const
+void StorageBuffer::bind(renderer::OperationContext& context) const
 {
     glBindVertexArray(m_vao);
 }
 
-void StorageBuffer::draw(::OperationContext& context) const
+void StorageBuffer::draw(renderer::OperationContext& context) const
 {
     glDrawArrays(get(context).graphicsPipeline->primitiveTopology(), 0, m_elementCount);
 }
@@ -82,4 +82,4 @@ GLuint StorageBuffer::framebuffer()
     return 0;
 }
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

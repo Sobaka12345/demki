@@ -4,7 +4,7 @@
 #include "memory.hpp"
 #include "swapchain.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 HandleVector<Image> Image::swapChainImages(const Device& device, const Swapchain& swapchain)
 {
@@ -109,4 +109,4 @@ std::weak_ptr<Memory> Image::allocateMemoryImpl(VkMemoryPropertyFlags properties
     return m_memory;
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

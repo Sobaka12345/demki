@@ -1,7 +1,7 @@
 #include "queue.hpp"
 #include "device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 Queue::Queue(Queue&& other) noexcept
 	: Handle(std::move(other))
@@ -42,4 +42,4 @@ VkResult Queue::presentKHR(PresentInfoKHR presentInfo) const
     return vkQueuePresentKHR(handle(), &presentInfo);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

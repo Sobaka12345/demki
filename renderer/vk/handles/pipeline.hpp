@@ -6,7 +6,7 @@
 
 #include <span>
 
-namespace vk {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(PipelineShaderStageCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
@@ -40,4 +40,4 @@ protected:
 };
 
 }    //  namespace handles
-}    //  namespace vk
+}    //  namespace renderer::vk

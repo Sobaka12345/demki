@@ -1,6 +1,6 @@
 #include "physical_device.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 PhysicalDevice::PhysicalDevice(PhysicalDevice&& other) noexcept
     : Handle(std::move(other))

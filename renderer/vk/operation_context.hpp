@@ -1,12 +1,14 @@
 #pragma once
 
 #include "handles/semaphore.hpp"
+#include <ishader_interface.hpp>
 
-#include <shader_interface.hpp>
 #include <types.hpp>
 
 #include <unordered_map>
 #include <vector>
+
+namespace renderer {
 
 struct OperationContext;
 
@@ -44,7 +46,7 @@ struct OperationContext
     IPipeline* pipeline();
     IOperationTarget* operationTarget();
 
-    void submit(::OperationContext& context);
+    void submit(renderer::OperationContext& context);
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;
     void setViewport(Viewport viewport) const;
@@ -63,3 +65,4 @@ struct OperationContext
 };
 
 }    //  namespace vk
+}    //  namespace renderer

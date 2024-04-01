@@ -7,7 +7,7 @@
 #include <map>
 #include <unordered_set>
 
-namespace vk {
+namespace renderer::vk {
 
 class BufferShaderResource : public ShaderResource
 {
@@ -81,4 +81,4 @@ private:
     virtual VkMemoryPropertyFlags memoryProperties() const override;
 };
 
-}    //  namespace vk
+}    //  namespace renderer::vk

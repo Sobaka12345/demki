@@ -2,7 +2,7 @@
 
 #include "pipeline.hpp"
 
-namespace vk {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(PipelineViewportStateCreateInfo,
     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO)
@@ -162,4 +162,4 @@ protected:
 };
 
 }    //  namespace handles
-}    //  namespace vk
+}    //  namespace renderer::vk

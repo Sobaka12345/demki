@@ -4,7 +4,7 @@
 #include "descriptor_pool.hpp"
 #include "descriptor_set_layout.hpp"
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 HandleVector<DescriptorSet> DescriptorSet::create(const Device& device,
     HandlePtr<DescriptorPool> pool,
@@ -112,4 +112,4 @@ void DescriptorSet::write(std::span<const WriteDescriptorSet> writes)
         nullptr);
 }
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

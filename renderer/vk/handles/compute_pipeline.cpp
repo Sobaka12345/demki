@@ -3,7 +3,7 @@
 #include "device.hpp"
 #include <map>
 
-namespace vk { namespace handles {
+namespace renderer::vk { namespace handles {
 
 HandleVector<ComputePipeline> ComputePipeline::create(const Device& device,
     VkPipelineCache cache,
@@ -38,4 +38,4 @@ ComputePipeline::ComputePipeline(
     : ComputePipeline(device, cache, std::move(createInfo), nullptr)
 {}
 
-}}    //  namespace vk::handles
+}}    //  namespace renderer::vk::handles

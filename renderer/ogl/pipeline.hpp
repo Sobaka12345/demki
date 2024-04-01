@@ -5,7 +5,7 @@
 
 #include <glad/glad.h>
 
-namespace ogl {
+namespace renderer::ogl {
 
 class GraphicsContext;
 
@@ -16,7 +16,7 @@ public:
     struct BindContext : public IPipelineBindContext
     {
         BindContext(std::span<const uint32_t> bindingIndices);
-        virtual void bind(::OperationContext& context,
+        virtual void bind(renderer::OperationContext& context,
             const IShaderInterfaceContainer& container) override;
 
         std::span<const uint32_t> bindingIndices;
@@ -46,4 +46,4 @@ protected:
     FragileSharedPtrMap<std::type_index, IPipelineBindContext> m_bindContexts;
 };
 
-}    //  namespace ogl
+}    //  namespace renderer::ogl

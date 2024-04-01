@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shader_interface.hpp"
+#include <ishader_interface.hpp>
 #include "shader_interface_handle.hpp"
 
 #include "handles/descriptor_set.hpp"
@@ -13,7 +13,7 @@
 #include <map>
 #include <set>
 
-namespace vk {
+namespace renderer::vk {
 
 class Renderer;
 class OperationContext;
@@ -43,7 +43,7 @@ protected:
 
         BindContext(DescriptorSetInfo descriptorSetInfo);
 
-        virtual void bind(::OperationContext& context,
+        virtual void bind(renderer::OperationContext& context,
             const IShaderInterfaceContainer& container) override;
 
     protected:
@@ -119,4 +119,4 @@ inline VkDescriptorType toDescriptorType(ShaderBlockType type)
     return VK_DESCRIPTOR_TYPE_MAX_ENUM;
 }
 
-}    //  namespace vk
+}    //  namespace renderer::vk
