@@ -1,42 +1,42 @@
 declare_project()
 
 add_library(${PROJECT_NAME} STATIC
-	ogl/computer.hpp
-	ogl/computer.cpp
-	ogl/compute_pipeline.hpp
-	ogl/compute_pipeline.cpp
-	ogl/graphics_pipeline.hpp
-	ogl/graphics_pipeline.cpp
-	ogl/graphics_context.hpp
-	ogl/graphics_context.cpp
-	ogl/ispecific_operation_target.hpp
-	ogl/model.hpp
-	ogl/model.cpp
-	ogl/operation_context.hpp
-	ogl/operation_context.cpp
-	ogl/pipeline.hpp
-	ogl/pipeline.cpp
-	ogl/renderer.hpp
-	ogl/renderer.cpp
-	ogl/shader_interface_handle.hpp
-	ogl/storage_buffer.hpp
-	ogl/storage_buffer.cpp
-	ogl/swapchain.hpp
-	ogl/swapchain.cpp
-	ogl/texture.hpp
-	ogl/texture.cpp
-	ogl/utils.hpp
-	vk/handles/allocator.hpp
-	vk/handles/buffer.hpp
+    ogl/computer.hpp
+    ogl/computer.cpp
+    ogl/compute_pipeline.hpp
+    ogl/compute_pipeline.cpp
+    ogl/graphics_pipeline.hpp
+    ogl/graphics_pipeline.cpp
+    ogl/graphics_context.hpp
+    ogl/graphics_context.cpp
+    ogl/ispecific_operation_target.hpp
+    ogl/model.hpp
+    ogl/model.cpp
+    ogl/operation_context.hpp
+    ogl/operation_context.cpp
+    ogl/pipeline.hpp
+    ogl/pipeline.cpp
+    ogl/renderer.hpp
+    ogl/renderer.cpp
+    ogl/shader_interface_handle.hpp
+    ogl/storage_buffer.hpp
+    ogl/storage_buffer.cpp
+    ogl/swapchain.hpp
+    ogl/swapchain.cpp
+    ogl/texture.hpp
+    ogl/texture.cpp
+    ogl/utils.hpp
+    vk/handles/allocator.hpp
+    vk/handles/buffer.hpp
     vk/handles/buffer.cpp
     vk/handles/command.hpp
     vk/handles/command.cpp
     vk/handles/command_buffer.hpp
     vk/handles/command_buffer.cpp
     vk/handles/command_pool.hpp
-	vk/handles/command_pool.cpp
-	vk/handles/compute_pipeline.hpp
-	vk/handles/compute_pipeline.cpp
+    vk/handles/command_pool.cpp
+    vk/handles/compute_pipeline.hpp
+    vk/handles/compute_pipeline.cpp
     vk/handles/debug_utils_messenger.hpp
     vk/handles/debug_utils_messenger.cpp
     vk/handles/descriptor_set.hpp
@@ -48,7 +48,7 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/device.hpp
     vk/handles/device.cpp
     vk/handles/fence.hpp
-	vk/handles/fence.cpp
+    vk/handles/fence.cpp
     vk/handles/framebuffer.cpp
     vk/handles/framebuffer.hpp
     vk/handles/graphics_pipeline.hpp
@@ -62,9 +62,9 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/instance.cpp
     vk/handles/memory.hpp
     vk/handles/memory.cpp
-	vk/handles/pipeline.hpp
-	vk/handles/pipeline.cpp
-	vk/handles/pipeline_layout.hpp
+    vk/handles/pipeline.hpp
+    vk/handles/pipeline.cpp
+    vk/handles/pipeline_layout.hpp
     vk/handles/pipeline_layout.cpp
     vk/handles/physical_device.hpp
     vk/handles/physical_device.cpp
@@ -87,69 +87,72 @@ add_library(${PROJECT_NAME} STATIC
     vk/graphics_context.cpp
     vk/model.hpp
     vk/model.cpp
-	vk/computer.hpp
-	vk/computer.cpp
-	vk/compute_pipeline.hpp
-	vk/compute_pipeline.cpp
-	vk/descriptor_set_provider.hpp
-	vk/descriptor_set_provider.cpp
-	vk/graphics_pipeline.hpp
-	vk/graphics_pipeline.cpp
-	vk/ispecific_operation_target.hpp
-	vk/pipeline.hpp
-	vk/pipeline.cpp
-	vk/renderer.hpp
-	vk/renderer.cpp
-	vk/operation_context.hpp
-	vk/operation_context.cpp
-	vk/storage_buffer.hpp
-	vk/storage_buffer.cpp
+    vk/computer.hpp
+    vk/computer.cpp
+    vk/compute_pipeline.hpp
+    vk/compute_pipeline.cpp
+    vk/descriptor_set_provider.hpp
+    vk/descriptor_set_provider.cpp
+    vk/graphics_pipeline.hpp
+    vk/graphics_pipeline.cpp
+    vk/ispecific_operation_target.hpp
+    vk/pipeline.hpp
+    vk/pipeline.cpp
+    vk/renderer.hpp
+    vk/renderer.cpp
+    vk/operation_context.hpp
+    vk/operation_context.cpp
+    vk/storage_buffer.hpp
+    vk/storage_buffer.cpp
     vk/swapchain.hpp
     vk/swapchain.cpp
     vk/texture.hpp
     vk/texture.cpp
-	vk/types.hpp
-	vk/shader_resource.hpp
-	vk/shader_resource.cpp
-	vk/shader_interface_handle.hpp
-	vk/shader_interface_handle.cpp
-	vk/buffer_shader_resource.hpp
-	vk/buffer_shader_resource.cpp
-	vk/utils.hpp
-	include/icomputer.hpp
-	include/icompute_pipeline.hpp
-	include/icompute_target.hpp
-	include/igraphics_context.hpp
-	include/igraphics_pipeline.hpp
-	include/imodel.hpp
-	include/ipipeline.hpp
-	include/irenderable.hpp
-	include/irenderer.hpp
-	include/irender_target.hpp
-	include/ioperation_target.hpp
-	include/istorage_buffer.hpp
-	include/ishader_interface_handle.hpp
-	include/iswapchain.hpp
-	include/itexture.hpp
-	include/types.hpp
-	include/ishader_interface.hpp
-	include/isurface.hpp
-	include/ivulkan_surface.hpp
-	include/iopengl_surface.hpp
-	include/camera.hpp
-	include/particles.hpp
-	include/renderable.hpp
-	camera.cpp
-	create_info.cpp
-	particles.cpp
-	renderable.cpp
-	operation_context.hpp
-	storage_buffer_value.hpp
-	utils.hpp
-	shader_interface.cpp
+    vk/types.hpp
+    vk/shader_resource.hpp
+    vk/shader_resource.cpp
+    vk/shader_interface_handle.hpp
+    vk/shader_interface_handle.cpp
+    vk/buffer_shader_resource.hpp
+    vk/buffer_shader_resource.cpp
+    vk/utils.hpp
+    include/icomputer.hpp
+    include/icompute_pipeline.hpp
+    include/icompute_target.hpp
+    include/igraphics_context.hpp
+    include/igraphics_pipeline.hpp
+    include/imodel.hpp
+    include/ipipeline.hpp
+    include/irenderable.hpp
+    include/irenderer.hpp
+    include/irender_target.hpp
+    include/ioperation_target.hpp
+    include/istorage_buffer.hpp
+    include/ishader_interface_handle.hpp
+    include/iswapchain.hpp
+    include/itexture.hpp
+    include/types.hpp
+    include/ishader_interface.hpp
+    include/isurface.hpp
+    include/ivulkan_surface.hpp
+    include/iopengl_surface.hpp
+    include/camera.hpp
+    include/particles.hpp
+    include/renderable.hpp
+    camera.cpp
+    create_info.cpp
+    particles.cpp
+    renderable.cpp
+    operation_context.hpp
+    storage_buffer_value.hpp
+    utils.hpp
+    shader_interface.cpp
     uniform_value.hpp
-	vertex.hpp
+    vertex.hpp
+    pch.hpp
 )
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE pch.hpp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ./include/)
 target_include_directories(${PROJECT_NAME} PRIVATE .)

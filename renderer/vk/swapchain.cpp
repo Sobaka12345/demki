@@ -12,6 +12,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <algorithm>
+
 namespace renderer::vk {
 
 VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities,

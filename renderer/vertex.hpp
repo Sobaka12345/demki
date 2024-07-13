@@ -1,5 +1,6 @@
 #pragma once
 
+#define GLM_EXT_INCLUDED
 #ifndef GLM_ENABLE_EXPERIMENTAL
 #	define GLM_ENABLE_EXPERIMENTAL
 #endif
@@ -10,8 +11,6 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <vulkan/vulkan_core.h>
-
-#include <array>
 
 struct Vertex3D
 {

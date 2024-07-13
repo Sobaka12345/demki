@@ -6,6 +6,7 @@
 #include "vk/graphics_context.hpp"
 #include "vk/types.hpp"
 
+#include <algorithm>
 #include <vector>
 #include <functional>
 #include <stdexcept>
