@@ -46,7 +46,7 @@ Device::SwapChainSupportDetails Device::swapChainSupportDetails(VkPhysicalDevice
 
 QueueFamilies::QueueFamilies()
 {
-    constexpr uint32_t invalidIndex = std::numeric_limits<uint32_t>::max();
+    constexpr uint32_t invalidIndex = (std::numeric_limits<uint32_t>::max)();
     m_queueFamilyIndices.fill(invalidIndex);
 }
 
@@ -59,7 +59,7 @@ QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
         queueFamilyProperties.data());
 
-    constexpr uint32_t invalidIndex = std::numeric_limits<uint32_t>::max();
+    constexpr uint32_t invalidIndex = (std::numeric_limits<uint32_t>::max)();
     m_queueFamilyIndices.fill(invalidIndex);
 
     for (int i = 0; i < queueFamilyProperties.size(); ++i)

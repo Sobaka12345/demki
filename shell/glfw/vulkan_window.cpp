@@ -20,6 +20,32 @@ VkSurfaceKHR VulkanWindow::surfaceKHR() const
     return m_surface;
 }
 
+void VulkanWindow::waitEvents() const
+{
+	return glfwWaitEvents();
+}
+
+std::vector<const char*> VulkanWindow::validationLayers()
+{
+    // TO DO
+    return {};
+}
+
+std::vector<const char*> VulkanWindow::requiredExtensions()
+{
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);    //!!!!!!!
+
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+#ifndef NDEBUG
+    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
+
+    return extensions;
+}
+
 renderer::IGraphicsContext& VulkanWindow::graphicsContext()
 {
     if (m_graphicsContext)
@@ -27,13 +53,7 @@ renderer::IGraphicsContext& VulkanWindow::graphicsContext()
         return *m_graphicsContext;
     }
 
-    auto newContext = createContext(
-        renderer::vk::handles::ApplicationInfo()
-            .pApplicationName(name().c_str())
-            .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .pEngineName("DemkiEngine")
-            .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .apiVersion(VK_API_VERSION_1_3));
+    auto newContext = createContext();
 
     m_instance = *newContext;
     glfwCreateWindowSurface(m_instance, create(), nullptr, &m_surface);

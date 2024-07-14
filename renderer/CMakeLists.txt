@@ -149,10 +149,9 @@ add_library(${PROJECT_NAME} STATIC
     shader_interface.cpp
     uniform_value.hpp
     vertex.hpp
-    pch.hpp
 )
 
-target_precompile_headers(${PROJECT_NAME} PRIVATE pch.hpp)
+target_precompile_headers(${PROJECT_NAME} PRIVATE renderer.pch)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ./include/)
 target_include_directories(${PROJECT_NAME} PRIVATE .)

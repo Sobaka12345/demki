@@ -5,6 +5,8 @@
 
 #include <ishader_interface.hpp>
 
+#include <array>
+
 namespace renderer {
 
 class IStorageBuffer;

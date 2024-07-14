@@ -4,5 +4,5 @@
 
 int main(int argc, char** argv)
 {
-    return Tetris{ argc, argv }.exec();
+    return Tetris{ argc, argv }.run();
 }

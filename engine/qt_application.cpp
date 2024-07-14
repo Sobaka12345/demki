@@ -30,7 +30,7 @@ QtApplication::QtApplication(int& argc, char** argv)
 
 QtApplication::~QtApplication() {}
 
-int QtApplication::exec()
+int QtApplication::run()
 {
     auto start = std::chrono::steady_clock::now();
     connect(

@@ -31,7 +31,7 @@ GraphicalApplication::~GraphicalApplication()
     m_mainWindow.reset();
 }
 
-int GraphicalApplication::exec()
+int GraphicalApplication::run()
 {
     return mainLoop();
 }

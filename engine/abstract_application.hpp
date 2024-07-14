@@ -44,7 +44,7 @@ public:
 
     renderer::IGraphicsContext& context();
 
-    virtual int exec() = 0;
+    virtual int run() = 0;
 
 protected:
     void init(shell::IWindow* window);

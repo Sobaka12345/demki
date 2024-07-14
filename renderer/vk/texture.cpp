@@ -20,7 +20,7 @@ Texture::Texture(const GraphicsContext& context, ITexture::CreateInfo createInfo
     , m_width(createInfo.width)
     , m_height(createInfo.height)
 {
-    m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1;
+    m_mipLevels = static_cast<uint32_t>(std::floor(std::log2((std::max)(m_width, m_height)))) + 1;
 
     ASSERT(createInfo.pixels, "failed to load texture image!");
 

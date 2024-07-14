@@ -17,12 +17,18 @@ VulkanWindow::VulkanWindow(int width, int height, std::string name, QWindow* par
 
 VulkanWindow::~VulkanWindow()
 {
+    m_instance.destroy();
     m_graphicsContext.reset();
 }
 
 VkSurfaceKHR VulkanWindow::surfaceKHR() const
 {
     return m_surface;
+}
+
+void VulkanWindow::waitEvents() const
+{
+	//return glfwWaitEvents();
 }
 
 bool VulkanWindow::prepare(renderer::OperationContext& context)
@@ -35,6 +41,24 @@ void VulkanWindow::present(renderer::OperationContext& context)
     m_swapchain->present(context);
 }
 
+std::vector<const char*> VulkanWindow::validationLayers()
+{
+    // TO DO
+    return {};
+}
+
+std::vector<const char*> VulkanWindow::requiredExtensions()
+{
+    std::vector<const char*> result;
+    m_instance.create();
+    for (auto extension : m_instance.extensions()) result.push_back(extension.constData());
+    m_instance.destroy();
+#ifndef NDEBUG
+    result.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
+    return result;
+}
+
 renderer::IGraphicsContext& VulkanWindow::graphicsContext()
 {
     if (m_graphicsContext)
@@ -42,13 +66,7 @@ renderer::IGraphicsContext& VulkanWindow::graphicsContext()
         return *m_graphicsContext;
     }
 
-    auto newContext = createContext(
-        renderer::vk::handles::ApplicationInfo()
-            .pApplicationName(name().c_str())
-            .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .pEngineName("DemkiEngine")
-            .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .apiVersion(VK_API_VERSION_1_3));
+    auto newContext = createContext();
 
     m_instance.setVkInstance(*newContext);
     ASSERT(m_instance.create(), "failed to create qt vulkan instance");

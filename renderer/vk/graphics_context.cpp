@@ -19,9 +19,6 @@
 #include <cstring>
 #include <iostream>
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 namespace renderer::vk {
 
 static bool requiredExtensionsSupported(const std::vector<const char*>& required)
@@ -122,49 +119,25 @@ const std::vector<const char*> GraphicsContext::s_validationLayers = {
     "VK_LAYER_KHRONOS_validation",
 };
 
-std::vector<const char*> getRequiredExtensions()
+GraphicsContext::GraphicsContext(handles::InstanceCreateInfo instanceCreateInfo)
 {
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);    //!!!!!!!
-
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-    if (GraphicsContext::s_enableValidationLayers)
-    {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-
-    return extensions;
-}
-
-GraphicsContext::GraphicsContext(handles::ApplicationInfo appInfo)
-{
-    auto createInfo = handles::InstanceCreateInfo().pApplicationInfo(&appInfo);
-
     if (s_enableValidationLayers)
     {
         ASSERT(requiredValidationLayerSupported(GraphicsContext::s_validationLayers),
             "required validation layers are absent");
 
-        createInfo.enabledLayerCount(s_validationLayers.size())
+        instanceCreateInfo.enabledLayerCount(s_validationLayers.size())
             .ppEnabledLayerNames(s_validationLayers.data())
             .pNext(&s_debugMessengerCreateInfo);
         //  we need pNext to debug vk(Create|Destroy)Instance
     }
     else
     {
-        createInfo.pNext(nullptr).enabledLayerCount(0);
+        instanceCreateInfo.pNext(nullptr).enabledLayerCount(0);
     }
 
-    const auto extensions = getRequiredExtensions();
-    ASSERT(requiredExtensionsSupported(extensions), "required extensions are absent");
-
-    createInfo.enabledExtensionCount(extensions.size()).ppEnabledExtensionNames(extensions.data());
-
-    ASSERT(Instance::create(vkCreateInstance, &createInfo, nullptr) == VK_SUCCESS,
+    ASSERT(Instance::create(vkCreateInstance, &instanceCreateInfo, nullptr) == VK_SUCCESS,
         "failed to create instance ;c");
-
 
     if (s_enableValidationLayers)
     {

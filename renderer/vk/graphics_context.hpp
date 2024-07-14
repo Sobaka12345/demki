@@ -36,7 +36,7 @@ public:
     const static std::vector<const char*> s_validationLayers;
 
 public:
-    GraphicsContext(handles::ApplicationInfo appInfo);
+    GraphicsContext(handles::InstanceCreateInfo instanceCreateInfo);
     GraphicsContext(GraphicsContext&& other) = delete;
     GraphicsContext(const GraphicsContext& other) = delete;
     virtual ~GraphicsContext();

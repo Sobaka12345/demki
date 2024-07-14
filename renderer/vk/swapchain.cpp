@@ -10,8 +10,6 @@
 
 #include <ivulkan_surface.hpp>
 
-#include <GLFW/glfw3.h>
-
 #include <algorithm>
 
 namespace renderer::vk {
@@ -19,7 +17,7 @@ namespace renderer::vk {
 VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities,
     const IVulkanSurface& window)
 {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+    if (capabilities.currentExtent.width != (std::numeric_limits<uint32_t>::max)())
     {
         return capabilities.currentExtent;
     }
@@ -447,7 +445,7 @@ void Swapchain::recreate()
 {
     while (!m_surface.available())
     {
-        glfwWaitEvents();
+        m_surface.waitEvents();
     }
     m_context.device().waitIdle();
 

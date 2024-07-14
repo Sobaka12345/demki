@@ -19,12 +19,17 @@ public:
     ~VulkanWindow();
 
     virtual VkSurfaceKHR surfaceKHR() const override;
+    virtual void waitEvents() const override;
     virtual renderer::IGraphicsContext& graphicsContext() override;
 
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
 
     virtual void accept(renderer::RenderInfoVisitor& visitor) const override;
+
+private:
+    virtual std::vector<const char*> validationLayers() override;
+    virtual std::vector<const char*> requiredExtensions() override;
 
 private:
     VkSurfaceKHR m_surface;

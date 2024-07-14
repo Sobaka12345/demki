@@ -10,7 +10,6 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-#include <vulkan/vulkan_core.h>
 
 struct Vertex3D
 {

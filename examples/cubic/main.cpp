@@ -2,5 +2,5 @@
 
 int main(int argc, char** argv)
 {
-    return Cubic{ argc, argv }.exec();
+    return Cubic{ argc, argv }.run();
 }

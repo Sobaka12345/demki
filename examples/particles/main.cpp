@@ -2,5 +2,5 @@
 
 int main(int argc, char** argv)
 {
-    return ParticlesApplication{ argc, argv }.exec();
+    return ParticlesApplication{ argc, argv }.run();
 }

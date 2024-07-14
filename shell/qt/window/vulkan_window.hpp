@@ -17,7 +17,11 @@ public:
     ~VulkanWindow();
 
 public:
+    std::vector<const char*> validationLayers();
+    std::vector<const char*> requiredExtensions();
+
     virtual VkSurfaceKHR surfaceKHR() const override;
+    virtual void waitEvents() const override;
 
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;

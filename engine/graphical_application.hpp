@@ -12,7 +12,7 @@ public:
     GraphicalApplication(int& argc, char** argv);
     virtual ~GraphicalApplication();
 
-    virtual int exec() override;
+    virtual int run() override;
     virtual shell::glfw::Window& window() override;
 
 private:
