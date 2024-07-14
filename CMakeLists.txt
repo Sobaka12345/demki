@@ -5,11 +5,6 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 string(REPLACE " " "_" PROJECT_NAME ${PROJECT_NAME})
 project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
-string(TOUPPER ${PROJECT_NAME} _CURRENT_PROJECT_NAME_TO_UPPER)
-cmake_language(EVAL CODE "
-    set(${_CURRENT_PROJECT_NAME_TO_UPPER}_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-")
-
 endmacro(declare_project)
 
 declare_project()
@@ -44,15 +39,6 @@ add_subdirectory(examples/cubic)
 add_subdirectory(examples/particles)
 add_subdirectory(examples/tetris)
 add_subdirectory(examples/dummy)
-
-target_link_libraries(resources utils)
-target_link_libraries(renderer PUBLIC resources vulkan-headers::vulkan-headers glad::glad glm::glm stb::stb tinyobjloader::tinyobjloader pfr::pfr tclap::tclap)
-target_link_libraries(shell PUBLIC renderer glfw Qt6::Core Qt6::Widgets Qt6::Gui Qt6::OpenGL)
-target_link_libraries(engine PUBLIC shell)
-target_link_libraries(tetris PRIVATE engine)
-target_link_libraries(cubic PRIVATE engine)
-target_link_libraries(dummy PRIVATE engine)
-target_link_libraries(particles PRIVATE engine)
 
 add_custom_target(conan SOURCES conanfile.py configure_linux_default.sh configure_windows_default.bat )
 source_group(config FILES conanfile.py configure_linux_default.sh configure_windows_default.bat)

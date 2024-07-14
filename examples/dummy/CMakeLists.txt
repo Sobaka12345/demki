@@ -1,41 +1,19 @@
 declare_project()
 
-set(DUMMY_SHADER_SOURCES
-    ${SHARED_SHADERS_DIR}/shader.frag
-    ${SHARED_SHADERS_DIR}/shader.vert)
+include(${CMAKE_SOURCE_DIR}/cmake_utils/project.cmake)
+demki_init_target(
+	TARGET          ${PROJECT_NAME}
+    USE_QT			TRUE
+	SHADER_SOURCES  ${SHARED_SHADERS_DIR}/shader.frag
+                    ${SHARED_SHADERS_DIR}/shader.vert
+)
 
-set(DUMMY_TEXTURES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/textures)
-set(DUMMY_TEXTURES_SRC ${DUMMY_TEXTURES_DIR}/viking_room.jpg)
+demki_complete_target(
+	TARGET      ${PROJECT_NAME}
+    PUBLIC_LIBS engine
+	SOURCES     main.cpp
+                dummy.cpp
+                dummy.hpp
+)
 
-set(DUMMY_MODELS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/models)
-set(DUMMY_MODELS_SRC ${DUMMY_TEXTURES_DIR}/viking_room.obj)
-
-add_executable(${PROJECT_NAME}
-    main.cpp
-    dummy.cpp
-    dummy.hpp
-    ${DUMMY_SHADER_SOURCES}
-    ${DUMMY_TEXTURE_DIR})
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${DUMMY_BINARY_DIR}/${CMAKE_BUILD_TYPE}/"
-    LIBRARY_OUTPUT_DIRECTORY "${DUMMY_BINARY_DIR}/${CMAKE_BUILD_TYPE}/"
-    RUNTIME_OUTPUT_DIRECTORY "${DUMMY_BINARY_DIR}/${CMAKE_BUILD_TYPE}/")
-
-
-generate_glslc_script(PROJECT_DIR ${DUMMY_BINARY_DIR} SHADER_PATHS ${DUMMY_SHADER_SOURCES})
-
-add_custom_command(TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E create_symlink "${DUMMY_BINARY_DIR}/shaders" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders")
-
-add_custom_command(TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E create_symlink "${DUMMY_TEXTURES_DIR}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/textures")
-
-add_custom_command(TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E create_symlink "${DUMMY_MODELS_DIR}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/models")
-
-install (DIRECTORY ${DUMMY_BINARY_DIR}/shaders DESTINATION ${PROJECT_NAME})
-install (TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_NAME})
+demki_install_target(TARGET ${PROJECT_NAME})

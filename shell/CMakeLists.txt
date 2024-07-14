@@ -32,3 +32,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC TRUE)
 target_include_directories(${PROJECT_NAME}
 	PUBLIC .
 )
+
+target_link_libraries(${PROJECT_NAME} PUBLIC renderer glfw Qt6::Core Qt6::Widgets Qt6::Gui Qt6::OpenGL)

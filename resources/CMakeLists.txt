@@ -12,3 +12,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC TRUE)
 target_include_directories(${PROJECT_NAME}
 	PUBLIC .
 )
+
+target_link_libraries(${PROJECT_NAME} utils)

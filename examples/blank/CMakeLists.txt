@@ -11,8 +11,6 @@ demki_complete_target(
 	TARGET 		${PROJECT_NAME}
 	PUBLIC_LIBS engine
 	SOURCES 	main.cpp
-				cubic.cpp
-				cubic.hpp
 )
 
 demki_install_target(TARGET ${PROJECT_NAME})

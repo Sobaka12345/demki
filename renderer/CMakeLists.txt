@@ -155,3 +155,5 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE renderer.pch)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ./include/)
 target_include_directories(${PROJECT_NAME} PRIVATE .)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC resources vulkan-headers::vulkan-headers glad::glad glm::glm stb::stb tinyobjloader::tinyobjloader pfr::pfr tclap::tclap)
