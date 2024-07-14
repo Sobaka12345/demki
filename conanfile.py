@@ -39,12 +39,10 @@ class DemkiConan(ConanFile):
 
 		if self.settings.os == "Windows":
 			self.options["qt"]["opengl"] = "dynamic"
+			self.options["qt"]["with_zstd"] = False
 		elif self.settings.os == "Linux":
-			self.options["qt"]["opengl"] = "desktop"
-			self.options["qt"]["qtdoc"] = False
-			self.options["qt"]["qttools"] = False
-			self.options["qt"]["qtdeclarative"] = False
-			self.options["qt"]["qttranslations"] = False
+			self.options["qt"]["opengl"] = "desktop"    
+			self.options["qt"]["with_zstd"] = True
 
 		# Disabled
 		#self.options["qt"]["opengl"] = "no"
@@ -70,7 +68,6 @@ class DemkiConan(ConanFile):
 		self.options["qt"]["with_glib"] = False
 		self.options["qt"]["with_md4c"] = False
 		self.options["qt"]["with_odbc"] = False
-		self.options["qt"]["with_zstd"] = False
 		self.options["qt"]["qtactiveqt"] = False
 		self.options["qt"]["qtlocation"] = False
 		self.options["qt"]["with_mysql"] = False
