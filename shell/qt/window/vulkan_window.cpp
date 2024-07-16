@@ -2,6 +2,7 @@
 
 #include <assert.hpp>
 
+#include <QCoreApplication>
 #include <QOpenGLWindow>
 #include <QVulkanWindow>
 
@@ -28,7 +29,7 @@ VkSurfaceKHR VulkanWindow::surfaceKHR() const
 
 void VulkanWindow::waitEvents() const
 {
-	//return glfwWaitEvents();
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 bool VulkanWindow::prepare(renderer::OperationContext& context)
