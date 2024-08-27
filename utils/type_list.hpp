@@ -107,3 +107,51 @@ struct TypeAt
 {
     using type = TypeAt<typename TypeListT::Tail, index - 1>::type;
 };
+
+template <typename TypeList, typename... Types>
+struct Append;
+
+template <>
+struct Append<NullType, NullType>
+{
+    using Result = NullType;
+};
+
+template <typename... T>
+struct Append<NullType, T...>
+{
+    using Result = TypeList<T...>;
+};
+
+template <typename Head, typename... Tail>
+struct Append<NullType, TypeList<Head, Tail...>>
+{
+    using Result = TypeList<Head, Tail...>;
+};
+
+template <typename Head, typename T, typename... Tail>
+struct Append<TypeList<Head, Tail...>, T>
+{
+    using Result = TypeList<Head, Tail..., T>;
+};
+
+template <typename Head, typename T, typename... Tail>
+struct Append<T, TypeList<Head, Tail...>>
+{
+    using Result = TypeList<T, Head, Tail...>;
+};
+
+template <template <class...> typename TT, typename TypeListT, typename... TList>
+struct Apply;
+
+template <template <class...> typename TT, typename... TList>
+struct Apply<TT, NullType, TList...>
+{
+    using Result = TT<TList...>;
+};
+
+template <template <class...> typename TT, typename TypeListT, typename... TList>
+struct Apply
+{
+    using Result = Apply<TT, typename TypeListT::Tail, TList..., typename TypeListT::Head>::Result;
+};

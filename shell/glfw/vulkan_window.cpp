@@ -6,7 +6,22 @@ namespace shell::glfw {
 
 VulkanWindow::VulkanWindow(int width, int height, std::string name)
     : Window(GLFW_NO_API, width, height, name)
-{}
+{
+    auto newContext = createContext(
+        renderer::vk::handles::ApplicationInfo()
+            .pApplicationName(name.c_str())
+            .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
+            .pEngineName("DemkiEngine")
+            .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
+            .apiVersion(VK_API_VERSION_1_3));
+
+    m_instance = *newContext;
+    glfwCreateWindowSurface(m_instance, create(), nullptr, &m_surface);
+
+    m_graphicsContext.reset(newContext);
+    newContext->init(*this);
+    m_swapchain = newContext->createSwapchain(*this, {});
+}
 
 VulkanWindow::~VulkanWindow()
 {
@@ -22,26 +37,6 @@ VkSurfaceKHR VulkanWindow::surfaceKHR() const
 
 renderer::IGraphicsContext& VulkanWindow::graphicsContext()
 {
-    if (m_graphicsContext)
-    {
-        return *m_graphicsContext;
-    }
-
-    auto newContext = createContext(
-        renderer::vk::handles::ApplicationInfo()
-            .pApplicationName(name().c_str())
-            .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .pEngineName("DemkiEngine")
-            .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
-            .apiVersion(VK_API_VERSION_1_3));
-
-    m_instance = *newContext;
-    glfwCreateWindowSurface(m_instance, create(), nullptr, &m_surface);
-
-    m_graphicsContext.reset(newContext);
-    newContext->init(*this);
-    m_swapchain = newContext->createSwapchain(*this, {});
-
     return *m_graphicsContext;
 }
 

@@ -109,7 +109,7 @@ public:
                     .binding = m_bindings.back().binding,
                     .format = Attribute::attrubuteFormat(subVal),
                     .offset = static_cast<uint32_t>(
-                        reinterpret_cast<int8_t*>(&subVal) - reinterpret_cast<int8_t*>(&val)),
+                        static_cast<int8_t*>(&subVal) - static_cast<int8_t*>(&val)),
                 });
             });
 

@@ -9,8 +9,7 @@ namespace renderer::ogl {
 
 class GraphicsContext;
 
-class Pipeline 
-    : virtual public IPipeline 
+class Pipeline : virtual public IPipeline
 {
 public:
     struct BindContext : public IPipelineBindContext
@@ -43,7 +42,7 @@ protected:
 
     GLuint m_shaderProgram;
     std::unordered_map<uint32_t, std::vector<uint32_t>> m_bindingIndices;
-    FragileSharedPtrMap<std::type_index, IPipelineBindContext> m_bindContexts;
+    FragileSharedPtrMap<size_t, IPipelineBindContext> m_bindContexts;
 };
 
 }    //  namespace renderer::ogl

@@ -3,7 +3,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 #include <camera.hpp>
-#include <imodel.hpp>
+#include <imesh.hpp>
 #include <renderable.hpp>
 
 using namespace renderer;
@@ -52,11 +52,11 @@ Dummy::Dummy(int& argc, char** argv)
 
     m_camera->setViewProjection(viewProjection);
 
-    m_model = context().createModel(executablePath() / "models" / "viking_room.obj");
+    m_mesh = context().createMesh(executablePath() / "models" / "viking_room.obj");
     m_texture = context().createTexture(executablePath() / "textures" / "viking_room.png");
 
     m_renderable = std::make_unique<Renderable>(context());
-    m_renderable->setModel(m_model);
+    m_renderable->setMesh(m_mesh);
     m_renderable->setTexture(m_texture);
     m_renderable->setPosition(
         glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));

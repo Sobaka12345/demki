@@ -24,7 +24,7 @@ static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0,
 Field::Field(IGraphicsContext& context)
     : m_context(context)
 {
-    m_cube = context.createModel(IModel::CreateInfo{
+    m_cube = context.createMesh(IMesh::CreateInfo{
         s_cubeVertices,
         s_cubeIndices,
     });
@@ -49,7 +49,7 @@ Field::Field(IGraphicsContext& context)
 std::shared_ptr<Block> Field::createBlock() const
 {
     Renderable obj(m_context);
-    obj.setModel(m_cube);
+    obj.setMesh(m_cube);
     obj.setTexture(m_cubeTexture);
 
     return std::make_shared<Block>(std::move(obj));

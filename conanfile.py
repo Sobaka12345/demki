@@ -4,7 +4,7 @@ from conan.tools.cmake import CMakeToolchain
 
 class DemkiConan(ConanFile):
 	settings = "os", "compiler", "build_type", "arch"
-	requires = ["qt/6.6.1",
+	requires = ["qt/6.7.1",
 	            "glfw/3.3.8",
 		    "tinyobjloader/2.0.0-rc10",
 		    "vulkan-loader/1.3.268.0",
@@ -23,10 +23,14 @@ class DemkiConan(ConanFile):
 		self.options["glad"].gl_version = '4.6'
 
 		os.environ["NOT_ON_C3I"] = "1"
+		#SET os.environ["LLVM_INSTALL_DIR"] to llvm-config --prefix IF qtdoc BUILD DOES NOT WORK
+
 		#Qt6 configuration
 		# Enabled
 		self.options["qt"]["gui"] = True
+		self.options["qt"]["qtsvg"] = True
 		self.options["qt"]["shared"] = True
+		self.options["qt"]["openssl"] = True
 		self.options["qt"]["widgets"] = True
 		self.options["qt"]["with_pcre2"] = True
 		self.options["qt"]["with_libpng"] = True
@@ -39,21 +43,17 @@ class DemkiConan(ConanFile):
 		if self.settings.os == "Windows":
 		        self.options["qt"]["opengl"] = "dynamic"
 		elif self.settings.os == "Linux":
-		        self.options["qt"]["opengl"] = "desktop"
+			    self.options["qt"]["opengl"] = "desktop"
 
 		# Disabled
 		#self.options["qt"]["opengl"] = "no"
 		self.options["qt"]["qt3d"] = False
-		self.options["qt"]["qtdoc"] = False
-		self.options["qt"]["qtsvg"] = False
 		self.options["qt"]["qtcoap"] = False
 		self.options["qt"]["qtgrpc"] = False
 		self.options["qt"]["qtmqtt"] = False
-		self.options["qt"]["openssl"] = False
 		self.options["qt"]["with_pq"] = False
 		self.options["qt"]["qtopcua"] = False
 		self.options["qt"]["qtscxml"] = False
-		self.options["qt"]["qttools"] = False
 		self.options["qt"]["qtcharts"] = False
 		self.options["qt"]["qtgraphs"] = False
 		self.options["qt"]["qtlottie"] = False
@@ -82,13 +82,10 @@ class DemkiConan(ConanFile):
 		self.options["qt"]["qtwebsockets"] = False
 		self.options["qt"]["with_libjpeg"] = False
 		self.options["qt"]["with_sqlite3"] = False
-		self.options["qt"]["qtdeclarative"] = False
 		self.options["qt"]["qtnetworkauth"] = False
 		self.options["qt"]["qtpositioning"] = False
-		self.options["qt"]["qtshadertools"] = False
 		self.options["qt"]["qtconnectivity"] = False
 		self.options["qt"]["qtimageformats"] = False
-		self.options["qt"]["qttranslations"] = False
 		self.options["qt"]["qtquicktimeline"] = False
 		self.options["qt"]["qtremoteobjects"] = False
 		self.options["qt"]["qtlanguageserver"] = False

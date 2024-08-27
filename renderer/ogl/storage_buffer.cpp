@@ -1,5 +1,6 @@
 #include "storage_buffer.hpp"
 
+#include "graphics_context.hpp"
 #include "compute_pipeline.hpp"
 
 #include "utils.hpp"
@@ -15,6 +16,8 @@ StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
     , m_elementCount(createInfo.initialDataSize)
 {
+    m_handle = context.fetchHandle(ShaderBlockType::STORAGE, createInfo.initialDataSize);
+
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_buffer);
 
@@ -33,8 +36,6 @@ StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
             dataMetaInfo.typeSize, reinterpret_cast<void*>(field.shift));
         glEnableVertexAttribArray(j++);
     }
-
-    m_handle = std::make_shared<StorageBufferInterfaceHandle>(m_buffer);
 }
 
 StorageBuffer::~StorageBuffer()
@@ -62,11 +63,6 @@ void StorageBuffer::present(renderer::OperationContext& context)
     glDispatchCompute(m_elementCount / x, y, z);
 }
 
-std::weak_ptr<IShaderInterfaceHandle> StorageBuffer::handle() const
-{
-    return m_handle;
-}
-
 void StorageBuffer::bind(renderer::OperationContext& context) const
 {
     glBindVertexArray(m_vao);
@@ -80,6 +76,11 @@ void StorageBuffer::draw(renderer::OperationContext& context) const
 GLuint StorageBuffer::framebuffer()
 {
     return 0;
+}
+
+std::shared_ptr<IShaderInterfaceHandle> StorageBuffer::handle()
+{
+    return m_handle;
 }
 
 }    //  namespace renderer::ogl

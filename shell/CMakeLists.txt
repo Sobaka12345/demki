@@ -1,4 +1,4 @@
-declare_project()
+begin_project()
 
 add_library(${PROJECT_NAME} STATIC
 	iwindow.hpp

@@ -1,9 +1,10 @@
 #pragma once
 
+
 #include "../utils.hpp"
 #include "../vertex.hpp"
 
-#include <ishader_interface.hpp>
+#include "ishader_interface.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -65,10 +66,10 @@ protected:
     class CreateInfo
     {
     public:
-        template <IsShaderInterfaceContainer T>
+        template <typename T>
         Derived& addShaderInterfaceContainer(uint32_t batchSize = 1)
         {
-            m_interfaceContainers.push_back({ T::sId(), batchSize, T::sLayout() });
+            m_interfaceContainers.push_back({ T::sId(), batchSize, T::s_layout });
             return that();
         }
 

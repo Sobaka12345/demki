@@ -96,11 +96,6 @@ void StorageBuffer::draw(renderer::OperationContext& context) const
     get(context).commandBuffer->draw(m_elementCount, 1, 0, 0);
 }
 
-std::weak_ptr<IShaderInterfaceHandle> StorageBuffer::handle() const
-{
-    return m_handle;
-}
-
 void StorageBuffer::waitFor(OperationContext& context)
 {
     std::copy(context.waitSemaphores.begin(),
@@ -118,5 +113,8 @@ uint32_t StorageBuffer::descriptorsRequired() const
 {
     return 1;
 }
+
+std::shared_ptr<IShaderInterfaceHandle> StorageBuffer::handle() {}
+
 
 }    //  namespace renderer::vk

@@ -8,7 +8,7 @@
 
 #include <vector>
 #include <functional>
-#include <stdexcept>
+#include <algorithm>
 
 namespace renderer::vk { namespace handles {
 

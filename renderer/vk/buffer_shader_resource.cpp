@@ -1,14 +1,18 @@
 #include "buffer_shader_resource.hpp"
 
+
+#include "graphics_context.hpp"
+#include "shader_interface_handle.hpp"
+
 #include <ranges>
 
 namespace renderer::vk {
 
 BufferShaderResource::BufferShaderResource(
-    const handles::Device& device, uint32_t alignment, uint32_t chunkObjectCount)
+    GraphicsContext& context, uint32_t alignment, uint32_t chunkObjectCount)
     : m_chunkObjectCount(chunkObjectCount)
     , m_alignment(alignment)
-    , m_device(device)
+    , m_context(context)
 {}
 
 std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::fetchDescriptor()
@@ -32,7 +36,7 @@ std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::fetchDescripto
 
 size_t BufferShaderResource::allocateBuffer()
 {
-    auto& newBuffer = m_buffers.emplaceBack(m_device, bufferCreateInfo());
+    auto& newBuffer = m_buffers.emplaceBack(m_context.device(), bufferCreateInfo());
     newBuffer.allocateAndBindMemory(memoryProperties()).lock()->map();
     m_freeDescriptors.push_back(std::unordered_set<uint64_t>{});
     auto& freeSet = m_freeDescriptors.back();
@@ -95,6 +99,11 @@ VkMemoryPropertyFlags UniformBufferShaderResource::memoryProperties() const
     return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 }
 
+DynamicUniformBufferShaderResource::DynamicUniformBufferShaderResource(
+    GraphicsContext& context, uint32_t alignment, uint32_t chunkObjectCount)
+    : UniformBufferShaderResource(context, alignment, chunkObjectCount)
+{}
+
 void DynamicUniformBufferShaderResource::populateDescriptor(Descriptor& descriptor)
 {
     auto& buffer = m_buffers[descriptor.id.bufferId];
@@ -103,6 +112,11 @@ void DynamicUniformBufferShaderResource::populateDescriptor(Descriptor& descript
     descriptor.dynamicOffset = descriptor.id.descriptorId * alignment();
     descriptor.memory = buffer.memory();
 }
+
+StaticUniformBufferShaderResource::StaticUniformBufferShaderResource(
+    GraphicsContext& context, uint32_t alignment, uint32_t chunkObjectCount)
+    : UniformBufferShaderResource(context, alignment, chunkObjectCount)
+{}
 
 void StaticUniformBufferShaderResource::populateDescriptor(Descriptor& descriptor)
 {

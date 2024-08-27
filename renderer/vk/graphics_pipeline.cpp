@@ -109,7 +109,7 @@ void GraphicsPipeline::BindContext::bind(renderer::OperationContext& context,
     std::vector<uint32_t> offsets;
     for (auto& descriptor : container.dynamicUniforms())
     {
-        descriptor.handle.lock()->accept(s_handleVisitor);
+        descriptor.resource->handle()->accept(s_handleVisitor);
         offsets.push_back(s_handleVisitor->currentDescriptor()->dynamicOffset);
     }
 

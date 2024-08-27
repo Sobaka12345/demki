@@ -1,11 +1,11 @@
-#include "model.hpp"
+#include "mesh.hpp"
 #include "graphics_pipeline.hpp"
 
 #include <operation_context.hpp>
 
 namespace renderer::ogl {
 
-Model::Model(GraphicsContext& context, CreateInfo createInfo) noexcept
+Mesh::Mesh(GraphicsContext& context, CreateInfo createInfo) noexcept
     : m_context(context)
     , m_indexCount(createInfo.indices.size())
 {
@@ -35,19 +35,19 @@ Model::Model(GraphicsContext& context, CreateInfo createInfo) noexcept
     glEnableVertexAttribArray(2);
 }
 
-Model::~Model()
+Mesh::~Mesh()
 {
     glDeleteBuffers(1, &m_indexBuffer);
     glDeleteBuffers(1, &m_vertexBuffer);
     glDeleteVertexArrays(1, &m_vao);
 }
 
-void Model::bind(renderer::OperationContext& context)
+void Mesh::bind(renderer::OperationContext& context)
 {
     glBindVertexArray(m_vao);
 }
 
-void Model::draw(renderer::OperationContext& context)
+void Mesh::draw(renderer::OperationContext& context)
 {
     glDrawElements(get(context).graphicsPipeline->primitiveTopology(), m_indexCount,
         GL_UNSIGNED_INT, 0);

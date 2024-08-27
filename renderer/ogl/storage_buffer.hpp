@@ -23,23 +23,24 @@ public:
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
 
-    virtual std::weak_ptr<IShaderInterfaceHandle> handle() const override;
     virtual void bind(renderer::OperationContext& context) const override;
     virtual void draw(renderer::OperationContext& context) const override;
 
     virtual GLuint framebuffer() override;
 
+    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
+
 private:
     void init(const void* data, size_t sizeInBytes, size_t typeSize);
 
 private:
+    std::shared_ptr<ShaderInterfaceHandle> m_handle;
     GraphicsContext& m_context;
 
     uint64_t m_elementCount;
 
     GLuint m_vao;
     GLuint m_buffer;
-    std::shared_ptr<IShaderInterfaceHandle> m_handle;
 };
 
 }    //  namespace renderer::ogl

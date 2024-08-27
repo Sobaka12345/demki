@@ -30,9 +30,7 @@ void Pipeline::BindContext::bind(renderer::OperationContext& context,
     keyVector.reserve(descriptors.size());
     for (const auto& descriptor : descriptors)
     {
-        DASSERT(!descriptor.handle.expired(),
-            "descriptor handle is expired or was not initialized");
-        descriptor.handle.lock()->accept(s_handleVisitor);
+        descriptor.resource->handle()->accept(s_handleVisitor);
 
         s_handleVisitor->assureDescriptorCount(descriptorsRequired);
 
@@ -63,7 +61,7 @@ void Pipeline::BindContext::bind(renderer::OperationContext& context,
         std::vector<handles::DescriptorSet::Write> writes;
         for (uint32_t i = 0; i < descriptors.size(); ++i)
         {
-            descriptors[i].handle.lock()->accept(s_handleVisitor);
+            descriptors[i].resource->handle()->accept(s_handleVisitor);
             if (descriptors[i].binding.type == ShaderBlockType::SAMPLER)
             {
                 writes.push_back(handles::DescriptorSet::Write{
@@ -149,22 +147,21 @@ FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
     const IShaderInterfaceContainer& container)
 {
     const auto containerId = container.id();
-    const auto containerTypeId = container.typeId();
 
-    if (auto iter = m_bindContexts.find(containerTypeId); iter != m_bindContexts.end())
+    if (auto iter = m_bindContexts.find(containerId); iter != m_bindContexts.end())
     {
         return iter->second;
     }
 
     auto& [setId, layout] = m_setLayouts.at(containerId);
 
-    auto [contextIter, _] = m_bindContexts.emplace(containerTypeId, 
+    auto [contextIter, _] = m_bindContexts.emplace(containerId,
         newBindContext({
             .setId = setId,
             .bindingIndices = m_bindingIndices.at(containerId),
             .descriptorSetProvider = m_descriptorSetProviders.at(containerId),
             .descriptorSetLayout = layout,
-    }));
+        }));
 
     contextIter->second.setFragile(true);
 

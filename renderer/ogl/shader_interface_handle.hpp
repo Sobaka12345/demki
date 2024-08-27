@@ -1,12 +1,15 @@
 #pragma once
 
+#include <iuniform_buffer.hpp>
 #include <ishader_interface_handle.hpp>
 
 #include <glad/glad.h>
 
 namespace renderer::ogl {
 
-struct ShaderInterfaceHandle : public IShaderInterfaceHandle
+struct ShaderInterfaceHandle
+    : public IShaderInterfaceHandle
+    , public std::enable_shared_from_this<ShaderInterfaceHandle>
 {
     struct TypeVisitor : public ShaderInterfaceHandleVisitor
     {
@@ -26,10 +29,16 @@ struct ShaderInterfaceHandle : public IShaderInterfaceHandle
     }
 
     virtual void bind(GLuint binding) = 0;
+
+    //  TO DO: remove or unify this nonsense
+    virtual void reset(GLuint resourceId) {};
 };
 
-struct UniformBufferInterfaceHandle : public ShaderInterfaceHandle
+struct UniformBufferInterfaceHandle
+    : public ShaderInterfaceHandle
+    , public IUniformBuffer
 {
+private:
     explicit UniformBufferInterfaceHandle(size_t size, GLenum memoryUsage)
         : size(size)
     {
@@ -39,6 +48,14 @@ struct UniformBufferInterfaceHandle : public ShaderInterfaceHandle
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         mapped = std::malloc(size);
+    }
+
+public:
+    [[nodiscard]] static std::shared_ptr<UniformBufferInterfaceHandle> create(size_t size,
+        GLenum memoryUsage)
+    {
+        return std::shared_ptr<UniformBufferInterfaceHandle>{ new UniformBufferInterfaceHandle(size,
+            memoryUsage) };
     }
 
     ~UniformBufferInterfaceHandle()
@@ -67,6 +84,8 @@ struct UniformBufferInterfaceHandle : public ShaderInterfaceHandle
         return mapped;
     }
 
+    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override { return shared_from_this(); }
+
     virtual void bind(GLuint binding) override
     {
         glBindBufferRange(GL_UNIFORM_BUFFER, binding, buffer, 0, size);
@@ -80,9 +99,16 @@ struct UniformBufferInterfaceHandle : public ShaderInterfaceHandle
 
 struct TextureInterfaceHandle : public ShaderInterfaceHandle
 {
-    explicit TextureInterfaceHandle(GLuint texture)
+private:
+    explicit TextureInterfaceHandle(GLuint texture = 0)
         : texture(texture)
     {}
+
+public:
+    [[nodiscard]] static std::shared_ptr<TextureInterfaceHandle> create(GLuint texture = 0)
+    {
+        return std::shared_ptr<TextureInterfaceHandle>{ new TextureInterfaceHandle(texture) };
+    }
 
     virtual void write(const void* src, size_t size) override { ASSERT(false, "not implemented"); }
 
@@ -98,12 +124,14 @@ struct TextureInterfaceHandle : public ShaderInterfaceHandle
         glBindTexture(GL_TEXTURE_2D, texture);
     }
 
+    virtual void reset(GLuint id) override { texture = id; }
+
     GLuint texture;
 };
 
 struct StorageBufferInterfaceHandle : public ShaderInterfaceHandle
 {
-    explicit StorageBufferInterfaceHandle(GLuint storageBuffer)
+    explicit StorageBufferInterfaceHandle(GLuint storageBuffer = 0)
         : storageBuffer(storageBuffer)
     {}
 
@@ -119,6 +147,8 @@ struct StorageBufferInterfaceHandle : public ShaderInterfaceHandle
     {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, storageBuffer);
     }
+
+    virtual void reset(GLuint id) override { storageBuffer = id; }
 
     GLuint storageBuffer;
 };

@@ -9,7 +9,7 @@
 namespace renderer {
 class OperationContext;
 
-class IModel;
+class IMesh;
 class ITexture;
 class IGraphicsContext;
 }
@@ -50,7 +50,7 @@ private:
     renderer::IGraphicsContext& m_context;
 
     FieldType m_blocks;
-    std::shared_ptr<renderer::IModel> m_cube;
+    std::shared_ptr<renderer::IMesh> m_cube;
     std::shared_ptr<renderer::ITexture> m_cubeTexture;
 
     std::shared_ptr<Figure> m_figure;

@@ -1,18 +1,7 @@
-macro (declare_project)
-
 cmake_minimum_required(VERSION 3.15.4)
-get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-string(REPLACE " " "_" PROJECT_NAME ${PROJECT_NAME})
-project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
-string(TOUPPER ${PROJECT_NAME} _CURRENT_PROJECT_NAME_TO_UPPER)
-cmake_language(EVAL CODE "
-    set(${_CURRENT_PROJECT_NAME_TO_UPPER}_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-")
-
-endmacro(declare_project)
-
-declare_project()
+include(cmake_utils/project.cmake)
+begin_project()
 
 include(cmake_utils/glslc.cmake)
 
@@ -43,8 +32,9 @@ add_subdirectory(examples/cubic)
 add_subdirectory(examples/particles)
 add_subdirectory(examples/tetris)
 add_subdirectory(examples/dummy)
+add_subdirectory(examples/arkanoid)
 
-target_link_libraries(resources utils)
+target_link_libraries(resources PUBLIC utils)
 target_link_libraries(renderer PUBLIC resources glad::glad glm::glm stb::stb tinyobjloader::tinyobjloader pfr::pfr tclap::tclap)
 target_link_libraries(shell PUBLIC renderer glfw qt::qt)
 target_link_libraries(engine PUBLIC shell)
@@ -52,6 +42,7 @@ target_link_libraries(tetris PRIVATE engine)
 target_link_libraries(cubic PRIVATE engine)
 target_link_libraries(dummy PRIVATE engine)
 target_link_libraries(particles PRIVATE engine)
+target_link_libraries(arkanoid PRIVATE engine)
 
 add_custom_target(conan SOURCES conanfile.py configure_linux_default.sh configure_windows_default.bat )
 source_group(config FILES conanfile.py configure_linux_default.sh configure_windows_default.bat)

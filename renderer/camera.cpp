@@ -1,32 +1,32 @@
 #include "camera.hpp"
 
+#include "igraphics_context.hpp"
+
 namespace renderer {
 
-Camera::Camera(IShaderResourceProvider& provider)
-    : m_viewProjection(
-          provider.fetchHandle(ShaderBlockType::UNIFORM_DYNAMIC, m_viewProjection.s_layoutSize))
+Camera::Camera(IGraphicsContext& context)
+    : m_viewProjection(context.createUniformValue<ViewProjection>())
 {
-    m_descriptors[0].handle = m_viewProjection.handle();
-    m_descriptors[0].binding = s_layout[0];
+    descriptor(0).resource = m_viewProjection;
 }
 
 void Camera::setView(glm::mat4 view)
 {
-    ViewProjection old = m_viewProjection.get();
+    ViewProjection old = viewProjection();
     old.view = std::move(view);
-    m_viewProjection.set(old);
+    setViewProjection(old);
 }
 
 void Camera::setProjection(glm::mat4 projection)
 {
-    ViewProjection old = m_viewProjection.get();
+    ViewProjection old = viewProjection();
     old.projection = std::move(projection);
-    m_viewProjection.set(old);
+    setViewProjection(old);
 }
 
 void Camera::setViewProjection(ViewProjection viewProjection)
 {
-    m_viewProjection.set(std::move(viewProjection));
+    m_viewProjection.set(viewProjection);
 }
 
 ViewProjection Camera::viewProjection() const

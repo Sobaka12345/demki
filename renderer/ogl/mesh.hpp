@@ -1,6 +1,6 @@
 #pragma once
 
-#include <imodel.hpp>
+#include <imesh.hpp>
 
 #include <glad/glad.h>
 
@@ -8,11 +8,11 @@ namespace renderer::ogl {
 
 class GraphicsContext;
 
-class Model : public IModel
+class Mesh : public IMesh
 {
 public:
-    explicit Model(GraphicsContext& context, IModel::CreateInfo createInfo) noexcept;
-    virtual ~Model();
+    explicit Mesh(GraphicsContext& context, IMesh::CreateInfo createInfo) noexcept;
+    virtual ~Mesh();
 
     virtual void bind(renderer::OperationContext& context) override;
     virtual void draw(renderer::OperationContext& context) override;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "handles/semaphore.hpp"
-#include <ishader_interface.hpp>
 
 #include <types.hpp>
 

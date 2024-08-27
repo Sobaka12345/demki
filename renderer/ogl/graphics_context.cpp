@@ -3,7 +3,7 @@
 #include "computer.hpp"
 #include "compute_pipeline.hpp"
 #include "graphics_pipeline.hpp"
-#include "model.hpp"
+#include "mesh.hpp"
 #include "renderer.hpp"
 #include "swapchain.hpp"
 #include "shader_interface_handle.hpp"
@@ -47,10 +47,15 @@ GraphicsContext::GraphicsContext(IOpenGLSurface& defaultSurface)
 
 GraphicsContext::~GraphicsContext() {}
 
-std::shared_ptr<IShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlockType sbt,
+std::shared_ptr<ShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlockType sbt,
     uint32_t layoutSize)
 {
-    return std::make_shared<UniformBufferInterfaceHandle>(layoutSize, memoryUsage(sbt));
+    //  if (sbt == ShaderBlockType::SAMPLER)
+    //  {
+    //      return TextureInterfaceHandle::create(layoutSize, memoryUsage(sbt));
+    //  }
+
+    return UniformBufferInterfaceHandle::create(layoutSize, memoryUsage(sbt));
 }
 
 std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(IOpenGLSurface& surface,
@@ -100,14 +105,14 @@ Multisampling GraphicsContext::maxSampleCount() const
 
 void GraphicsContext::waitIdle() {}
 
-std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
+std::shared_ptr<IMesh> GraphicsContext::createMesh(std::filesystem::path path)
 {
-    return createModel(IModel::CreateInfo{ path });
+    return createMesh(IMesh::CreateInfo{ path });
 }
 
-std::shared_ptr<IModel> GraphicsContext::createModel(IModel::CreateInfo createInfo)
+std::shared_ptr<IMesh> GraphicsContext::createMesh(IMesh::CreateInfo createInfo)
 {
-    return std::make_shared<Model>(*this, std::move(createInfo));
+    return std::make_shared<Mesh>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path path)
@@ -119,6 +124,10 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo cr
 {
     return std::make_shared<Texture>(*this, std::move(createInfo));
 }
+
+std::shared_ptr<IUniformBuffer> GraphicsContext::createUniformBuffer(
+    IUniformBuffer::CreateInfo createInfo)
+{}
 
 
 }    //  namespace renderer::ogl

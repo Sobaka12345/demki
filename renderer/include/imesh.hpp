@@ -11,7 +11,7 @@ namespace renderer {
 
 class OperationContext;
 
-class IModel : public shell::IResource
+class IMesh : public shell::IResource
 {
 public:
     struct CreateInfo
@@ -25,7 +25,7 @@ public:
     };
 
 public:
-    virtual ~IModel(){};
+    virtual ~IMesh(){};
 
     virtual void bind(OperationContext& context) = 0;
     virtual void draw(OperationContext& context) = 0;

@@ -23,11 +23,13 @@ public:
 
     virtual void bind(renderer::OperationContext& context) const override;
     virtual void draw(renderer::OperationContext& context) const override;
-    virtual std::weak_ptr<IShaderInterfaceHandle> handle() const override;
 
     virtual void waitFor(OperationContext& context) override;
     virtual void populateWaitInfo(OperationContext& context) override;
     virtual uint32_t descriptorsRequired() const override;
+
+    //  IShaderResource interface
+    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
 
 private:
     const GraphicsContext& m_context;
@@ -37,10 +39,11 @@ private:
 
     std::vector<VkSemaphore> m_computeWaitSemaphores;
 
+    std::shared_ptr<ShaderInterfaceHandle> m_handle;
+
     std::unique_ptr<handles::CommandBuffer> m_commandBuffer;
     std::unique_ptr<handles::Fence> m_computeInFlightFence;
     std::unique_ptr<handles::Semaphore> m_computeFinishedSemaphore;
-    std::shared_ptr<ShaderInterfaceHandle> m_handle;
 };
 
 }    //  namespace renderer::vk

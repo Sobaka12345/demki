@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iresource.hpp>
+#include "ishader_resource.hpp"
 
 #include <filesystem>
 
@@ -9,7 +9,7 @@ namespace renderer {
 class OperationContext;
 class IShaderInterfaceHandle;
 
-class ITexture : virtual public shell::IResource
+class ITexture : virtual public IShaderResource
 {
 public:
     struct CreateInfo
@@ -31,8 +31,6 @@ public:
 
 public:
     virtual ~ITexture() {}
-
-    virtual std::shared_ptr<IShaderInterfaceHandle> uniformHandle() = 0;
 };
 
 }    //  namespace renderer

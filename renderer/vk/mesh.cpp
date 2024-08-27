@@ -1,4 +1,4 @@
-#include "model.hpp"
+#include "mesh.hpp"
 
 #include "handles/command_buffer.hpp"
 #include "handles/memory.hpp"
@@ -7,7 +7,7 @@
 
 namespace renderer::vk {
 
-Model::Model(GraphicsContext& context, CreateInfo createInfo)
+Mesh::Mesh(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
     , m_verticesSize(createInfo.vertices.size() * sizeof(createInfo.vertices[0]))
     , m_indicesSize(createInfo.indices.size() * sizeof(createInfo.indices[0]))
@@ -24,12 +24,12 @@ Model::Model(GraphicsContext& context, CreateInfo createInfo)
 	m_memory.lock()->unmap();
 }
 
-void Model::draw(renderer::OperationContext& context)
+void Mesh::draw(renderer::OperationContext& context)
 {
     get(context).commandBuffer->drawIndexed(m_indicesSize / m_indexSize, 1, 0, 0, 0);
 }
 
-void Model::bind(renderer::OperationContext& context)
+void Mesh::bind(renderer::OperationContext& context)
 {
     if (m_memory.expired()) return;
 

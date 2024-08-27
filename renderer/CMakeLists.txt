@@ -1,4 +1,4 @@
-declare_project()
+begin_project()
 
 add_library(${PROJECT_NAME} STATIC
 	ogl/computer.hpp
@@ -10,8 +10,8 @@ add_library(${PROJECT_NAME} STATIC
 	ogl/graphics_context.hpp
 	ogl/graphics_context.cpp
 	ogl/ispecific_operation_target.hpp
-	ogl/model.hpp
-	ogl/model.cpp
+	ogl/mesh.hpp
+	ogl/mesh.cpp
 	ogl/operation_context.hpp
 	ogl/operation_context.cpp
 	ogl/pipeline.hpp
@@ -85,8 +85,8 @@ add_library(${PROJECT_NAME} STATIC
     vk/handles/swapchain.cpp
     vk/graphics_context.hpp
     vk/graphics_context.cpp
-    vk/model.hpp
-    vk/model.cpp
+    vk/mesh.hpp
+    vk/mesh.cpp
 	vk/computer.hpp
 	vk/computer.cpp
 	vk/compute_pipeline.hpp
@@ -116,12 +116,13 @@ add_library(${PROJECT_NAME} STATIC
 	vk/buffer_shader_resource.hpp
 	vk/buffer_shader_resource.cpp
 	vk/utils.hpp
+	include/ibuffer.hpp
 	include/icomputer.hpp
 	include/icompute_pipeline.hpp
 	include/icompute_target.hpp
 	include/igraphics_context.hpp
 	include/igraphics_pipeline.hpp
-	include/imodel.hpp
+	include/imesh.hpp
 	include/ipipeline.hpp
 	include/irenderable.hpp
 	include/irenderer.hpp
@@ -133,12 +134,15 @@ add_library(${PROJECT_NAME} STATIC
 	include/itexture.hpp
 	include/types.hpp
 	include/ishader_interface.hpp
+	include/ishader_resource.hpp
 	include/isurface.hpp
 	include/ivulkan_surface.hpp
 	include/iopengl_surface.hpp
 	include/camera.hpp
 	include/particles.hpp
 	include/renderable.hpp
+	include/iuniform_buffer.hpp
+	include/uniform_value.hpp
 	camera.cpp
 	create_info.cpp
 	particles.cpp
@@ -147,7 +151,6 @@ add_library(${PROJECT_NAME} STATIC
 	storage_buffer_value.hpp
 	utils.hpp
 	shader_interface.cpp
-    uniform_value.hpp
 	vertex.hpp
 )
 

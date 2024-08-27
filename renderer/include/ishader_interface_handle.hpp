@@ -1,17 +1,14 @@
 #pragma once
 
-#include <ishader_interface.hpp>
-
 #include <assert.hpp>
-
-#include <cstdint>
-#include <memory>
 
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+
+#include <memory>
 
 namespace renderer {
 
@@ -100,14 +97,6 @@ struct IShaderInterfaceHandle
     {
         return static_cast<const T*>(read(sizeof(T)));
     }
-};
-
-struct IShaderResourceProvider
-{
-    virtual ~IShaderResourceProvider() {}
-
-    virtual std::shared_ptr<IShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt,
-        uint32_t layoutSize) = 0;
 };
 
 }    //  namespace renderer

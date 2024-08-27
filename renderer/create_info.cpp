@@ -1,4 +1,4 @@
-#include "imodel.hpp"
+#include "imesh.hpp"
 #include "itexture.hpp"
 
 #include "assert.hpp"
@@ -10,7 +10,7 @@
 
 namespace renderer {
 
-IModel::CreateInfo::CreateInfo(std::filesystem::path path)
+IMesh::CreateInfo::CreateInfo(std::filesystem::path path)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -48,7 +48,7 @@ IModel::CreateInfo::CreateInfo(std::filesystem::path path)
     }
 }
 
-IModel::CreateInfo::CreateInfo(std::span<const Vertex3DColoredTextured> vertices,
+IMesh::CreateInfo::CreateInfo(std::span<const Vertex3DColoredTextured> vertices,
     std::span<const uint32_t> indices)
     : vertices(vertices.begin(), vertices.end())
     , indices(indices.begin(), indices.end())

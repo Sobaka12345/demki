@@ -15,10 +15,11 @@ constexpr auto s_imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
 
 namespace renderer::vk {
 
-Texture::Texture(const GraphicsContext& context, ITexture::CreateInfo createInfo)
+Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
     : m_context(context)
     , m_width(createInfo.width)
     , m_height(createInfo.height)
+    , m_handle(ShaderInterfaceHandle::create(*this))
 {
     m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1;
 
@@ -124,18 +125,12 @@ std::shared_ptr<ShaderResource::Descriptor> Texture::fetchDescriptor()
     return result;
 }
 
-void Texture::freeDescriptor(const ShaderResource::Descriptor& descriptor) {}
-
-std::shared_ptr<IShaderInterfaceHandle> Texture::uniformHandle()
+std::shared_ptr<IShaderInterfaceHandle> Texture::handle()
 {
-    if (!m_handle)
-    {
-        auto handle = ShaderInterfaceHandle::create(*this);
-        m_handle = handle;
-    }
-
     return m_handle;
 }
+
+void Texture::freeDescriptor(const ShaderResource::Descriptor& descriptor) {}
 
 void Texture::generateMipmaps()
 {

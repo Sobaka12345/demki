@@ -1,6 +1,8 @@
-declare_project()
+begin_project()
 
 add_library(${PROJECT_NAME} STATIC
+	object.hpp
+	object.cpp
 	abstract_application.hpp
 	abstract_application.cpp
 	graphical_application.hpp

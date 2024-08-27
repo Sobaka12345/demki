@@ -5,7 +5,7 @@
 #include "compute_pipeline.hpp"
 #include "graphics_pipeline.hpp"
 #include "computer.hpp"
-#include "model.hpp"
+#include "mesh.hpp"
 #include "renderer.hpp"
 #include "swapchain.hpp"
 #include "texture.hpp"
@@ -208,7 +208,7 @@ std::shared_ptr<ShaderInterfaceHandle> GraphicsContext::fetchHandleSpecific(Shad
         }
         using PairType = typename std::remove_reference<decltype(map)>::type::value_type;
         auto [iter, _] = map.emplace(
-            PairType{ alignment, typename PairType::second_type{ device(), alignment, 100 } });
+            PairType{ alignment, typename PairType::second_type{ *this, alignment, 100 } });
 
         return ShaderInterfaceHandle::create(iter->second);
     };
@@ -221,14 +221,12 @@ std::shared_ptr<ShaderInterfaceHandle> GraphicsContext::fetchHandleSpecific(Shad
     {
         return insertAndFetchSpecificHandle(m_dynamicUniformShaderResources);
     }
+    else if (sbt == ShaderBlockType::UNIFORM_STATIC)
+    {
+        return insertAndFetchSpecificHandle(m_staticUniformShaderResources);
+    }
 
-    return insertAndFetchSpecificHandle(m_staticUniformShaderResources);
-}
-
-std::shared_ptr<IShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlockType sbt,
-    uint32_t layoutSize)
-{
-    return fetchHandleSpecific(sbt, layoutSize);
+    return ShaderInterfaceHandle::create();
 }
 
 VkFormat GraphicsContext::findSupportedFormat(const std::vector<VkFormat>& candidates,
@@ -318,14 +316,14 @@ std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
     return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<IModel> GraphicsContext::createModel(std::filesystem::path path)
+std::shared_ptr<IMesh> GraphicsContext::createMesh(std::filesystem::path path)
 {
-    return createModel(IModel::CreateInfo{ path });
+    return createMesh(IMesh::CreateInfo{ path });
 }
 
-std::shared_ptr<IModel> GraphicsContext::createModel(IModel::CreateInfo createInfo)
+std::shared_ptr<IMesh> GraphicsContext::createMesh(IMesh::CreateInfo createInfo)
 {
-    return std::make_shared<Model>(*this, std::move(createInfo));
+    return std::make_shared<Mesh>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path path)
@@ -336,6 +334,14 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path p
 std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo createInfo)
 {
     return std::make_shared<Texture>(*this, std::move(createInfo));
+}
+
+std::shared_ptr<IUniformBuffer> GraphicsContext::createUniformBuffer(
+    IUniformBuffer::CreateInfo createInfo)
+{
+    return fetchHandleSpecific(
+        createInfo.isDynamic ? ShaderBlockType::UNIFORM_DYNAMIC : ShaderBlockType::UNIFORM_STATIC,
+        createInfo.size);
 }
 
 void GraphicsContext::waitIdle()

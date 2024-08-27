@@ -4,16 +4,18 @@
 
 #include "shader_resource.hpp"
 
-#include <map>
+#include <iuniform_buffer.hpp>
+
 #include <unordered_set>
 
 namespace renderer::vk {
 
+class GraphicsContext;
+
 class BufferShaderResource : public ShaderResource
 {
 public:
-    BufferShaderResource(
-        const handles::Device& device, uint32_t alignment, uint32_t chunkObjectCount);
+    BufferShaderResource(GraphicsContext& context, uint32_t alignment, uint32_t chunkObjectCount);
     virtual std::shared_ptr<ShaderResource::Descriptor> fetchDescriptor() override;
 
     uint32_t alignment() const { return m_alignment; }
@@ -38,7 +40,7 @@ protected:
     handles::HandleVector<handles::Buffer> m_buffers;
 
 private:
-    const handles::Device& m_device;
+    GraphicsContext& m_context;
 
     std::vector<std::unordered_set<uint64_t>> m_freeDescriptors;
 };
@@ -48,6 +50,9 @@ class UniformBufferShaderResource : public BufferShaderResource
 public:
     using BufferShaderResource::BufferShaderResource;
 
+protected:
+    std::shared_ptr<ShaderInterfaceHandle> m_handle;
+
 private:
     virtual handles::BufferCreateInfo bufferCreateInfo() const override;
     virtual VkMemoryPropertyFlags memoryProperties() const override;
@@ -56,7 +61,8 @@ private:
 class DynamicUniformBufferShaderResource : public UniformBufferShaderResource
 {
 public:
-    using UniformBufferShaderResource::UniformBufferShaderResource;
+    DynamicUniformBufferShaderResource(
+        GraphicsContext& device, uint32_t alignment, uint32_t chunkObjectCount);
 
 private:
     virtual void populateDescriptor(ShaderResource::Descriptor& descriptor) override;
@@ -65,7 +71,8 @@ private:
 class StaticUniformBufferShaderResource : public UniformBufferShaderResource
 {
 public:
-    using UniformBufferShaderResource::UniformBufferShaderResource;
+    StaticUniformBufferShaderResource(
+        GraphicsContext& device, uint32_t alignment, uint32_t chunkObjectCount);
 
 private:
     virtual void populateDescriptor(ShaderResource::Descriptor& descriptor) override;

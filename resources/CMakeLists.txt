@@ -1,4 +1,4 @@
-declare_project()
+begin_project()
 
 add_library(${PROJECT_NAME} STATIC
 	iresources.hpp
@@ -6,8 +6,6 @@ add_library(${PROJECT_NAME} STATIC
 	resources.hpp
 	resources.cpp
 )
-
-set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC TRUE)
 
 target_include_directories(${PROJECT_NAME}
 	PUBLIC .

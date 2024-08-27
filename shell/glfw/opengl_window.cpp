@@ -10,23 +10,7 @@ namespace shell::glfw {
 
 OpenGLWindow::OpenGLWindow(int width, int height, std::string name)
     : Window(GLFW_OPENGL_API, width, height, name)
-{}
-
-OpenGLWindow::~OpenGLWindow() {}
-
-void OpenGLWindow::swapBuffers()
 {
-    glfwSwapBuffers(glfwHandle());
-}
-
-renderer::IGraphicsContext& OpenGLWindow::graphicsContext()
-{
-    if (m_graphicsContext)
-    {
-        return *m_graphicsContext;
-    }
-
-
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -39,7 +23,17 @@ renderer::IGraphicsContext& OpenGLWindow::graphicsContext()
 
     m_graphicsContext.reset(newContext);
     m_swapchain = newContext->createSwapchain(*this, {});
+}
 
+OpenGLWindow::~OpenGLWindow() {}
+
+void OpenGLWindow::swapBuffers()
+{
+    glfwSwapBuffers(glfwHandle());
+}
+
+renderer::IGraphicsContext& OpenGLWindow::graphicsContext()
+{
     return *m_graphicsContext;
 }
 

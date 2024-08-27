@@ -3,7 +3,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 #include <camera.hpp>
-#include <imodel.hpp>
+#include <imesh.hpp>
 #include <renderable.hpp>
 
 #include <GLFW/glfw3.h>
@@ -249,7 +249,7 @@ public:
                 {
                     auto& newBlock = m_map[idx.x][idx.y][idx.z];
                     newBlock.emplace(m_app.context());
-                    newBlock.value().setModel(block->model());
+                    newBlock.value().setMesh(block->mesh());
                     newBlock.value().setTexture(block->texture());
                     newBlock.value().setPosition(
                         glm::translate(glm::identity<glm::mat4>(), m_map.toBlockPosition(idx)));
@@ -316,7 +316,7 @@ Cubic::Cubic(int& argc, char** argv)
     m_map = std::make_unique<Map>();
     m_hero = std::make_unique<Hero>(*this, *m_map);
 
-    m_model = context().createModel(executablePath() / "models" / "Erde mit Grass.obj");
+    m_mesh = context().createMesh(executablePath() / "models" / "Erde mit Grass.obj");
     m_texture = context().createTexture({ executablePath() / "textures" / "Erde mit Grass.png" });
 
     for (size_t x = 0; x < m_map->size(); ++x)
@@ -331,7 +331,7 @@ Cubic::Cubic(int& argc, char** argv)
                 {
                     auto& block = (*m_map)[x][y][z];
                     block.emplace(context());
-                    block->setModel(m_model);
+                    block->setMesh(m_mesh);
                     block->setTexture(m_texture);
                     block->setPosition(glm::translate(glm::identity<glm::mat4>(),
                         m_map->toBlockPosition({ x, y, z })));

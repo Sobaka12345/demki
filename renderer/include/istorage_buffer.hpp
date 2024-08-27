@@ -1,10 +1,10 @@
 #pragma once
 
 #include "../utils.hpp"
+#include "ishader_resource.hpp"
 
 #include <icompute_target.hpp>
 
-#include <memory>
 #include <span>
 
 #include <boost/pfr.hpp>
@@ -13,7 +13,9 @@ namespace renderer {
 
 class IShaderInterfaceHandle;
 
-class IStorageBuffer : virtual public IComputeTarget
+class IStorageBuffer
+    : virtual public IComputeTarget
+    , public IShaderResource
 {
 public:
     struct CreateInfo
@@ -35,7 +37,6 @@ public:
 public:
     virtual ~IStorageBuffer() {}
 
-    virtual std::weak_ptr<IShaderInterfaceHandle> handle() const = 0;
     virtual void bind(OperationContext& context) const = 0;
     virtual void draw(OperationContext& context) const = 0;
 };

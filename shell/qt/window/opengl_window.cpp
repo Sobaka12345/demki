@@ -13,25 +13,6 @@ OpenGLWindow::OpenGLWindow(int width, int height, std::string name, QWindow* par
     : Window(width, height, name, parent)
 {
     setSurfaceType(QWindow::OpenGLSurface);
-}
-
-OpenGLWindow::~OpenGLWindow()
-{
-    m_swapchain.reset();
-    m_graphicsContext.reset();
-}
-
-void OpenGLWindow::swapBuffers()
-{
-    m_context->swapBuffers(this);
-}
-
-renderer::IGraphicsContext& OpenGLWindow::graphicsContext()
-{
-    if (m_graphicsContext)
-    {
-        return *m_graphicsContext;
-    }
 
     create();
     show();
@@ -56,7 +37,21 @@ renderer::IGraphicsContext& OpenGLWindow::graphicsContext()
 
     m_graphicsContext.reset(newContext);
     m_swapchain = newContext->createSwapchain(*this, {});
+}
 
+OpenGLWindow::~OpenGLWindow()
+{
+    m_swapchain.reset();
+    m_graphicsContext.reset();
+}
+
+void OpenGLWindow::swapBuffers()
+{
+    m_context->swapBuffers(this);
+}
+
+renderer::IGraphicsContext& OpenGLWindow::graphicsContext()
+{
     return *m_graphicsContext;
 }
 

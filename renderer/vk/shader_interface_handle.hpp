@@ -17,10 +17,12 @@ class Memory;
 
 class ShaderInterfaceHandle
     : public IShaderInterfaceHandle
+    , public IUniformBuffer
     , public std::enable_shared_from_this<ShaderInterfaceHandle>
 {
 private:
-    ShaderInterfaceHandle(ShaderResource&);
+    ShaderInterfaceHandle(ShaderResource*);
+    ShaderInterfaceHandle();
 
 public:
     struct TypeVisitor : public ShaderInterfaceHandleVisitor
@@ -34,8 +36,10 @@ public:
     };
 
 public:
-    [[nodiscard]] static std::shared_ptr<ShaderInterfaceHandle> create(ShaderResource&);
+    [[nodiscard]] static std::shared_ptr<ShaderInterfaceHandle> create();
     ~ShaderInterfaceHandle();
+
+    void reset(ShaderResource& resource);
 
     virtual void accept(ShaderInterfaceHandleVisitor& visitor) override { visitor.visit(*this); }
 
@@ -44,6 +48,8 @@ public:
         visitor.visit(*this);
     }
 
+    //  IShaderResource interface
+    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
     virtual void write(const void* src, size_t size) override;
     virtual const void* read(size_t size) const override;
 
@@ -55,7 +61,7 @@ private:
     void nextDescriptor();
 
 private:
-    ShaderResource& m_uniformAllocator;
+    ShaderResource* m_uniformAllocator;
     std::list<std::shared_ptr<ShaderResource::Descriptor>> m_descriptors;
     std::list<std::shared_ptr<ShaderResource::Descriptor>>::const_iterator m_currentDescriptor;
 };

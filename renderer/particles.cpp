@@ -12,17 +12,11 @@ Particles::Particles(IGraphicsContext& context, std::span<const Particle> initia
     m_particlesBuffers[0] = context.createStorageBuffer(bufferInfo);
     m_particlesBuffers[1] = context.createStorageBuffer(bufferInfo);
 
-    m_descriptors[0].binding = s_layout[0];
-    m_descriptors[0].handle = m_particlesBuffers[0]->handle();
+    descriptor(0).resource = m_particlesBuffers[0];
+    descriptor(1).resource = m_particlesBuffers[1];
 
-    m_descriptors[1].binding = s_layout[1];
-    m_descriptors[1].handle = m_particlesBuffers[1]->handle();
-
-    m_descriptorsReverse[0].binding = s_layout[0];
-    m_descriptorsReverse[0].handle = m_descriptors[1].handle;
-
-    m_descriptorsReverse[1].binding = s_layout[1];
-    m_descriptorsReverse[1].handle = m_descriptors[0].handle;
+    m_descriptorsReverse[0] = descriptor(1);
+    m_descriptorsReverse[1] = descriptor(0);
 }
 
 void Particles::draw(OperationContext& context)

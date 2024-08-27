@@ -20,9 +20,7 @@ public:
     virtual ~GraphicsContext();
 
 public:
-    virtual std::shared_ptr<IShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt,
-        uint32_t layoutSize) override;
-
+    std::shared_ptr<ShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt, uint32_t layoutSize);
     std::shared_ptr<ISwapchain> createSwapchain(IOpenGLSurface& surface,
         ISwapchain::CreateInfo createInfo);
 
@@ -39,10 +37,12 @@ public:
 
     virtual void waitIdle() override;
 
-    virtual std::shared_ptr<IModel> createModel(std::filesystem::path path) override;
-    virtual std::shared_ptr<IModel> createModel(IModel::CreateInfo createInfo) override;
+    virtual std::shared_ptr<IMesh> createMesh(std::filesystem::path path) override;
+    virtual std::shared_ptr<IMesh> createMesh(IMesh::CreateInfo createInfo) override;
     virtual std::shared_ptr<ITexture> createTexture(std::filesystem::path path) override;
     virtual std::shared_ptr<ITexture> createTexture(ITexture::CreateInfo createInfo) override;
+    virtual std::shared_ptr<IUniformBuffer> createUniformBuffer(
+        IUniformBuffer::CreateInfo createInfo) override;
 };
 
 }    //  namespace renderer::ogl

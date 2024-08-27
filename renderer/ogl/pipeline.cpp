@@ -52,15 +52,13 @@ void Pipeline::BindContext::bind(OperationContext& context,
     auto uniforms = container.uniforms();
     for (size_t i = 0; i < uniforms.size(); ++i)
     {
-        uniforms[i].handle.lock()->accept(s_handleVisitor);
+        uniforms[i].resource->handle()->accept(s_handleVisitor);
 
         s_handleVisitor->bind(bindingIndices[i]);
     }
 }
 
-Pipeline::~Pipeline()
-{
-}
+Pipeline::~Pipeline() {}
 
 void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContainers,
     const std::vector<ShaderInfo>& shaders)
@@ -104,13 +102,13 @@ void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContaine
 FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
     const IShaderInterfaceContainer& container)
 {
-    auto [iter, emplaced] = m_bindContexts.emplace(
-        container.typeId(), new BindContext{ m_bindingIndices[container.id()] });
+    auto [iter, emplaced] =
+        m_bindContexts.emplace(container.id(), new BindContext{ m_bindingIndices[container.id()] });
     if (emplaced)
     {
         iter->second.setFragile(true);
     }
-    
+
     return iter->second;
 }
 

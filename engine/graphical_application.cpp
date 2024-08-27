@@ -50,9 +50,9 @@ int GraphicalApplication::mainLoop()
         update(
             std::chrono::duration_cast<std::chrono::duration<int64_t, TimeResolution>>(end - start)
                 .count());
+        perform();
         start = end;
         glfwPollEvents();
-        perform();
     }
 
     context().waitIdle();

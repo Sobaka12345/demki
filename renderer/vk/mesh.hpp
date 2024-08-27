@@ -1,6 +1,6 @@
 #pragma once
 
-#include <imodel.hpp>
+#include <imesh.hpp>
 #include <operation_context.hpp>
 
 #include <span>
@@ -15,13 +15,13 @@ class Memory;
 
 class GraphicsContext;
 
-class Model : public IModel
+class Mesh : public IMesh
 {
 public:
     friend class ResourceManager;
 
 public:
-    Model(GraphicsContext& context, IModel::CreateInfo createInfo);
+    Mesh(GraphicsContext& context, IMesh::CreateInfo createInfo);
 
     virtual void draw(renderer::OperationContext& context) override;
     virtual void bind(renderer::OperationContext& context) override;

@@ -4,7 +4,7 @@
 #include <update_timer.hpp>
 
 namespace renderer {
-class IModel;
+class IMesh;
 class ITexture;
 class Camera;
 class Renderable;
@@ -42,7 +42,7 @@ private:
     std::unique_ptr<Hero> m_hero;
     std::unique_ptr<Map> m_map;
 
-    std::shared_ptr<renderer::IModel> m_model;
+    std::shared_ptr<renderer::IMesh> m_mesh;
     std::shared_ptr<renderer::ITexture> m_texture;
     std::shared_ptr<renderer::Renderable> m_renderable;
 };

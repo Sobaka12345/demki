@@ -1,6 +1,5 @@
 #include "particles_application.hpp"
 
-#include "camera.hpp"
 #include "particles.hpp"
 #include "renderable.hpp"
 
@@ -11,30 +10,21 @@
 
 using namespace renderer;
 
-struct DeltaTime : public SIShaderInterfaceContainer<DeltaTime>
+struct DeltaTime
+    : public ShaderInterfaceContainer<IShaderInterfaceContainer,
+          ShaderInterfaceBindingMeta<float, ShaderBlockType::UNIFORM_DYNAMIC, ShaderStage::COMPUTE>>
 {
 public:
-    static constexpr ShaderInterfaceLayout<1> s_layout = {
-        ShaderInterfaceBinding{
-            .type = ShaderBlockType::UNIFORM_DYNAMIC,
-            .stage = ShaderStage::COMPUTE,
-        },
-    };
-
-public:
     DeltaTime(IShaderResourceProvider& provider)
-        : m_value(provider.fetchHandle(s_layout[0].type, sizeof(float)))
-    {
-        m_descriptors[0].binding = s_layout[0];
-        m_descriptors[0].handle = m_value.handle();
-    }
+        : ShaderInterfaceContainer(provider)
+    {}
 
     virtual void bind(OperationContext& context) override
     {
         IShaderInterfaceContainer::bind(context);
     }
 
-    void set(float value) { m_value.set(value); }
+    void set(float value) { descriptor(0).handle->write<float>(&value); }
 
     virtual std::span<const InterfaceDescriptor> uniforms() const override { return m_descriptors; }
 
@@ -42,9 +32,6 @@ public:
     {
         return m_descriptors;
     }
-
-    UniformValue<float> m_value;
-    std::array<InterfaceDescriptor, s_layout.size()> m_descriptors;
 };
 
 static uint64_t s_particleCount = 4096;

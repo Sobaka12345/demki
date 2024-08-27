@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../uniform_value.hpp"
+#include "uniform_value.hpp"
 
 #include <irenderable.hpp>
 
@@ -10,53 +10,44 @@
 
 namespace renderer {
 
+class IGraphicsContext;
+
 class IShaderResourceProvider;
 
 class Renderable
-    : public IRenderable
-    , public SIShaderInterfaceContainer<Renderable>
+    : public ShaderInterfaceContainer<IShaderInterfaceContainer,
+          ShaderInterfaceBindingMeta<glm::mat4,
+              ShaderBlockType::UNIFORM_DYNAMIC,
+              ShaderStage::VERTEX>,
+          ShaderInterfaceBindingMeta<std::nullptr_t,
+              ShaderBlockType::SAMPLER,
+              ShaderStage::FRAGMENT>>
+    , public IRenderable
 {
 public:
-    static constexpr ShaderInterfaceLayout<2> s_layout = {
-        ShaderInterfaceBinding{
-            .type = ShaderBlockType::UNIFORM_DYNAMIC,
-            .stage = ShaderStage::VERTEX,
-        },
-        ShaderInterfaceBinding{
-            .type = ShaderBlockType::SAMPLER,
-            .stage = ShaderStage::FRAGMENT,
-        },
-    };
-
-public:
-    Renderable(IShaderResourceProvider& provider);
-    Renderable(const Renderable& other) noexcept;
-    Renderable(Renderable&& other) noexcept;
+    Renderable(IGraphicsContext& context);
     virtual ~Renderable();
+
     virtual void draw(OperationContext& context) const override;
 
     virtual void bind(OperationContext& context) override;
     virtual std::span<const InterfaceDescriptor> uniforms() const override;
     virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override;
 
-    virtual std::weak_ptr<IModel> model() const override;
-    virtual void setModel(std::weak_ptr<IModel> model) override;
+    virtual std::weak_ptr<IMesh> mesh() const override;
+    virtual void setMesh(std::weak_ptr<IMesh> mesh) override;
 
     virtual std::weak_ptr<ITexture> texture() const override;
     virtual void setTexture(std::weak_ptr<ITexture> texture) override;
 
-    void setPosition(glm::mat4 position) { m_position.set(std::move(position)); }
-
-    glm::mat4 position() const { return m_position.get(); }
+    void setPosition(glm::mat4 position);
+    glm::mat4 position() const;
 
 private:
-    IShaderResourceProvider& m_shaderResourceProvider;
-
-    std::weak_ptr<IModel> m_model;
-    std::weak_ptr<ITexture> m_texture;
     UniformValue<glm::mat4> m_position;
 
-    std::array<InterfaceDescriptor, s_layout.size()> m_uniformDescriptors;
+    std::weak_ptr<IMesh> m_mesh;
+    std::weak_ptr<ITexture> m_texture;
 };
 
 }    //  namespace renderer

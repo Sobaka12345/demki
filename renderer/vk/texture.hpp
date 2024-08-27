@@ -21,11 +21,13 @@ class Texture
     , public ShaderResource
 {
 public:
-    Texture(const GraphicsContext& context, ITexture::CreateInfo createInfo);
+    Texture(GraphicsContext& context, ITexture::CreateInfo createInfo);
     ~Texture();
 
     virtual std::shared_ptr<ShaderResource::Descriptor> fetchDescriptor() override;
-    virtual std::shared_ptr<IShaderInterfaceHandle> uniformHandle() override;
+
+    //  IShaderResource interface
+    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
 
 private:
     virtual void freeDescriptor(const ShaderResource::Descriptor& descriptor) override;
@@ -39,7 +41,8 @@ private:
     int m_width;
     int m_height;
 
-    std::shared_ptr<IShaderInterfaceHandle> m_handle;
+    std::shared_ptr<ShaderInterfaceHandle> m_handle;
+
     std::unique_ptr<handles::Image> m_image;
     std::unique_ptr<handles::ImageView> m_imageView;
     std::unique_ptr<handles::Sampler> m_sampler;

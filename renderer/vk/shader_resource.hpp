@@ -4,16 +4,15 @@
 
 #include "types.hpp"
 
-#include "iresource.hpp"
+#include "ishader_resource.hpp"
 
 #include "../utils.hpp"
 
 #include <memory>
-#include <type_traits>
 
 namespace renderer::vk {
 
-class ShaderResource : virtual public shell::IResource
+class ShaderResource : virtual public IShaderResource
 {
 public:
     struct Descriptor : public std::enable_shared_from_this<Descriptor>
