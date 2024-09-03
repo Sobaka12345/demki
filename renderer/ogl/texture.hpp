@@ -14,8 +14,8 @@ public:
     explicit Texture(GraphicsContext& context, ITexture::CreateInfo createInfo) noexcept;
     virtual ~Texture();
 
-    //  IShaderResource interface
-    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
+    virtual void adapt(renderer::OperationContext& context, uint32_t bindingId) override;
+    virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const override;
 
 private:
     std::shared_ptr<ShaderInterfaceHandle> m_handle;

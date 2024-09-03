@@ -36,7 +36,7 @@ public:
     DescriptorSetLayout(const Device& device, DescriptorSetLayoutCreateInfo info) noexcept;
     virtual ~DescriptorSetLayout();
 
-    handles::DescriptorSetLayoutBinding binding(int32_t bindingId) const;
+    const handles::DescriptorSetLayoutBinding& binding(int32_t bindingId) const;
 
 protected:
     DescriptorSetLayout(

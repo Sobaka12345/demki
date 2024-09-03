@@ -44,8 +44,12 @@ public:
     UniformValue<T> createUniformValue()
     {
         return createUniformBuffer(
-            IUniformBuffer::CreateInfo{ .isDynamic = false, .size = sizeof(T) });
+            IUniformBuffer::CreateInfo{ .isDynamic = true, .size = sizeof(T) });
     }
+
+    template <typename T>
+    auto create()
+    {}
 
 protected:
     using TimeResolution = std::nano;

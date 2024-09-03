@@ -1,7 +1,7 @@
 #include "texture.hpp"
 
 #include "graphics_context.hpp"
-#include "shader_interface_handle.hpp"
+#include "pipeline.hpp"
 
 namespace renderer::ogl {
 
@@ -11,7 +11,6 @@ Texture::Texture(GraphicsContext& context, CreateInfo createInfo) noexcept
     //  m_handle = context.fetchHandle(ShaderBlockType::SAMPLER, createInfo.imageSize);
 
     glGenTextures(1, &m_texture);
-    m_handle = TextureInterfaceHandle::create(m_texture);
     glBindTexture(GL_TEXTURE_2D, m_texture);
     //  set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -26,10 +25,18 @@ Texture::Texture(GraphicsContext& context, CreateInfo createInfo) noexcept
 
 Texture::~Texture() {}
 
-std::shared_ptr<IShaderInterfaceHandle> Texture::handle()
+void Texture::adapt(renderer::OperationContext& context, uint32_t bindingId)
 {
-    return m_handle;
+    //  NOTHING TO DO
 }
 
+void Texture::bind(renderer::OperationContext& context, uint32_t bindingId) const
+{
+    DASSERT(get(context).pipelineBindContext);
+    auto& bindContext = *get(context).pipelineBindContext;
+
+    glActiveTexture(GL_TEXTURE0 + bindingId);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
+}
 
 }    //  namespace renderer::ogl

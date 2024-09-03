@@ -20,6 +20,7 @@ class ISpecificOperationTarget;
 class Computer;
 class Renderer;
 
+class PipelineBindContext;
 class ComputePipeline;
 class GraphicsPipeline;
 
@@ -58,6 +59,7 @@ struct OperationContext
 
     ComputePipeline* computePipeline = nullptr;
     GraphicsPipeline* graphicsPipeline = nullptr;
+    PipelineBindContext* pipelineBindContext = nullptr;
     Renderer* renderer = nullptr;
     Computer* computer = nullptr;
     handles::RenderPass* renderPass = nullptr;

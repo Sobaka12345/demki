@@ -70,7 +70,7 @@ struct HandlePtrHasher
 {
     std::size_t operator()(const vk::handles::HandlePtr<T>& s) const noexcept
     {
-        return reinterpret_cast<size_t>(s.ptr());
+        return static_cast<size_t>(s.ptr());
     }
 };
 

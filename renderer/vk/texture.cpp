@@ -1,6 +1,7 @@
 #include "texture.hpp"
 
 #include "graphics_context.hpp"
+#include "pipeline.hpp"
 #include "types.hpp"
 #include "shader_interface_handle.hpp"
 
@@ -19,9 +20,8 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
     : m_context(context)
     , m_width(createInfo.width)
     , m_height(createInfo.height)
-    , m_handle(ShaderInterfaceHandle::create(*this))
 {
-    m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1;
+    m_mipLevels = createInfo.mipLevels;
 
     ASSERT(createInfo.pixels, "failed to load texture image!");
 
@@ -115,9 +115,9 @@ Texture::~Texture()
     m_image.reset();
 }
 
-std::shared_ptr<ShaderResource::Descriptor> Texture::fetchDescriptor()
+std::shared_ptr<ShaderResourceAllocator::Descriptor> Texture::fetchDescriptor()
 {
-    auto result = ShaderResource::fetchDescriptor();
+    auto result = ShaderResourceAllocator::fetchDescriptor();
     result->descriptorImageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         .imageView(*m_imageView)
         .sampler(*m_sampler);
@@ -125,12 +125,26 @@ std::shared_ptr<ShaderResource::Descriptor> Texture::fetchDescriptor()
     return result;
 }
 
-std::shared_ptr<IShaderInterfaceHandle> Texture::handle()
+void Texture::bind(renderer::OperationContext& context, uint32_t bindingId) const
 {
-    return m_handle;
+    //  NOTHING TO DO
 }
 
-void Texture::freeDescriptor(const ShaderResource::Descriptor& descriptor) {}
+void Texture::adapt(renderer::OperationContext& context, uint32_t bindingId)
+{
+    //  TEMP
+    if (!m_handle)
+    {
+        m_handle = ShaderInterfaceHandle::create(*this);
+    }
+
+    const auto writes = descriptorSetWrites(get(context), bindingId, *m_handle);
+    //  TEMP
+    vkUpdateDescriptorSets(m_context.device(), static_cast<uint32_t>(writes.size()), writes.data(),
+        0, nullptr);
+}
+
+void Texture::freeDescriptor(const ShaderResourceAllocator::Descriptor& descriptor) {}
 
 void Texture::generateMipmaps()
 {

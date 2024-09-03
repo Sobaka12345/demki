@@ -1,7 +1,8 @@
 #pragma once
 
 #include "graphics_context.hpp"
-#include "ispecific_operation_target.hpp"
+#include "specific_operation_target.hpp"
+#include "specific_shader_resource.hpp"
 
 #include <istorage_buffer.hpp>
 
@@ -12,7 +13,8 @@ class Semaphore;
 class Fence;
 }
 
-class StorageBuffer : public SpecificOperationTarget<IStorageBuffer>
+class StorageBuffer
+    : public SpecificBase<IStorageBuffer, ISpecificOperationTarget, ISpecificShaderResource>
 {
 public:
     StorageBuffer(GraphicsContext& context, IStorageBuffer::CreateInfo createInfo);
@@ -21,7 +23,6 @@ public:
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
 
-    virtual void bind(renderer::OperationContext& context) const override;
     virtual void draw(renderer::OperationContext& context) const override;
 
     virtual void waitFor(OperationContext& context) override;
@@ -29,7 +30,8 @@ public:
     virtual uint32_t descriptorsRequired() const override;
 
     //  IShaderResource interface
-    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
+    virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const override;
+    virtual void adapt(renderer::OperationContext& context, uint32_t bindingId) override;
 
 private:
     const GraphicsContext& m_context;

@@ -11,7 +11,7 @@ class OperationContext;
 class IRenderable
 {
 public:
-    virtual ~IRenderable(){};
+    virtual ~IRenderable() {};
     virtual void draw(OperationContext& context) const = 0;
     virtual void bind(OperationContext& context) = 0;
 

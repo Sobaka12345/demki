@@ -37,7 +37,6 @@ public:
 public:
     virtual ~IStorageBuffer() {}
 
-    virtual void bind(OperationContext& context) const = 0;
     virtual void draw(OperationContext& context) const = 0;
 };
 

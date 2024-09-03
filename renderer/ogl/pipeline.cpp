@@ -1,6 +1,7 @@
 #include "pipeline.hpp"
 
-#include "shader_interface_handle.hpp"
+#include <ishader_interface_container.hpp>
+#include <operation_context.hpp>
 
 namespace renderer::ogl {
 
@@ -40,21 +41,20 @@ void checkCompileErrors(GLuint shader, std::string type)
     }
 }
 
-Pipeline::BindContext::BindContext(std::span<const uint32_t> bindingIndices)
+PipelineBindContext::PipelineBindContext(IShaderInterfaceContainer& container,
+    std::span<const uint32_t> bindingIndices)
     : bindingIndices(bindingIndices)
+    , container(container)
 {}
 
-void Pipeline::BindContext::bind(OperationContext& context,
-    const IShaderInterfaceContainer& container)
+void PipelineBindContext::bind(renderer::OperationContext& context)
 {
-    static ShaderInterfaceHandle::TypeVisitor s_handleVisitor;
+    get(context).pipelineBindContext = this;
 
-    auto uniforms = container.uniforms();
-    for (size_t i = 0; i < uniforms.size(); ++i)
+    size_t i = 0;
+    for (auto& resource : container)
     {
-        uniforms[i].resource->handle()->accept(s_handleVisitor);
-
-        s_handleVisitor->bind(bindingIndices[i]);
+        resource->bind(context, i++);
     }
 }
 
@@ -99,17 +99,10 @@ void Pipeline::init(const std::vector<InterfaceContainerInfo>& interfaceContaine
     }
 }
 
-FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
-    const IShaderInterfaceContainer& container)
+std::shared_ptr<IPipelineBindContext> Pipeline::bindContext(IShaderInterfaceContainer& container)
 {
-    auto [iter, emplaced] =
-        m_bindContexts.emplace(container.id(), new BindContext{ m_bindingIndices[container.id()] });
-    if (emplaced)
-    {
-        iter->second.setFragile(true);
-    }
-
-    return iter->second;
+    return std::shared_ptr<IPipelineBindContext>{ new PipelineBindContext{
+        container, m_bindingIndices[container.id()] } };
 }
 
 }    //  namespace renderer::ogl

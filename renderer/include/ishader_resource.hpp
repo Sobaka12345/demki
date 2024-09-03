@@ -8,7 +8,8 @@ namespace renderer {
 
 struct IShaderResource : public shell::IResource
 {
-    virtual std::shared_ptr<IShaderInterfaceHandle> handle() = 0;
+    virtual void adapt(renderer::OperationContext& context, uint32_t bindingId) = 0;
+    virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const = 0;
 };
 
 }

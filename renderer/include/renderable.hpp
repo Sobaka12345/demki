@@ -4,15 +4,13 @@
 
 #include <irenderable.hpp>
 
-#include <ishader_interface.hpp>
+#include <ishader_interface_container.hpp>
 
 #include <glm/mat4x4.hpp>
 
 namespace renderer {
 
 class IGraphicsContext;
-
-class IShaderResourceProvider;
 
 class Renderable
     : public ShaderInterfaceContainer<IShaderInterfaceContainer,
@@ -31,14 +29,12 @@ public:
     virtual void draw(OperationContext& context) const override;
 
     virtual void bind(OperationContext& context) override;
-    virtual std::span<const InterfaceDescriptor> uniforms() const override;
-    virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override;
 
     virtual std::weak_ptr<IMesh> mesh() const override;
     virtual void setMesh(std::weak_ptr<IMesh> mesh) override;
 
     virtual std::weak_ptr<ITexture> texture() const override;
-    virtual void setTexture(std::weak_ptr<ITexture> texture) override;
+    virtual void setTexture(std::weak_ptr<ITexture> value) override;
 
     void setPosition(glm::mat4 position);
     glm::mat4 position() const;

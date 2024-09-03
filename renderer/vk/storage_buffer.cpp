@@ -37,8 +37,8 @@ void StorageBuffer::accept(ComputerInfoVisitor& visitor) const
 
 bool StorageBuffer::prepare(renderer::OperationContext& context)
 {
-    vkWaitForFences(
-        m_context.device(), 1, m_computeInFlightFence->handlePtr(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_context.device(), 1, m_computeInFlightFence->handlePtr(), VK_TRUE,
+        UINT64_MAX);
 
     vkResetFences(m_context.device(), 1, m_computeInFlightFence->handlePtr());
 
@@ -84,15 +84,11 @@ void StorageBuffer::present(renderer::OperationContext& context)
         "failed to submit compute command buffer!");
 }
 
-void StorageBuffer::bind(renderer::OperationContext& context) const
+void StorageBuffer::draw(renderer::OperationContext& context) const
 {
     VkBuffer buf = m_handle->currentDescriptor()->descriptorBufferInfo.buffer();
     VkDeviceSize offset = m_handle->currentDescriptor()->descriptorBufferInfo.offset();
     get(context).commandBuffer->bindVertexBuffer(0, 1, &buf, &offset);
-}
-
-void StorageBuffer::draw(renderer::OperationContext& context) const
-{
     get(context).commandBuffer->draw(m_elementCount, 1, 0, 0);
 }
 
@@ -114,7 +110,18 @@ uint32_t StorageBuffer::descriptorsRequired() const
     return 1;
 }
 
-std::shared_ptr<IShaderInterfaceHandle> StorageBuffer::handle() {}
+void StorageBuffer::bind(renderer::OperationContext& context, uint32_t bindingId) const
+{
+    //  NOTHING TO DO
+}
+
+void StorageBuffer::adapt(renderer::OperationContext& context, uint32_t bindingId)
+{
+    const auto writes = descriptorSetWrites(get(context), bindingId, *m_handle);
+    //  TEMP
+    vkUpdateDescriptorSets(m_context.device(), static_cast<uint32_t>(writes.size()), writes.data(),
+        0, nullptr);
+}
 
 
 }    //  namespace renderer::vk

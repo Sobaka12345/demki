@@ -7,7 +7,7 @@
 #include "renderer.hpp"
 #include "computer.hpp"
 #include "compute_pipeline.hpp"
-#include "ispecific_operation_target.hpp"
+#include "specific_operation_target.hpp"
 
 #include <vulkan/vulkan_core.h>
 #include <operation_context.hpp>

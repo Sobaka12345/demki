@@ -12,12 +12,11 @@ class GraphicsPipeline
     : public Pipeline
     , public IGraphicsPipeline
 {
-    struct BindContext : public Pipeline::BindContext
+    struct BindContext : public PipelineBindContext
     {
-        using Pipeline::BindContext::BindContext;
+        using PipelineBindContext::PipelineBindContext;
 
-        virtual void bind(renderer::OperationContext& context,
-            const IShaderInterfaceContainer& container) override;
+        virtual void bind(renderer::OperationContext& context) override;
     };
 
 private:
@@ -32,8 +31,7 @@ public:
 private:
     const handles::Pipeline& pipeline(const vk::OperationContext& context);
 
-    virtual BindContext* newBindContext(
-        BindContext::DescriptorSetInfo descriptorSetInfo) const override;
+    virtual BindContext* newBindContext(BindContext::CreateInfo createInfo) const override;
 
 private:
     VkCullModeFlags m_cullMode;

@@ -58,12 +58,21 @@ ITexture::CreateInfo::CreateInfo(std::filesystem::path path)
 {
     pixels = stbi_load(path.string().c_str(), &width, &height, &textureChannels, STBI_rgb_alpha);
     imageSize = width * height * 4;
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+}
+
+ITexture::CreateInfo::CreateInfo(std::filesystem::path path, uint32_t mipLevels)
+{
+    pixels = stbi_load(path.string().c_str(), &width, &height, &textureChannels, STBI_rgb_alpha);
+    imageSize = width * height * 4;
+    mipLevels = mipLevels;
 }
 
 ITexture::CreateInfo::CreateInfo(CreateInfo&& other)
     : pixels(other.pixels)
     , imageSize(other.imageSize)
     , textureChannels(other.textureChannels)
+    , mipLevels(other.mipLevels)
     , width(other.width)
     , height(other.height)
 {

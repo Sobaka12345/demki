@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "../utils.hpp"
+
 namespace renderer {
 class IOperationTarget;
 
@@ -21,13 +23,8 @@ public:
     virtual uint32_t descriptorsRequired() const = 0;
 };
 
-template <typename Base>
-class SpecificOperationTarget
-    : public ISpecificOperationTarget
-    , public Base
-{
-    virtual Base* toBase() final override { return this; }
-};
+template <typename IBase>
+using SpecificOperationTarget = SpecificBase<IBase, ISpecificOperationTarget>;
 
 }    //  namespace vk
 }    //  namespace renderer

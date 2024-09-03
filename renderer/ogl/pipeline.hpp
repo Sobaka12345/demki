@@ -9,18 +9,18 @@ namespace renderer::ogl {
 
 class GraphicsContext;
 
+struct PipelineBindContext : public IPipelineBindContext
+{
+    PipelineBindContext(IShaderInterfaceContainer& container,
+        std::span<const uint32_t> bindingIndices);
+    virtual void bind(renderer::OperationContext& context) override;
+
+    std::span<const uint32_t> bindingIndices;
+    IShaderInterfaceContainer& container;
+};
+
 class Pipeline : virtual public IPipeline
 {
-public:
-    struct BindContext : public IPipelineBindContext
-    {
-        BindContext(std::span<const uint32_t> bindingIndices);
-        virtual void bind(renderer::OperationContext& context,
-            const IShaderInterfaceContainer& container) override;
-
-        std::span<const uint32_t> bindingIndices;
-    };
-
 public:
     template <typename CreateInfoT>
     Pipeline(const GraphicsContext& context, CreateInfoT createInfo)
@@ -34,8 +34,8 @@ public:
     void init(const std::vector<InterfaceContainerInfo>& interfaceContainers,
         const std::vector<ShaderInfo>& shaders);
 
-    virtual FragileSharedPtr<IPipelineBindContext> bindContext(
-        const IShaderInterfaceContainer& container) override;
+    virtual std::shared_ptr<IPipelineBindContext> bindContext(
+        IShaderInterfaceContainer& container) override;
 
 protected:
     const GraphicsContext& m_context;

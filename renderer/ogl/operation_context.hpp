@@ -12,6 +12,7 @@ namespace ogl {
 
 class Computer;
 class Renderer;
+class PipelineBindContext;
 
 class ISpecificOperationTarget;
 
@@ -41,6 +42,7 @@ struct OperationContext
     ISpecificOperationTarget* specificTarget = nullptr;
     IOperationTarget* mainTarget = nullptr;
 
+    PipelineBindContext* pipelineBindContext = nullptr;
     ComputePipeline* computePipeline = nullptr;
     GraphicsPipeline* graphicsPipeline = nullptr;
 };

@@ -18,13 +18,14 @@ add_library(${PROJECT_NAME} STATIC
 	ogl/pipeline.cpp
 	ogl/renderer.hpp
 	ogl/renderer.cpp
-	ogl/shader_interface_handle.hpp
 	ogl/storage_buffer.hpp
 	ogl/storage_buffer.cpp
 	ogl/swapchain.hpp
 	ogl/swapchain.cpp
 	ogl/texture.hpp
 	ogl/texture.cpp
+	ogl/uniform_buffer.hpp
+	ogl/uniform_buffer.cpp
 	ogl/utils.hpp
 	vk/handles/allocator.hpp
 	vk/handles/buffer.hpp
@@ -95,13 +96,15 @@ add_library(${PROJECT_NAME} STATIC
 	vk/descriptor_set_provider.cpp
 	vk/graphics_pipeline.hpp
 	vk/graphics_pipeline.cpp
-	vk/ispecific_operation_target.hpp
 	vk/pipeline.hpp
 	vk/pipeline.cpp
 	vk/renderer.hpp
 	vk/renderer.cpp
 	vk/operation_context.hpp
 	vk/operation_context.cpp
+	vk/specific_operation_target.hpp
+	vk/specific_shader_resource.hpp
+	vk/specific_shader_resource.cpp
 	vk/storage_buffer.hpp
 	vk/storage_buffer.cpp
     vk/swapchain.hpp
@@ -109,12 +112,14 @@ add_library(${PROJECT_NAME} STATIC
     vk/texture.hpp
     vk/texture.cpp
 	vk/types.hpp
-	vk/shader_resource.hpp
-	vk/shader_resource.cpp
+	vk/shader_resource_allocator.hpp
+	vk/shader_resource_allocator.cpp
 	vk/shader_interface_handle.hpp
 	vk/shader_interface_handle.cpp
-	vk/buffer_shader_resource.hpp
-	vk/buffer_shader_resource.cpp
+	vk/buffer_shader_resource_allocator.hpp
+	vk/buffer_shader_resource_allocator.cpp
+	vk/uniform_buffer.hpp
+	vk/uniform_buffer.cpp
 	vk/utils.hpp
 	include/ibuffer.hpp
 	include/icomputer.hpp
@@ -134,6 +139,7 @@ add_library(${PROJECT_NAME} STATIC
 	include/itexture.hpp
 	include/types.hpp
 	include/ishader_interface.hpp
+	include/ishader_interface_container.hpp
 	include/ishader_resource.hpp
 	include/isurface.hpp
 	include/ivulkan_surface.hpp

@@ -10,6 +10,7 @@
 #include "swapchain.hpp"
 #include "texture.hpp"
 #include "storage_buffer.hpp"
+#include "uniform_buffer.hpp"
 
 #include <operation_context.hpp>
 
@@ -225,8 +226,13 @@ std::shared_ptr<ShaderInterfaceHandle> GraphicsContext::fetchHandleSpecific(Shad
     {
         return insertAndFetchSpecificHandle(m_staticUniformShaderResources);
     }
+    //  else if (sbt == ShaderBlockType::SAMPLER)
+    //  {
+    //      return
+    //  }
 
-    return ShaderInterfaceHandle::create();
+    ASSERT(false, "NOT DEFINED");
+    return nullptr;
 }
 
 VkFormat GraphicsContext::findSupportedFormat(const std::vector<VkFormat>& candidates,
@@ -339,9 +345,7 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo cr
 std::shared_ptr<IUniformBuffer> GraphicsContext::createUniformBuffer(
     IUniformBuffer::CreateInfo createInfo)
 {
-    return fetchHandleSpecific(
-        createInfo.isDynamic ? ShaderBlockType::UNIFORM_DYNAMIC : ShaderBlockType::UNIFORM_STATIC,
-        createInfo.size);
+    return std::make_shared<UniformBuffer>(*this, std::move(createInfo));
 }
 
 void GraphicsContext::waitIdle()

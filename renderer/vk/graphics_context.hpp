@@ -4,7 +4,7 @@
 #include "handles/debug_utils_messenger.hpp"
 #include "handles/instance.hpp"
 
-#include "buffer_shader_resource.hpp"
+#include "buffer_shader_resource_allocator.hpp"
 
 #include <igraphics_context.hpp>
 
@@ -88,10 +88,11 @@ private:
 private:
     handles::HandleVector<handles::Buffer> m_buffers;
 
-    std::unordered_map<uint32_t, StaticUniformBufferShaderResource> m_staticUniformShaderResources;
-    std::unordered_map<uint32_t, DynamicUniformBufferShaderResource>
+    std::unordered_map<uint32_t, StaticUniformBufferShaderResourceAllocator>
+        m_staticUniformShaderResources;
+    std::unordered_map<uint32_t, DynamicUniformBufferShaderResourceAllocator>
         m_dynamicUniformShaderResources;
-    std::unordered_map<uint32_t, StorageBufferShaderResource> m_storageShaderResources;
+    std::unordered_map<uint32_t, StorageBufferShaderResourceAllocator> m_storageShaderResources;
 
     std::unique_ptr<handles::Device> m_device;
     std::unique_ptr<handles::DebugUtilsMessenger> m_debugMessenger;

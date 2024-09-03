@@ -1,4 +1,4 @@
-#include "../include/ishader_interface.hpp"
+#include "../include/ishader_interface_container.hpp"
 
 #include <operation_context.hpp>
 
@@ -17,11 +17,11 @@ void IShaderInterfaceContainer::bind(OperationContext& context)
     if (auto iter = m_contexts.find(pipeline); iter == m_contexts.end())
     {
         auto [newEl, _] = m_contexts.emplace(pipeline, pipeline->bindContext(*this));
-        newEl->second->bind(context, *this);
+        newEl->second->bind(context);
     }
     else
     {
-        iter->second->bind(context, *this);
+        iter->second->bind(context);
     }
 }
 

@@ -7,7 +7,6 @@
 #include "ishader_interface.hpp"
 
 #include <filesystem>
-#include <memory>
 #include <variant>
 #include <vector>
 #include <span>
@@ -15,13 +14,12 @@
 namespace renderer {
 
 class OperationContext;
-class OperationContext;
 class IShaderInterfaceContainer;
 class IShaderInterfaceHandle;
 
 struct IPipelineBindContext
 {
-    virtual void bind(OperationContext& context, const IShaderInterfaceContainer& container) = 0;
+    virtual void bind(OperationContext& context) = 0;
 
     virtual ~IPipelineBindContext() {}
 };
@@ -98,8 +96,8 @@ protected:
 
 public:
     virtual void bind(OperationContext& context) = 0;
-    virtual FragileSharedPtr<IPipelineBindContext> bindContext(
-        const IShaderInterfaceContainer& container) = 0;
+    virtual std::shared_ptr<IPipelineBindContext> bindContext(
+        IShaderInterfaceContainer& container) = 0;
 
     virtual ~IPipeline() {}
 };

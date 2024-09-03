@@ -20,7 +20,6 @@ public:
     virtual ~GraphicsContext();
 
 public:
-    std::shared_ptr<ShaderInterfaceHandle> fetchHandle(ShaderBlockType sbt, uint32_t layoutSize);
     std::shared_ptr<ISwapchain> createSwapchain(IOpenGLSurface& surface,
         ISwapchain::CreateInfo createInfo);
 

@@ -8,82 +8,48 @@
 
 #include "descriptor_set_provider.hpp"
 #include "graphics_context.hpp"
-#include "ispecific_operation_target.hpp"
+#include "specific_operation_target.hpp"
 
-#include <algorithm>
+#include <ishader_interface_container.hpp>
 
 namespace renderer::vk {
 
-ShaderInterfaceHandle::TypeVisitor Pipeline::s_handleVisitor;
-
-Pipeline::BindContext::BindContext(DescriptorSetInfo descriptorSetInfo)
-    : descriptorSetInfo(descriptorSetInfo)
-{}
-
-void Pipeline::BindContext::bind(renderer::OperationContext& context,
-    const IShaderInterfaceContainer& container)
+PipelineBindContext::PipelineBindContext(CreateInfo createInfo)
+    : info(std::move(createInfo))
+    , currentSetIndex(0)
 {
-    const uint32_t descriptorsRequired = get(context).specificTarget->descriptorsRequired();
+    dynamicOffsets.reserve(info.container.layout().size());
+}
 
-    std::span descriptors = container.uniforms();
-    std::vector<ShaderResource::Descriptor::Id> keyVector;
-    keyVector.reserve(descriptors.size());
-    for (const auto& descriptor : descriptors)
+void PipelineBindContext::bind(renderer::OperationContext& context)
+{
+    currentSetIndex = sets.empty() ? 0 : (currentSetIndex + 1) % sets.size();
+
+    dynamicOffsets.clear();
+    auto& specificContext = get(context);
+    specificContext.pipelineBindContext = this;
+    const uint32_t descriptorsRequired = specificContext.specificTarget->descriptorsRequired();
+
+    uint32_t bindingId = 0;
+    if (descriptorsRequired > sets.size()) [[unlikely]]
     {
-        descriptor.resource->handle()->accept(s_handleVisitor);
-
-        s_handleVisitor->assureDescriptorCount(descriptorsRequired);
-
-        const auto id = s_handleVisitor->currentDescriptor()->id;
-
-        if (descriptor.binding.type == ShaderBlockType::UNIFORM_DYNAMIC)
+        while (descriptorsRequired > sets.size())
         {
-            keyVector.push_back({
-                //  dynamic descriptors use dynamic offsets and can
-                //  share same descriptor set given the same buffer ID
-                .descriptorId = 0,
-                .bufferId = id.bufferId,
-                .resourceId = id.resourceId,
-            });
+            sets.emplace_back(info.descriptorSetProvider.set(info.descriptorSetLayout));
         }
-        else
+
+        for (auto& descriptor : info.container)
         {
-            keyVector.push_back(id);
+            descriptor->adapt(context, bindingId);
+            descriptor->bind(context, bindingId++);
         }
     }
-
-    if (auto iter = sets.find(keyVector); iter != sets.end())
+    else [[likely]]
     {
-        currentSet = iter->second;
-    }
-    else
-    {
-        std::vector<handles::DescriptorSet::Write> writes;
-        for (uint32_t i = 0; i < descriptors.size(); ++i)
+        for (const auto& descriptor : info.container)
         {
-            descriptors[i].resource->handle()->accept(s_handleVisitor);
-            if (descriptors[i].binding.type == ShaderBlockType::SAMPLER)
-            {
-                writes.push_back(handles::DescriptorSet::Write{
-                    .imageInfo = s_handleVisitor->currentDescriptor()->descriptorImageInfo,
-                    .layoutBinding = descriptorSetInfo.descriptorSetLayout.binding(
-                        descriptorSetInfo.bindingIndices[i]),
-                });
-            }
-            else
-            {
-                writes.push_back(handles::DescriptorSet::Write{
-                    .bufferInfo = s_handleVisitor->currentDescriptor()->descriptorBufferInfo,
-                    .layoutBinding = descriptorSetInfo.descriptorSetLayout.binding(
-                        descriptorSetInfo.bindingIndices[i]),
-                });
-            }
+            descriptor->bind(context, bindingId++);
         }
-
-        auto [newEl, _] = sets.emplace(keyVector,
-            descriptorSetInfo.descriptorSetProvider.set(descriptorSetInfo.descriptorSetLayout));
-        newEl->second->write(writes);
-        currentSet = newEl->second;
     }
 }
 
@@ -143,29 +109,18 @@ Pipeline::~Pipeline()
     m_descriptorSetProviders.clear();
 }
 
-FragileSharedPtr<IPipelineBindContext> Pipeline::bindContext(
-    const IShaderInterfaceContainer& container)
+std::shared_ptr<IPipelineBindContext> Pipeline::bindContext(IShaderInterfaceContainer& container)
 {
     const auto containerId = container.id();
-
-    if (auto iter = m_bindContexts.find(containerId); iter != m_bindContexts.end())
-    {
-        return iter->second;
-    }
-
     auto& [setId, layout] = m_setLayouts.at(containerId);
 
-    auto [contextIter, _] = m_bindContexts.emplace(containerId,
-        newBindContext({
-            .setId = setId,
-            .bindingIndices = m_bindingIndices.at(containerId),
-            .descriptorSetProvider = m_descriptorSetProviders.at(containerId),
-            .descriptorSetLayout = layout,
-        }));
-
-    contextIter->second.setFragile(true);
-
-    return contextIter->second;
+    return std::shared_ptr<IPipelineBindContext>{ newBindContext({
+        .setId = setId,
+        .container = container,
+        .bindingIndices = m_bindingIndices.at(containerId),
+        .descriptorSetProvider = m_descriptorSetProviders.at(containerId),
+        .descriptorSetLayout = layout,
+    }) };
 }
 
 }    //  namespace renderer::vk

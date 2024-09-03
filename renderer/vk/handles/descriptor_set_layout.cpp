@@ -26,7 +26,7 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& device,
 }
 
 DescriptorSetLayout::DescriptorSetLayout(const Device& device,
-                                         DescriptorSetLayoutCreateInfo createInfo) noexcept
+    DescriptorSetLayoutCreateInfo createInfo) noexcept
     : DescriptorSetLayout(device, std::move(createInfo), nullptr)
 {}
 
@@ -35,7 +35,7 @@ DescriptorSetLayout::~DescriptorSetLayout()
     destroy(vkDestroyDescriptorSetLayout, m_device, handle(), nullptr);
 }
 
-handles::DescriptorSetLayoutBinding DescriptorSetLayout::binding(int32_t bindingId) const
+const handles::DescriptorSetLayoutBinding& DescriptorSetLayout::binding(int32_t bindingId) const
 {
     return m_bindings.at(bindingId);
 }

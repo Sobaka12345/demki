@@ -12,33 +12,13 @@ Particles::Particles(IGraphicsContext& context, std::span<const Particle> initia
     m_particlesBuffers[0] = context.createStorageBuffer(bufferInfo);
     m_particlesBuffers[1] = context.createStorageBuffer(bufferInfo);
 
-    descriptor(0).resource = m_particlesBuffers[0];
-    descriptor(1).resource = m_particlesBuffers[1];
-
-    m_descriptorsReverse[0] = descriptor(1);
-    m_descriptorsReverse[1] = descriptor(0);
+    resource(0) = m_particlesBuffers[0];
+    resource(1) = m_particlesBuffers[1];
 }
 
 void Particles::draw(OperationContext& context)
 {
-    m_particlesBuffers[m_currentIndex]->bind(context);
     m_particlesBuffers[m_currentIndex]->draw(context);
-}
-
-void Particles::bind(OperationContext& context)
-{
-    IShaderInterfaceContainer::bind(context);
-}
-
-std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::uniforms() const
-{
-    if (m_currentIndex == 1) return m_descriptors;
-    return m_descriptorsReverse;
-}
-
-std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Particles::dynamicUniforms() const
-{
-    return {};
 }
 
 void Particles::accept(ComputerInfoVisitor& visitor) const
@@ -57,6 +37,7 @@ void Particles::present(OperationContext& context)
     m_particlesBuffers[m_currentIndex]->present(context);
 
     m_currentIndex = (m_currentIndex + 1) % m_particlesBuffers.size();
+    std::swap(resource(1), resource(0));
 }
 
 }    //  namespace renderer

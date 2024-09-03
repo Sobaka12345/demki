@@ -15,6 +15,7 @@ public:
     struct CreateInfo
     {
         explicit CreateInfo(std::filesystem::path path);
+        explicit CreateInfo(std::filesystem::path path, uint32_t mipLevels);
 
         CreateInfo(const CreateInfo& other) = delete;
 
@@ -27,6 +28,7 @@ public:
         int textureChannels;
         int width;
         int height;
+        uint32_t mipLevels;
     };
 
 public:

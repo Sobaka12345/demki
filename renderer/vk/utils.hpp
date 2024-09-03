@@ -56,9 +56,7 @@ struct VkStruct : public T
 
 template <typename T>
 concept IsVkStruct = requires {
-    {
-        typename T::VkStructType{}
-    } -> std::convertible_to<T>;
+    { typename T::VkStructType{} } -> std::convertible_to<T>;
 };
 
 }    //  namespace renderer::vk

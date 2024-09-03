@@ -38,8 +38,61 @@ END_DECLARE_VKSTRUCT()
 
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorImageInfo)
     VKSTRUCT_PROPERTY(VkSampler, sampler)
-    VKSTRUCT_PROPERTY(VkImageView, imageView)
-    VKSTRUCT_PROPERTY(VkImageLayout, imageLayout)
+
+private:
+    template <typename T>
+                       constexpr inline void _setimageView(T value)
+{
+    if constexpr (std ::is_std_span<T>::value)
+            std ::copy(value.begin(), value.end(), Base ::imageView);
+    else
+    Base ::imageView = value;
+}
+
+public:
+template <typename T = VkImageView>
+constexpr
+typename std ::enable_if<!std ::is_std_span<T>::value, const std ::remove_const_t<T>&>::type
+imageView() const
+{
+    if constexpr (IsVkStruct<T>)
+    {
+        return reinterpret_cast<const T&>(this->*(&Base ::imageView));
+    }
+    else
+    return Base ::imageView;
+}
+template <typename T = VkImageView>
+constexpr typename std ::enable_if<std ::is_std_span<T>::value,
+std ::span<const std ::remove_const_t<typename T ::value_type>, T ::extent>>::type
+imageView() const
+{
+    return { Base ::imageView };
+}
+template <typename T = VkImageView>
+constexpr typename std ::enable_if<!std ::is_std_span<T>::value, T&>::type imageView()
+{
+    if constexpr (IsVkStruct<T>)
+    {
+        return reinterpret_cast<T&>(this->*(&Base ::imageView));
+    }
+    else
+    return Base ::imageView;
+}
+template <typename T = VkImageView>
+constexpr typename std ::enable_if<std ::is_std_span<T>::value,
+std ::span<std ::remove_const_t<typename T ::value_type>, T ::extent>>::type
+imageView()
+{
+    return { Base ::imageView };
+}
+template <typename T = VkImageView>
+constexpr auto& imageView(T && value)
+{
+    _setimageView<VkImageView>(std ::forward<T>(value));
+    return *this;
+}
+VKSTRUCT_PROPERTY(VkImageLayout, imageLayout)
 END_DECLARE_VKSTRUCT()
 
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(Extent2D)

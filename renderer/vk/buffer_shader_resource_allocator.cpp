@@ -1,4 +1,4 @@
-#include "buffer_shader_resource.hpp"
+#include "buffer_shader_resource_allocator.hpp"
 
 
 #include "graphics_context.hpp"
@@ -8,14 +8,15 @@
 
 namespace renderer::vk {
 
-BufferShaderResource::BufferShaderResource(
+BufferShaderResourceAllocator::BufferShaderResourceAllocator(
     GraphicsContext& context, uint32_t alignment, uint32_t chunkObjectCount)
     : m_chunkObjectCount(chunkObjectCount)
     , m_alignment(alignment)
     , m_context(context)
 {}
 
-std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::fetchDescriptor()
+std::shared_ptr<ShaderResourceAllocator::Descriptor> BufferShaderResourceAllocator::
+    fetchDescriptor()
 {
     for (int64_t bufferId = m_buffers.size() - 1; bufferId >= 0; --bufferId)
     {
@@ -34,7 +35,7 @@ std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::fetchDescripto
     return nullptr;
 }
 
-size_t BufferShaderResource::allocateBuffer()
+size_t BufferShaderResourceAllocator::allocateBuffer()
 {
     auto& newBuffer = m_buffers.emplaceBack(m_context.device(), bufferCreateInfo());
     newBuffer.allocateAndBindMemory(memoryProperties()).lock()->map();
@@ -49,7 +50,7 @@ size_t BufferShaderResource::allocateBuffer()
     return m_buffers.size() - 1;
 }
 
-void BufferShaderResource::populateDescriptor(Descriptor& descriptor)
+void BufferShaderResourceAllocator::populateDescriptor(Descriptor& descriptor)
 {
     auto& buffer = m_buffers[descriptor.id.bufferId];
     descriptor.descriptorBufferInfo =
@@ -60,14 +61,14 @@ void BufferShaderResource::populateDescriptor(Descriptor& descriptor)
     descriptor.memory = buffer.memory();
 }
 
-std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::tryFetchDescriptor(
-    size_t bufferId)
+std::shared_ptr<ShaderResourceAllocator::Descriptor> BufferShaderResourceAllocator::
+    tryFetchDescriptor(size_t bufferId)
 {
     if (auto& freeSet = m_freeDescriptors[bufferId]; !freeSet.empty())
     {
         uint64_t freeDescriptorId = freeSet.extract(freeSet.begin()).value();
 
-        auto descriptor = ShaderResource::fetchDescriptor();
+        auto descriptor = ShaderResourceAllocator::fetchDescriptor();
 
         descriptor->id.descriptorId = freeDescriptorId;
         descriptor->id.bufferId = bufferId;
@@ -81,12 +82,13 @@ std::shared_ptr<ShaderResource::Descriptor> BufferShaderResource::tryFetchDescri
     return nullptr;
 }
 
-void BufferShaderResource::freeDescriptor(const ShaderResource::Descriptor& descriptor)
+void BufferShaderResourceAllocator::freeDescriptor(
+    const ShaderResourceAllocator::Descriptor& descriptor)
 {
     m_freeDescriptors[descriptor.id.bufferId].insert(descriptor.id.descriptorId);
 }
 
-handles::BufferCreateInfo UniformBufferShaderResource::bufferCreateInfo() const
+handles::BufferCreateInfo UniformBufferShaderResourceAllocator::bufferCreateInfo() const
 {
     return handles::BufferCreateInfo{}
         .size(m_alignment * m_chunkObjectCount)
@@ -94,17 +96,12 @@ handles::BufferCreateInfo UniformBufferShaderResource::bufferCreateInfo() const
         .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 }
 
-VkMemoryPropertyFlags UniformBufferShaderResource::memoryProperties() const
+VkMemoryPropertyFlags UniformBufferShaderResourceAllocator::memoryProperties() const
 {
     return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 }
 
-DynamicUniformBufferShaderResource::DynamicUniformBufferShaderResource(
-    GraphicsContext& context, uint32_t alignment, uint32_t chunkObjectCount)
-    : UniformBufferShaderResource(context, alignment, chunkObjectCount)
-{}
-
-void DynamicUniformBufferShaderResource::populateDescriptor(Descriptor& descriptor)
+void DynamicUniformBufferShaderResourceAllocator::populateDescriptor(Descriptor& descriptor)
 {
     auto& buffer = m_buffers[descriptor.id.bufferId];
     descriptor.descriptorBufferInfo =
@@ -113,17 +110,12 @@ void DynamicUniformBufferShaderResource::populateDescriptor(Descriptor& descript
     descriptor.memory = buffer.memory();
 }
 
-StaticUniformBufferShaderResource::StaticUniformBufferShaderResource(
-    GraphicsContext& context, uint32_t alignment, uint32_t chunkObjectCount)
-    : UniformBufferShaderResource(context, alignment, chunkObjectCount)
-{}
-
-void StaticUniformBufferShaderResource::populateDescriptor(Descriptor& descriptor)
+void StaticUniformBufferShaderResourceAllocator::populateDescriptor(Descriptor& descriptor)
 {
-    UniformBufferShaderResource::populateDescriptor(descriptor);
+    UniformBufferShaderResourceAllocator::populateDescriptor(descriptor);
 }
 
-handles::BufferCreateInfo StorageBufferShaderResource::bufferCreateInfo() const
+handles::BufferCreateInfo StorageBufferShaderResourceAllocator::bufferCreateInfo() const
 {
     return handles::BufferCreateInfo{}
         .size(m_alignment * m_chunkObjectCount)
@@ -132,9 +124,10 @@ handles::BufferCreateInfo StorageBufferShaderResource::bufferCreateInfo() const
         .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 }
 
-VkMemoryPropertyFlags StorageBufferShaderResource::memoryProperties() const
+VkMemoryPropertyFlags StorageBufferShaderResourceAllocator::memoryProperties() const
 {
     return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
+
 
 }    //  namespace renderer::vk

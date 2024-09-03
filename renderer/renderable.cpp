@@ -11,7 +11,7 @@ namespace renderer {
 Renderable::Renderable(IGraphicsContext& context)
     : m_position(context.createUniformValue<glm::mat4>())
 {
-    descriptor(0).resource = m_position;
+    resource(0) = m_position;
 }
 
 Renderable::~Renderable() {}
@@ -33,16 +33,6 @@ void Renderable::bind(OperationContext& context)
     IShaderInterfaceContainer::bind(context);
 }
 
-std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Renderable::uniforms() const
-{
-    return m_descriptors;
-}
-
-std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Renderable::dynamicUniforms() const
-{
-    return std::span{ m_descriptors.begin(), 1 };
-}
-
 std::weak_ptr<IMesh> Renderable::mesh() const
 {
     return m_mesh;
@@ -58,13 +48,10 @@ std::weak_ptr<ITexture> Renderable::texture() const
     return m_texture;
 }
 
-void Renderable::setTexture(std::weak_ptr<ITexture> texture)
+void Renderable::setTexture(std::weak_ptr<ITexture> value)
 {
-    if (!texture.expired())
-    {
-        m_texture = texture;
-        descriptor(1).resource = m_texture.lock();
-    }
+    m_texture = value;
+    resource(1) = m_texture.lock();
 }
 
 void Renderable::setPosition(glm::mat4 position)

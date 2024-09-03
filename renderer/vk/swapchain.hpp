@@ -6,7 +6,7 @@
 #include "handles/image_view.hpp"
 #include "handles/framebuffer.hpp"
 
-#include "ispecific_operation_target.hpp"
+#include "specific_operation_target.hpp"
 
 #include <iswapchain.hpp>
 

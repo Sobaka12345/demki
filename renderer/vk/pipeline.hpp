@@ -28,36 +28,38 @@ class PipelineLayout;
 class RenderPass;
 }
 
-class Pipeline : virtual public IPipeline
+struct PipelineBindContext : public IPipelineBindContext
 {
-protected:
-    struct BindContext : public IPipelineBindContext
+    struct CreateInfo
     {
-        struct DescriptorSetInfo
+        uint32_t setId = 0;
+        IShaderInterfaceContainer& container;
+        std::vector<uint32_t>& bindingIndices;
+        DescriptorSetProvider& descriptorSetProvider;
+        handles::DescriptorSetLayout& descriptorSetLayout;
+
+        const VkDescriptorSetLayoutBinding& binding(size_t descriptorIndex) const
         {
-            uint32_t setId = 0;
-            std::vector<uint32_t>& bindingIndices;
-            DescriptorSetProvider& descriptorSetProvider;
-            handles::DescriptorSetLayout& descriptorSetLayout;
-        };
-
-        BindContext(DescriptorSetInfo descriptorSetInfo);
-
-        virtual void bind(renderer::OperationContext& context,
-            const IShaderInterfaceContainer& container) override;
-
-    protected:
-        DescriptorSetInfo descriptorSetInfo;
-        std::shared_ptr<handles::DescriptorSet> currentSet;
-        std::unordered_map<std::vector<ShaderResource::Descriptor::Id>,
-            std::shared_ptr<handles::DescriptorSet>,
-            ShaderResource::Descriptor::Id::ContainerHasher<std::vector>>
-            sets;
+            return descriptorSetLayout.binding(bindingIndices[descriptorIndex]);
+        }
     };
 
+    PipelineBindContext(CreateInfo descriptorSetInfo);
+
+    virtual void bind(renderer::OperationContext& context) override;
+
+    CreateInfo info;
+
+    std::vector<uint32_t> dynamicOffsets;
+    std::vector<std::shared_ptr<handles::DescriptorSet>> sets;
+    size_t currentSetIndex;
+};
+
+class Pipeline : virtual public IPipeline
+{
 public:
-    virtual FragileSharedPtr<IPipelineBindContext> bindContext(
-        const IShaderInterfaceContainer& container) override;
+    virtual std::shared_ptr<IPipelineBindContext> bindContext(
+        IShaderInterfaceContainer& container) override;
 
     const handles::PipelineLayout& layout() const { return *m_pipelineLayout; }
 
@@ -72,11 +74,10 @@ protected:
 
 private:
     void init(const std::vector<InterfaceContainerInfo>& interfaceContainers);
-    virtual BindContext* newBindContext(BindContext::DescriptorSetInfo descriptorSetInfo) const = 0;
+    virtual PipelineBindContext* newBindContext(
+        PipelineBindContext::CreateInfo descriptorSetInfo) const = 0;
 
 protected:
-    static ShaderInterfaceHandle::TypeVisitor s_handleVisitor;
-
     const GraphicsContext& m_context;
 
     std::unordered_map<uint32_t, DescriptorSetProvider> m_descriptorSetProviders;

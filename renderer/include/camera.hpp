@@ -2,7 +2,7 @@
 
 #include "ipipeline.hpp"
 #include "../include/uniform_value.hpp"
-#include "../include/ishader_interface.hpp"
+#include "../include/ishader_interface_container.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
@@ -30,11 +30,6 @@ public:
     void setProjection(glm::mat4 projection);
     void setViewProjection(ViewProjection viewProjection);
     ViewProjection viewProjection() const;
-
-public:
-    virtual void bind(OperationContext& context) override;
-    virtual std::span<const InterfaceDescriptor> uniforms() const override;
-    virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override;
 
 private:
     UniformValue<ViewProjection> m_viewProjection;

@@ -7,7 +7,7 @@ namespace renderer {
 Camera::Camera(IGraphicsContext& context)
     : m_viewProjection(context.createUniformValue<ViewProjection>())
 {
-    descriptor(0).resource = m_viewProjection;
+    resource(0) = m_viewProjection;
 }
 
 void Camera::setView(glm::mat4 view)
@@ -32,21 +32,6 @@ void Camera::setViewProjection(ViewProjection viewProjection)
 ViewProjection Camera::viewProjection() const
 {
     return m_viewProjection.get();
-}
-
-void Camera::bind(OperationContext& context)
-{
-    IShaderInterfaceContainer::bind(context);
-}
-
-std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Camera::uniforms() const
-{
-    return m_descriptors;
-}
-
-std::span<const IShaderInterfaceContainer::InterfaceDescriptor> Camera::dynamicUniforms() const
-{
-    return m_descriptors;
 }
 
 }    //  namespace renderer

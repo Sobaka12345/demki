@@ -312,4 +312,12 @@ struct StructMetaInfo
     std::vector<Field> fields;
 };
 
+template <typename IBase, typename... Specifics>
+class SpecificBase
+    : public IBase
+    , public Specifics...
+{
+    virtual IBase* toBase() final override { return this; }
+};
+
 }    //  namespace renderer

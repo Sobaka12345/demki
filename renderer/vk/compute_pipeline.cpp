@@ -12,23 +12,17 @@
 #include "handles/render_pass.hpp"
 #include "handles/shader_module.hpp"
 
+#include <ishader_interface_container.hpp>
+
 namespace renderer::vk {
 
-void ComputePipeline::BindContext::bind(renderer::OperationContext& context,
-    const IShaderInterfaceContainer& container)
+void ComputePipeline::BindContext::bind(renderer::OperationContext& context)
 {
-    Pipeline::BindContext::bind(context, container);
     auto& specContext = get(context);
+    PipelineBindContext::bind(context);
 
-    std::vector<uint32_t> offsets;
-    for (auto& descriptor : container.dynamicUniforms())
-    {
-        descriptor.resource->handle()->accept(s_handleVisitor);
-        offsets.push_back(s_handleVisitor->currentDescriptor()->dynamicOffset);
-    }
-
-    specContext.commandBuffer->bindDescriptorSet(specContext.computePipeline->layout(),
-        descriptorSetInfo.setId, currentSet, offsets, VK_PIPELINE_BIND_POINT_COMPUTE);
+    specContext.commandBuffer->bindDescriptorSet(specContext.computePipeline->layout(), info.setId,
+        sets[currentSetIndex], dynamicOffsets, VK_PIPELINE_BIND_POINT_COMPUTE);
 }
 
 ComputePipelineCreateInfo ComputePipeline::defaultPipeline()
@@ -83,9 +77,9 @@ const handles::Pipeline& ComputePipeline::pipeline(const OperationContext& conte
 }
 
 ComputePipeline::BindContext* ComputePipeline::newBindContext(
-    BindContext::DescriptorSetInfo descriptorSetInfo) const
+    BindContext::CreateInfo createInfo) const
 {
-    return new BindContext(std::move(descriptorSetInfo));
+    return new BindContext(std::move(createInfo));
 }
 
 }    //  namespace renderer::vk

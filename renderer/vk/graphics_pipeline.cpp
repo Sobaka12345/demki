@@ -1,5 +1,7 @@
 #include "graphics_pipeline.hpp"
 
+#include "../include/ishader_interface_container.hpp"
+
 #include "graphics_context.hpp"
 #include "renderer.hpp"
 #include "descriptor_set_provider.hpp"
@@ -100,21 +102,13 @@ VkFormat toVkAttrubuteFormat(IGraphicsPipeline::CreateInfo::Attribute::Format at
 
 namespace vk {
 
-void GraphicsPipeline::BindContext::bind(renderer::OperationContext& context,
-    const IShaderInterfaceContainer& container)
+void GraphicsPipeline::BindContext::bind(renderer::OperationContext& context)
 {
-    Pipeline::BindContext::bind(context, container);
+    PipelineBindContext::bind(context);
     auto& specContext = get(context);
 
-    std::vector<uint32_t> offsets;
-    for (auto& descriptor : container.dynamicUniforms())
-    {
-        descriptor.resource->handle()->accept(s_handleVisitor);
-        offsets.push_back(s_handleVisitor->currentDescriptor()->dynamicOffset);
-    }
-
-    specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(),
-        descriptorSetInfo.setId, currentSet, offsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(), info.setId,
+        sets[currentSetIndex], dynamicOffsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
@@ -310,9 +304,9 @@ const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& cont
 }
 
 GraphicsPipeline::BindContext* GraphicsPipeline::newBindContext(
-    BindContext::DescriptorSetInfo descriptorSetInfo) const
+    PipelineBindContext::CreateInfo createInfo) const
 {
-    return new BindContext(std::move(descriptorSetInfo));
+    return new BindContext(std::move(createInfo));
 }
 
 }    //  namespace vk

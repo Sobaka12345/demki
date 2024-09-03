@@ -4,22 +4,23 @@
 
 #include "types.hpp"
 
-#include "ishader_resource.hpp"
-
 #include "../utils.hpp"
+
+#include <iresource.hpp>
 
 #include <memory>
 
 namespace renderer::vk {
 
-class ShaderResource : virtual public IShaderResource
+class ShaderResourceAllocator : public shell::IResource
 {
 public:
     struct Descriptor : public std::enable_shared_from_this<Descriptor>
     {
         struct Id
         {
-            template <template <class...> typename T, typename El = ShaderResource::Descriptor::Id>
+            template <template <class...> typename T,
+                typename El = ShaderResourceAllocator::Descriptor::Id>
                 requires std::is_iterable_v<T<El>>
             struct ContainerHasher
             {
@@ -27,7 +28,7 @@ public:
                 {
                     size_t result = 0;
                     uint64_t pow = 1;
-                    for (ShaderResource::Descriptor::Id el : e)
+                    for (ShaderResourceAllocator::Descriptor::Id el : e)
                     {
                         result +=
                             el.resourceId * pow + el.descriptorId * pow * 2 + el.bufferId * pow * 3;
@@ -56,21 +57,22 @@ public:
         ~Descriptor();
 
     private:
-        [[nodiscard]] static std::shared_ptr<Descriptor> create(ShaderResource& shaderResource);
-        Descriptor(ShaderResource& shaderResource);
+        [[nodiscard]] static std::shared_ptr<Descriptor> create(
+            ShaderResourceAllocator& shaderResourceAllocator);
+        Descriptor(ShaderResourceAllocator& ShaderResourceAllocator);
 
-        ShaderResource& shaderResource;
+        ShaderResourceAllocator& shaderResourceAllocator;
 
-        friend class ShaderResource;
+        friend class ShaderResourceAllocator;
     };
 
 public:
-    virtual std::shared_ptr<ShaderResource::Descriptor> fetchDescriptor();
+    virtual std::shared_ptr<ShaderResourceAllocator::Descriptor> fetchDescriptor();
 
 private:
-    virtual void freeDescriptor(const ShaderResource::Descriptor& descriptor);
+    virtual void freeDescriptor(const ShaderResourceAllocator::Descriptor& descriptor);
 
-    friend class ShaderResource::Descriptor;
+    friend class ShaderResourceAllocator::Descriptor;
 };
 
 }    //  namespace renderer::vk

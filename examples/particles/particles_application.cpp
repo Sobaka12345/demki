@@ -15,23 +15,21 @@ struct DeltaTime
           ShaderInterfaceBindingMeta<float, ShaderBlockType::UNIFORM_DYNAMIC, ShaderStage::COMPUTE>>
 {
 public:
-    DeltaTime(IShaderResourceProvider& provider)
-        : ShaderInterfaceContainer(provider)
-    {}
+    DeltaTime(IGraphicsContext& context)
+        : m_deltaTime(context.createUniformValue<float>())
+    {
+        resource(0) = m_deltaTime;
+    }
 
     virtual void bind(OperationContext& context) override
     {
         IShaderInterfaceContainer::bind(context);
     }
 
-    void set(float value) { descriptor(0).handle->write<float>(&value); }
+    void set(float value) { m_deltaTime.set(value); }
 
-    virtual std::span<const InterfaceDescriptor> uniforms() const override { return m_descriptors; }
-
-    virtual std::span<const InterfaceDescriptor> dynamicUniforms() const override
-    {
-        return m_descriptors;
-    }
+private:
+    UniformValue<float> m_deltaTime;
 };
 
 static uint64_t s_particleCount = 4096;

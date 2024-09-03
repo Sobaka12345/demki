@@ -2,7 +2,8 @@
 
 #include <itexture.hpp>
 
-#include "shader_resource.hpp"
+#include "shader_resource_allocator.hpp"
+#include "specific_shader_resource.hpp"
 
 #include <memory>
 
@@ -17,20 +18,21 @@ class Sampler;
 }
 
 class Texture
-    : public ITexture
-    , public ShaderResource
+    : public SpecificShaderResource<ITexture>
+    , public ShaderResourceAllocator
 {
 public:
     Texture(GraphicsContext& context, ITexture::CreateInfo createInfo);
     ~Texture();
 
-    virtual std::shared_ptr<ShaderResource::Descriptor> fetchDescriptor() override;
+    virtual std::shared_ptr<ShaderResourceAllocator::Descriptor> fetchDescriptor() override;
 
     //  IShaderResource interface
-    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
+    virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const override;
+    virtual void adapt(renderer::OperationContext& context, uint32_t bindingId) override;
 
 private:
-    virtual void freeDescriptor(const ShaderResource::Descriptor& descriptor) override;
+    virtual void freeDescriptor(const ShaderResourceAllocator::Descriptor& descriptor) override;
 
     void generateMipmaps();
 

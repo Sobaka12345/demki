@@ -6,23 +6,12 @@
 #include "mesh.hpp"
 #include "renderer.hpp"
 #include "swapchain.hpp"
-#include "shader_interface_handle.hpp"
 #include "storage_buffer.hpp"
+#include "uniform_buffer.hpp"
 #include "texture.hpp"
 
 namespace renderer::ogl {
 
-GLenum memoryUsage(ShaderBlockType sbt)
-{
-    switch (sbt)
-    {
-        case ShaderBlockType::UNIFORM_STATIC: return GL_STATIC_DRAW;
-        case ShaderBlockType::UNIFORM_DYNAMIC: return GL_DYNAMIC_DRAW;
-        default: ASSERT(false, "not implemented");
-    }
-
-    return GL_INVALID_ENUM;
-}
 
 void GLAPIENTRY MessageCallback(GLenum source,
     GLenum type,
@@ -46,17 +35,6 @@ GraphicsContext::GraphicsContext(IOpenGLSurface& defaultSurface)
 }
 
 GraphicsContext::~GraphicsContext() {}
-
-std::shared_ptr<ShaderInterfaceHandle> GraphicsContext::fetchHandle(ShaderBlockType sbt,
-    uint32_t layoutSize)
-{
-    //  if (sbt == ShaderBlockType::SAMPLER)
-    //  {
-    //      return TextureInterfaceHandle::create(layoutSize, memoryUsage(sbt));
-    //  }
-
-    return UniformBufferInterfaceHandle::create(layoutSize, memoryUsage(sbt));
-}
 
 std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(IOpenGLSurface& surface,
     ISwapchain::CreateInfo createInfo)
@@ -127,7 +105,9 @@ std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo cr
 
 std::shared_ptr<IUniformBuffer> GraphicsContext::createUniformBuffer(
     IUniformBuffer::CreateInfo createInfo)
-{}
+{
+    return std::make_shared<UniformBuffer>(*this, std::move(createInfo));
+}
 
 
 }    //  namespace renderer::ogl

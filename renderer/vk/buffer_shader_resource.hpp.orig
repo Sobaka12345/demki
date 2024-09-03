@@ -56,6 +56,11 @@ protected:
 private:
     virtual handles::BufferCreateInfo bufferCreateInfo() const override;
     virtual VkMemoryPropertyFlags memoryProperties() const override;
+
+    //  IShaderResource interface
+
+public:
+    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
 };
 
 class DynamicUniformBufferShaderResource : public UniformBufferShaderResource
@@ -81,11 +86,20 @@ private:
 class StorageBufferShaderResource : public BufferShaderResource
 {
 public:
-    using BufferShaderResource::BufferShaderResource;
+    StorageBufferShaderResource(
+        GraphicsContext& device, uint32_t alignment, uint32_t chunkObjectCount);
 
 private:
     virtual handles::BufferCreateInfo bufferCreateInfo() const override;
     virtual VkMemoryPropertyFlags memoryProperties() const override;
+
+    //  IShaderResource interface
+
+public:
+    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
+
+protected:
+    std::shared_ptr<ShaderInterfaceHandle> m_handle;
 };
 
 }    //  namespace renderer::vk

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "types.hpp"
-#include "buffer_shader_resource.hpp"
-#include "shader_resource.hpp"
+#include "buffer_shader_resource_allocator.hpp"
 
 #include <ishader_interface_handle.hpp>
 
@@ -17,29 +16,28 @@ class Memory;
 
 class ShaderInterfaceHandle
     : public IShaderInterfaceHandle
-    , public IUniformBuffer
     , public std::enable_shared_from_this<ShaderInterfaceHandle>
 {
 private:
-    ShaderInterfaceHandle(ShaderResource*);
-    ShaderInterfaceHandle();
+    ShaderInterfaceHandle(ShaderResourceAllocator&);
 
 public:
-    struct TypeVisitor : public ShaderInterfaceHandleVisitor
-    {
-        void visit(ShaderInterfaceHandle& handle) override { this->handle = &handle; }
+    //  struct TypeVisitor : public ShaderInterfaceHandleVisitor
+    //  {
+    //      void visit(ShaderInterfaceHandle& handle) override { this->handle = &handle; }
 
-        ShaderInterfaceHandle* operator->() { return handle; }
+    //    ShaderInterfaceHandle* operator->() { return handle; }
 
-    private:
-        ShaderInterfaceHandle* handle = nullptr;
-    };
+    //  private:
+    //      ShaderInterfaceHandle* handle = nullptr;
+    //  };
 
 public:
-    [[nodiscard]] static std::shared_ptr<ShaderInterfaceHandle> create();
+    [[nodiscard]] static std::shared_ptr<ShaderInterfaceHandle> create(
+        ShaderResourceAllocator& uniformAllocator);
     ~ShaderInterfaceHandle();
 
-    void reset(ShaderResource& resource);
+    //  void reset(ShaderResource& resource);
 
     virtual void accept(ShaderInterfaceHandleVisitor& visitor) override { visitor.visit(*this); }
 
@@ -48,22 +46,24 @@ public:
         visitor.visit(*this);
     }
 
-    //  IShaderResource interface
-    virtual std::shared_ptr<IShaderInterfaceHandle> handle() override;
     virtual void write(const void* src, size_t size) override;
     virtual const void* read(size_t size) const override;
 
+    size_t descriptorCount() const;
     void assureDescriptorCount(uint32_t requiredCount);
-    std::shared_ptr<ShaderResource::Descriptor> currentDescriptor();
-    const std::shared_ptr<ShaderResource::Descriptor> currentDescriptor() const;
+    std::shared_ptr<ShaderResourceAllocator::Descriptor> descriptor(size_t index);
+    std::shared_ptr<const ShaderResourceAllocator::Descriptor> descriptor(size_t index) const;
+    std::shared_ptr<ShaderResourceAllocator::Descriptor> currentDescriptor();
+    std::shared_ptr<const ShaderResourceAllocator::Descriptor> currentDescriptor() const;
 
 private:
     void nextDescriptor();
 
 private:
-    ShaderResource* m_uniformAllocator;
-    std::list<std::shared_ptr<ShaderResource::Descriptor>> m_descriptors;
-    std::list<std::shared_ptr<ShaderResource::Descriptor>>::const_iterator m_currentDescriptor;
+    ShaderResourceAllocator& m_uniformAllocator;
+    std::list<std::shared_ptr<ShaderResourceAllocator::Descriptor>> m_descriptors;
+    std::list<std::shared_ptr<ShaderResourceAllocator::Descriptor>>::const_iterator
+        m_currentDescriptor;
 };
 
 }    //  namespace renderer::vk

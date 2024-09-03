@@ -6,7 +6,6 @@
 #include "utils.hpp"
 #include "graphics_pipeline.hpp"
 #include "icomputer.hpp"
-#include "shader_interface_handle.hpp"
 
 #include <operation_context.hpp>
 
@@ -16,8 +15,6 @@ StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
     , m_elementCount(createInfo.initialDataSize)
 {
-    m_handle = context.fetchHandle(ShaderBlockType::STORAGE, createInfo.initialDataSize);
-
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_buffer);
 
@@ -63,13 +60,9 @@ void StorageBuffer::present(renderer::OperationContext& context)
     glDispatchCompute(m_elementCount / x, y, z);
 }
 
-void StorageBuffer::bind(renderer::OperationContext& context) const
-{
-    glBindVertexArray(m_vao);
-}
-
 void StorageBuffer::draw(renderer::OperationContext& context) const
 {
+    glBindVertexArray(m_vao);
     glDrawArrays(get(context).graphicsPipeline->primitiveTopology(), 0, m_elementCount);
 }
 
@@ -78,9 +71,15 @@ GLuint StorageBuffer::framebuffer()
     return 0;
 }
 
-std::shared_ptr<IShaderInterfaceHandle> StorageBuffer::handle()
+void StorageBuffer::adapt(renderer::OperationContext& context, uint32_t bindingId)
 {
-    return m_handle;
+    //  NOTHING TO DO
 }
+
+void StorageBuffer::bind(renderer::OperationContext& context, uint32_t bindingId) const
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingId, m_buffer);
+}
+
 
 }    //  namespace renderer::ogl
