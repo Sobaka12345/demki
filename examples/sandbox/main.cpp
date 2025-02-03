@@ -10,6 +10,8 @@
 
 #include "types.h"
 
+#include "shaders_hpp/shader.vert.spv.hpp""
+
 inline std::filesystem::path executablePath()
 {
     static std::filesystem::path s_executablePath =
@@ -52,8 +54,10 @@ int main(int argc, char** argv)
 {
     auto file = readFile(executablePath() / "shaders/shader.vert.spv");
 
+
+
     SpvReflectShaderModule module = {};
-    SpvReflectResult result = spvReflectCreateShaderModule(file.size() * 4, file.data(), &module);
+    SpvReflectResult result = spvReflectCreateShaderModule(sizeof(shader_vert_spv), shader_vert_spv, &module);
     assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
     //  Go through each enumerate to examine it

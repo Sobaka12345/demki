@@ -1,10 +1,5 @@
 begin_project()
 
-set(SANDBOX_SHADER_SOURCES
-	${SANDBOX_SHADERS_DIR}/shader.frag
-	${SANDBOX_SHADERS_DIR}/shader.comp
-	${SANDBOX_SHADERS_DIR}/shader.vert)
-
 set(SANDBOX_TEXTURES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/textures)
 set(SANDBOX_TEXTURES_SRC ${SANDBOX_TEXTURES_DIR}/viking_room.jpg)
 

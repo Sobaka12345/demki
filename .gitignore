@@ -6,3 +6,5 @@ build_env
 compile_commands.json
 CMakeUserPresets.json
 CMakeLists.txt.user
+
+**/shaders_hpp/

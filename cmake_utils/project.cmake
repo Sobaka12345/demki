@@ -43,16 +43,17 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 	include(${CMAKE_SOURCE_DIR}/cmake_utils/glslc.cmake)
 	generate_glslc_script(PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR} SHADER_PATHS "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES}")
 
+	file(GLOB_RECURSE "${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_BINARIES" ABSOLUTE "${CMAKE_CURRENT_BINARY_DIR}/shaders/*.spv")
 	set(${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders_hpp)
 	file(MAKE_DIRECTORY ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR})
-	foreach(shader_source ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES})
-		get_filename_component(file_base_name ${shader_source} NAME)
+	foreach(shader_bin ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_BINARIES})
+		get_filename_component(file_base_name ${shader_bin} NAME)
 		set(generated_header ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR}/${file_base_name}.hpp)
 		add_custom_command(OUTPUT ${generated_header}
 			COMMAND ${BIN2HEADER_EXECUTABLE}
 			    --output ${generated_header}
-				${shader_source}
-			DEPENDS ${shader_source}
+				${shader_bin}
+			DEPENDS ${shader_bin}
 			VERBATIM
 		)
 
