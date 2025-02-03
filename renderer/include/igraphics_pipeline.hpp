@@ -8,7 +8,7 @@
 
 namespace renderer {
 
-class IGraphicsPipeline : virtual public IPipeline
+class IGraphicsPipeline : public IPipeline
 {
 public:
     class CreateInfo : public IPipeline::CreateInfo<CreateInfo>
@@ -92,37 +92,39 @@ public:
         };
 
     public:
-        template <typename T>
-        CreateInfo& addInput()
-        {
-            T val;
-            m_bindings.push_back(Binding{
-                .binding = static_cast<uint32_t>(m_bindings.size()),
-                .stride = sizeof(decltype(val)),
-                .inputRate = Binding::VERTEX,
-            });
+        // template <typename T>
+        // CreateInfo& addInput()
+        // {
+        //     T val;
+        //     m_bindings.push_back(Binding{
+        //         .binding = static_cast<uint32_t>(m_bindings.size()),
+        //         .stride = sizeof(decltype(val)),
+        //         .inputRate = Binding::VERTEX,
+        //     });
 
-            uint32_t j = 0;
-            boost::pfr::for_each_field(val, [&](auto& subVal) {
-                m_attributes.push_back(Attribute{
-                    .location = j++,
-                    .binding = m_bindings.back().binding,
-                    .format = Attribute::attrubuteFormat(subVal),
-                    .offset = static_cast<uint32_t>(
-                        reinterpret_cast<int8_t*>(&subVal) - reinterpret_cast<int8_t*>(&val)),
-                });
-            });
+        //     uint32_t j = 0;
+        //     boost::pfr::for_each_field(val, [&](auto& subVal) {
+        //         m_attributes.push_back(Attribute{
+        //             .location = j++,
+        //             .binding = m_bindings.back().binding,
+        //             .format = Attribute::attrubuteFormat(subVal),
+        //             .offset = static_cast<uint32_t>(
+        //                 reinterpret_cast<int8_t*>(&subVal) - reinterpret_cast<int8_t*>(&val)),
+        //         });
+        //     });
 
-            return *this;
-        }
+        //     return *this;
+        // }
 
-        const auto& attributes() const { return m_attributes; }
+        // const auto& attributes() const { return m_attributes; }
 
-        auto& attributes() { return m_attributes; }
+        // auto& attributes() { return m_attributes; }
 
-        const auto& bindings() const { return m_bindings; }
+        // const auto& bindings() const { return m_bindings; }
 
-        auto& bindings() { return m_bindings; }
+        // auto& bindings() { return m_bindings; }
+
+
 
     private:
         std::vector<Attribute> m_attributes;

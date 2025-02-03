@@ -1,6 +1,0 @@
--qt-host-path
-/usr/lib/qt6
--platform
-wasm-emscripten
--prefix
-/home/dio/Desktop/demki/external/qt-wasm/qtbase

@@ -11,7 +11,7 @@ class GraphicsPipeline
     , public IGraphicsPipeline
 {
 public:
-    GraphicsPipeline(const GraphicsContext& context, CreateInfo createInfo);
+    GraphicsPipeline(const GraphicsContext& context, IGraphicsPipeline::CreateInfo createInfo);
     ~GraphicsPipeline();
 
     int primitiveTopology() const;

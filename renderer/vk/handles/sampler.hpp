@@ -1,12 +1,11 @@
 #pragma once
 
 #include "handle.hpp"
+#include "../utils.hpp"
 
-#include "vk/utils.hpp"
+#include <crtp.hpp>
 
-namespace renderer::vk { namespace handles {
-
-class Device;
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(SamplerCreateInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -28,21 +27,16 @@ BEGIN_DECLARE_VKSTRUCT(SamplerCreateInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO)
     VKSTRUCT_PROPERTY(VkBool32, unnormalizedCoordinates)
 END_DECLARE_VKSTRUCT()
 
-class Sampler : public Handle<VkSampler>
-{
-    HANDLE(Sampler);
+template <typename T>
+struct SamplerFunctions : public CRTPBase<T>
+{};
 
-public:
-	Sampler(const Sampler& other) = delete;
-	Sampler(Sampler&& other) noexcept;
-    Sampler(const Device& device, SamplerCreateInfo createInfo) noexcept;
-    virtual ~Sampler();
+template <typename T>
+struct SamplerGroupFunctions : public CRTPBase<T>
+{};
 
-protected:
-    Sampler(const Device& device, SamplerCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
+namespace handles {
+DECLARE_HANDLE_TYPE(Sampler, SamplerFunctions, SamplerGroupFunctions);
+}
 
-private:
-	const Device& m_device;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk::handles

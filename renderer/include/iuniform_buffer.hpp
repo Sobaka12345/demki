@@ -11,12 +11,10 @@ class IUniformBuffer
     , public IShaderResource
 {
 public:
-    struct CreateInfo
+    struct CreateInfo : public IBuffer::CreateInfo
     {
-        bool isDynamic = false;
-        size_t size = 0;
+        CREATE_INFO_PROPERTY(bool, dynamic, false)
     };
 };
-
 
 }    //  namespace renderer

@@ -15,14 +15,14 @@ VulkanWindow::VulkanWindow(int width, int height, std::string name, QWindow* par
     connect(this, &Window::aboutToClose, this, [this]() { m_swapchain.reset(); });
 
     auto newContext = createContext(
-        renderer::vk::handles::ApplicationInfo()
+        renderer::vk::ApplicationInfo()
             .pApplicationName(name.c_str())
             .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
             .pEngineName("DemkiEngine")
             .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
             .apiVersion(VK_API_VERSION_1_3));
 
-    m_instance.setVkInstance(*newContext);
+    m_instance.setVkInstance(newContext->instance());
     ASSERT(m_instance.create(), "failed to create qt vulkan instance");
 
     create();

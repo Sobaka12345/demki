@@ -9,9 +9,8 @@
 namespace renderer {
 
 Renderable::Renderable(IGraphicsContext& context)
-    : m_position(context.createUniformValue<glm::mat4>())
+
 {
-    resource(0) = m_position;
 }
 
 Renderable::~Renderable() {}
@@ -30,7 +29,7 @@ void Renderable::bind(OperationContext& context)
 
     m_mesh.lock()->bind(context);
 
-    IShaderInterfaceContainer::bind(context);
+    //IShaderInterfaceContainer::bind(context);
 }
 
 std::weak_ptr<IMesh> Renderable::mesh() const
@@ -51,17 +50,15 @@ std::weak_ptr<ITexture> Renderable::texture() const
 void Renderable::setTexture(std::weak_ptr<ITexture> value)
 {
     m_texture = value;
-    resource(1) = m_texture.lock();
 }
 
 void Renderable::setPosition(glm::mat4 position)
 {
-    m_position.set(position);
 }
 
 glm::mat4 Renderable::position() const
 {
-    return m_position.get();
+    return {};
 }
 
 }    //  namespace renderer

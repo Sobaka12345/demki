@@ -2,10 +2,6 @@
 
 #include "../operation_context.hpp"
 
-#include <assert.hpp>
-
-#include <cstdint>
-
 namespace renderer {
 
 namespace vk {

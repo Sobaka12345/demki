@@ -1,8 +1,5 @@
-begin_project()
+begin_project(EXTRA_SHADER_SOURCES)
 
-set(DUMMY_SHADER_SOURCES
-	${DEMKI_SHADERS_DIR}/shader.frag
-	${DEMKI_SHADERS_DIR}/shader.vert)
 
 set(DUMMY_TEXTURES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/textures)
 set(DUMMY_TEXTURES_SRC ${DUMMY_TEXTURES_DIR}/viking_room.jpg)

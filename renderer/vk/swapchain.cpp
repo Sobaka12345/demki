@@ -16,6 +16,8 @@
 
 namespace renderer::vk {
 
+using namespace handles;
+
 VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities,
     const IVulkanSurface& window)
 {
@@ -96,8 +98,8 @@ Swapchain::SwapChainSupportDetails Swapchain::supportDetails(VkPhysicalDevice ph
 }
 
 Swapchain::Swapchain(
-    const GraphicsContext& context, IVulkanSurface& surface, ISwapchain::CreateInfo _createInfo)
-    : m_context(context)
+    GraphicsContext& context, IVulkanSurface& surface, ISwapchain::CreateInfo _createInfo)
+    : SpecificBase<ISwapchain, ISpecificContextObject, ISpecificOperationTarget>(context)
     , m_surface(surface)
     , m_swapchainInfo(std::move(_createInfo))
     , m_depthFormat(context.findDepthFormat())
@@ -108,27 +110,30 @@ Swapchain::Swapchain(
     m_maxFramesInFlight = m_swapchainInfo.framesInFlight;
     m_surface.registerFramebufferResizeCallback([this](int, int) { m_needRecreate = true; });
 
-    m_resourcesInUse.resize(m_maxFramesInFlight);
-
-    constexpr handles::FenceCreateInfo fenceInfo =
-        handles::FenceCreateInfo{}.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+    constexpr auto fenceInfo = FenceCreateInfo{}.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+    constexpr auto semaphoreInfo = SemaphoreCreateInfo{};
 
     for (size_t i = 0; i < m_maxFramesInFlight; ++i)
     {
-        m_inFlightFences.emplaceBack(m_context.device(),
-            handles::FenceCreateInfo{}.flags(VK_FENCE_CREATE_SIGNALED_BIT));
-        m_imageAvailableSemaphores.emplaceBack(m_context.device(), handles::SemaphoreCreateInfo{});
-        m_renderFinishedSemaphores.emplaceBack(m_context.device(), handles::SemaphoreCreateInfo{});
+        m_inFlightFences.push_back(FenceHelper::create(m_context.device(), &fenceInfo, nullptr));
+        m_imageAvailableSemaphores.push_back(
+            SemaphoreHelper::create(m_context.device(), &semaphoreInfo, nullptr));
+        m_renderFinishedSemaphores.push_back(
+            SemaphoreHelper::create(m_context.device(), &semaphoreInfo, nullptr));
     }
 
-    m_commandBuffers =
-        m_context.device()
-            .commandPool(handles::GRAPHICS_COMPUTE)
-            .lock()
-            ->allocateBuffers(m_maxFramesInFlight);
+    auto commandPool = m_context.commandPool(QueueFamilyType::GRAPHICS_COMPUTE);
+
+    auto cbAllocateInfo =
+        CommandBufferAllocateInfo{}
+            .commandBufferCount(m_maxFramesInFlight)
+            .commandPool(commandPool)
+            .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    m_commandBuffers.resize(m_maxFramesInFlight);
+    CommandBufferHelper::create(m_context.device(), &cbAllocateInfo, m_commandBuffers.data());
 
     const auto supportDetails =
-        Swapchain::supportDetails(m_context.device().physicalDevice(), m_surface.surfaceKHR());
+        Swapchain::supportDetails(context.physicalDevice(), m_surface.surfaceKHR());
 
     VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(supportDetails.formats);
     VkPresentModeKHR presentMode = choosePresentMode(supportDetails.presentModes);
@@ -143,16 +148,20 @@ Swapchain::Swapchain(
     static std::vector<uint32_t> queueFamilyIndices = {};
     VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (m_context.device().queueFamilies()[handles::GRAPHICS_COMPUTE] !=
-        m_context.device().queueFamilies()[handles::PRESENT])
+
+    const auto graphicsComputeFamilyIndex = m_context.queueIndex(QueueFamilyType::GRAPHICS_COMPUTE);
+    const auto presentFamilyIndex = m_context.queueIndex(QueueFamilyType::PRESENT);
+    if (graphicsComputeFamilyIndex != presentFamilyIndex)
     {
         sharingMode = VK_SHARING_MODE_CONCURRENT;
-        queueFamilyIndices = { m_context.device().queueFamilies()[handles::GRAPHICS_COMPUTE],
-            m_context.device().queueFamilies()[handles::PRESENT] };
+        queueFamilyIndices = {
+            graphicsComputeFamilyIndex,
+            presentFamilyIndex,
+        };
     }
 
     m_swapchainCreateInfo =
-        handles::SwapchainCreateInfoKHR{}
+        SwapchainCreateInfoKHR{}
             .surface(m_surface.surfaceKHR())
             .minImageCount(imageCount)
             .imageFormat(surfaceFormat.format)
@@ -174,7 +183,7 @@ Swapchain::Swapchain(
 
 Swapchain::~Swapchain()
 {
-    m_context.device().waitIdle();
+    m_context.waitIdle();
 
     destroy();
 
@@ -186,91 +195,89 @@ Swapchain::~Swapchain()
 void Swapchain::populateOperationContext(OperationContext& context)
 {
     context.specificTarget = this;
-    context.commandBuffer = &currentCommandBuffer();
+    context.commandBuffer = currentCommandBuffer();
 
     if (!m_swapChainFramebuffers.size())
     {
         for (size_t i = 0; i < m_swapChainImageViews.size(); ++i)
         {
             //  TO DO: remove this cringe
-            std::vector<VkImageView> attachments;
-            attachments.reserve(context.renderPass->attachments().size());
-            for (auto attachment : context.renderPass->attachments())
-            {
-                if (attachment.finalLayout() == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-                {
-                    attachments.push_back(m_swapChainImageViews[i]);
-                }
-                else if (attachment.finalLayout() ==
-                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-                {
-                    if (!m_depthImage)
-                    {
-                        m_depthImage = std::make_unique<handles::Image>(m_context.device(),
-                            imageCreateInfo()
-                                .format(m_depthFormat)
-                                .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-                                .samples(attachment.samples()));
-                        m_depthImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            ImageViewContainer::Vector<> attachments;
+            //attachments.reserve(context.renderPass->attachments().size());
+            // for (auto attachment : context.renderPass->attachments())
+            // {
+            //     if (attachment.finalLayout() == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+            //     {
+            //         attachments.push_back(m_swapChainImageViews[i]);
+            //     }
+            //     else if (attachment.finalLayout() ==
+            //         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+            //     {
+            //         if (!m_depthImage)
+            //         {
+            //             m_depthImage = std::make_unique<handles::Image>(m_context.device(),
+            //                 imageCreateInfo()
+            //                     .format(m_depthFormat)
+            //                     .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            //                     .samples(attachment.samples()));
+            //             m_depthImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-                        auto depthViewInfo =
-                            imageViewCreateInfo().image(*m_depthImage).format(m_depthFormat);
-                        depthViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                        m_depthImageView = std::make_unique<handles::ImageView>(m_context.device(),
-                            std::move(depthViewInfo));
-                    }
-                    attachments.push_back(*m_depthImageView);
-                }
-                else if (attachment.finalLayout() == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-                {
-                    if (!m_colorImage)
-                    {
-                        m_colorImage = std::make_unique<handles::Image>(m_context.device(),
-                            imageCreateInfo()
-                                .format(m_swapchain->imageFormat())
-                                .usage(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-                                .samples(attachment.samples()));
-                        m_colorImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            //             auto depthViewInfo =
+            //                 imageViewCreateInfo().image(m_depthImage).format(m_depthFormat);
+            //             depthViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+            //             m_depthImageView =
+            //                 ImageViewHelper::create(m_context.device(), &depthViewInfo, nullptr);
+            //         }
+            //         attachments.push_back(m_depthImageView);
+            //     }
+            //     else if (attachment.finalLayout() == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+            //     {
+            //         if (!m_colorImage)
+            //         {
+            //             m_colorImage = std::make_unique<handles::Image>(m_context.device(),
+            //                 imageCreateInfo()
+            //                     .format(m_swapchain->imageFormat())
+            //                     .usage(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+            //                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+            //                     .samples(attachment.samples()));
+            //             m_colorImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-                        auto colorViewInfo =
-                            imageViewCreateInfo()
-                                .image(*m_colorImage)
-                                .format(m_swapchain->imageFormat());
-                        colorViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                        m_colorImageView = std::make_unique<handles::ImageView>(m_context.device(),
-                            std::move(colorViewInfo));
-                    }
-                    attachments.push_back(*m_colorImageView);
-                }
-            }
+            //             auto colorViewInfo =
+            //                 imageViewCreateInfo()
+            //                     .image(m_colorImage)
+            //                     .format(m_swapchain->imageFormat());
+            //             colorViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+            //             m_colorImageView = std::make_unique<handles::ImageView>(m_context.device(),
+            //                 std::move(colorViewInfo));
+            //         }
+            //         attachments.push_back(m_colorImageView);
+            //     }
+            // }
 
             const auto framebufferInfo =
-                handles::FramebufferCreateInfo{}
-                    .renderPass(*context.renderPass)
+                FramebufferCreateInfo{}
+                    .renderPass(context.renderPass)
                     .attachmentCount(attachments.size())
                     .pAttachments(attachments.data())
                     .width(m_swapchainCreateInfo.imageExtent().width)
                     .height(m_swapchainCreateInfo.imageExtent().height)
                     .layers(1);
 
-            m_swapChainFramebuffers.emplaceBack(m_context.device(), framebufferInfo);
+            m_swapChainFramebuffers.emplace_back(
+                FramebufferHelper::create(m_context.device(), &framebufferInfo, nullptr));
         }
     }
 
-    context.framebuffer = &currentFramebuffer();
+    context.framebuffer = currentFramebuffer();
 }
 
 bool Swapchain::prepare(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
 
-    vkWaitForFences(m_context.device(), 1, m_inFlightFences[m_currentFrame].handlePtr(), VK_TRUE,
-        UINT64_MAX);
+    vkWaitForFences(m_context.device(), 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
-    m_resourcesInUse[m_currentFrame].sets.clear();
-
-    VkResult result = vkAcquireNextImageKHR(m_context.device(), *m_swapchain, UINT64_MAX,
+    VkResult result = vkAcquireNextImageKHR(m_context.device(), m_swapchain, UINT64_MAX,
         m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_currentImage);
 
     ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR,
@@ -285,34 +292,32 @@ bool Swapchain::prepare(renderer::OperationContext& context)
         return false;
     }
 
-    vkResetFences(m_context.device(), 1, m_inFlightFences[m_currentFrame].handlePtr());
+    vkResetFences(m_context.device(), 1, &m_inFlightFences[m_currentFrame]);
 
-    const auto& commandBuffer = *specContext.commandBuffer;
-
-    commandBuffer.reset();
-    ASSERT(commandBuffer.begin() == VK_SUCCESS, "failed to begin recording command buffer!");
+    vkResetCommandBuffer(specContext.commandBuffer, 0);
+    const auto commandBufferBeginInfo = CommandBufferBeginInfo{}.pInheritanceInfo(nullptr);
+    ASSERT(vkBeginCommandBuffer(specContext.commandBuffer, &commandBufferBeginInfo) == VK_SUCCESS,
+        "failed to begin recording command buffer!");
 
     return true;
 }
 
 void Swapchain::present(renderer::OperationContext& context)
 {
-    const auto& commandBuffer = *get(context).commandBuffer;
-    ASSERT(commandBuffer.end() == VK_SUCCESS, "failed to record command buffer!");
-
-    m_resourcesInUse[m_currentFrame] = std::move(commandBuffer.resourcesInUse());
+    const auto commandBuffer = get(context).commandBuffer;
+    ASSERT(vkEndCommandBuffer(commandBuffer) == VK_SUCCESS, "failed to record command buffer!");
 
     std::vector<VkPipelineStageFlags> waitStages = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
     auto submitInfo =
-        handles::SubmitInfo{}
+        SubmitInfo{}
             .commandBufferCount(1)
-            .pCommandBuffers(commandBuffer.handlePtr())
+            .pCommandBuffers(&commandBuffer)
             .signalSemaphoreCount(1)
-            .pSignalSemaphores(m_renderFinishedSemaphores[m_currentFrame].handlePtr());
+            .pSignalSemaphores(&m_renderFinishedSemaphores[m_currentFrame]);
 
-    std::vector<VkSemaphore> waitSemaphores{ m_imageAvailableSemaphores[m_currentFrame].handle() };
+    SemaphoreContainer::Vector<> waitSemaphores{ m_imageAvailableSemaphores[m_currentFrame] };
 
     if (!m_renderWaitSemaphores.empty())
     {
@@ -326,23 +331,22 @@ void Swapchain::present(renderer::OperationContext& context)
         .pWaitSemaphores(waitSemaphores.data())
         .pWaitDstStageMask(waitStages.data());
 
-    ASSERT(m_context.device()
-                .queue(handles::GRAPHICS_COMPUTE)
-                .lock()
-                ->submit(1, &submitInfo, m_inFlightFences[m_currentFrame]) == VK_SUCCESS,
+
+    const auto queue = m_context.queue(QueueFamilyType::GRAPHICS_COMPUTE);
+
+    ASSERT(vkQueueSubmit(queue, 1, &submitInfo, m_inFlightFences[m_currentFrame]) == VK_SUCCESS,
         "failed to submit draw command buffer!");
 
-    VkResult result =
-        m_context.device()
-            .queue(handles::PRESENT)
-            .lock()
-            ->presentKHR(
-                handles::PresentInfoKHR{}
-                    .waitSemaphoreCount(1)
-                    .pWaitSemaphores(m_renderFinishedSemaphores[m_currentFrame].handlePtr())
-                    .swapchainCount(1)
-                    .pSwapchains(m_swapchain->handlePtr())
-                    .pImageIndices(&m_currentImage));
+    const auto queuePresentInfo =
+        PresentInfoKHR{}
+            .waitSemaphoreCount(1)
+            .pWaitSemaphores(&m_renderFinishedSemaphores[m_currentFrame])
+            .swapchainCount(1)
+            .pSwapchains(&m_swapchain)
+            .pImageIndices(&m_currentImage);
+
+
+    VkResult result = vkQueuePresentKHR(queue, &queuePresentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_needRecreate ||
         !m_surface.available())
@@ -395,7 +399,7 @@ VkFormat Swapchain::depthFormat() const
 
 void Swapchain::populateWaitInfo(OperationContext& context)
 {
-    context.waitSemaphores.push_back(m_renderFinishedSemaphores[m_currentFrame].handle());
+    context.waitSemaphores.push_back(m_renderFinishedSemaphores[m_currentFrame]);
 }
 
 void Swapchain::waitFor(OperationContext& context)
@@ -404,24 +408,24 @@ void Swapchain::waitFor(OperationContext& context)
         std::back_inserter(m_renderWaitSemaphores));
 }
 
-uint32_t Swapchain::descriptorsRequired() const
+uint32_t Swapchain::currentFrameIndex() const
 {
-    return m_maxFramesInFlight;
+    return m_currentFrame;
 }
 
-handles::Framebuffer& Swapchain::currentFramebuffer()
+Framebuffer Swapchain::currentFramebuffer()
 {
     return m_swapChainFramebuffers[m_currentImage];
 }
 
-handles::CommandBuffer& Swapchain::currentCommandBuffer()
+CommandBuffer Swapchain::currentCommandBuffer()
 {
     return m_commandBuffers[m_currentFrame];
 }
 
-handles::ImageCreateInfo Swapchain::imageCreateInfo() const
+ImageCreateInfo Swapchain::imageCreateInfo() const
 {
-    return handles::ImageCreateInfo{}
+    return ImageCreateInfo{}
         .imageType(VK_IMAGE_TYPE_2D)
         .extent(VkExtent3D{
             m_swapchainCreateInfo.imageExtent().width,
@@ -435,9 +439,9 @@ handles::ImageCreateInfo Swapchain::imageCreateInfo() const
         .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 }
 
-handles::ImageViewCreateInfo Swapchain::imageViewCreateInfo() const
+ImageViewCreateInfo Swapchain::imageViewCreateInfo() const
 {
-    return handles::ImageViewCreateInfo()
+    return ImageViewCreateInfo()
         .viewType(VK_IMAGE_VIEW_TYPE_2D)
         .subresourceRange(
             ImageSubresourceRange{}.baseArrayLayer(0).layerCount(1).baseMipLevel(0).levelCount(1));
@@ -449,39 +453,44 @@ void Swapchain::recreate()
     {
         glfwWaitEvents();
     }
-    m_context.device().waitIdle();
+    m_context.waitIdle();
 
     destroy();
     const auto supportDetails =
-        Swapchain::supportDetails(m_context.device().physicalDevice(), m_surface.surfaceKHR());
+        Swapchain::supportDetails(m_context.physicalDevice(), m_surface.surfaceKHR());
     m_swapchainCreateInfo.imageExtent(chooseExtent(supportDetails.capabilities, m_surface));
     create();
 }
 
 void Swapchain::destroy()
 {
-    m_depthImageView.reset();
-    m_depthImage.reset();
-    m_colorImageView.reset();
-    m_colorImage.reset();
+    ImageViewHelper::destroy(m_context.device(), m_depthImageView, nullptr);
+    ImageHelper::destroy(m_context.device(), m_depthImage, nullptr);
 
-    m_swapChainFramebuffers.clear();
-    m_swapChainImageViews.clear();
-    m_swapChainImages.clear();
-    m_swapchain.reset();
+    ImageViewHelper::destroy(m_context.device(), m_colorImageView, nullptr);
+    ImageHelper::destroy(m_context.device(), m_colorImage, nullptr);
+
+    m_swapChainFramebuffers.destroyAll(nullptr);
+    m_swapChainImageViews.destroyAll(nullptr);
+    m_swapChainImages.destroyAll(nullptr);
+
+    SwapchainKHRHelper::destroy(m_context.device(), m_swapchain, nullptr);
 }
 
 void Swapchain::create()
 {
-    m_swapchain = std::make_unique<handles::Swapchain>(m_context.device(), m_swapchainCreateInfo);
-    m_swapChainImages = m_swapchain->images();
+    m_swapchain = SwapchainKHRHelper::create(m_context.device(), &m_swapchainCreateInfo, nullptr);
+    m_swapChainImages = ImageHelper::swapChainImages(m_context.device(), m_swapchain);
 
     for (size_t i = 0; i < m_swapChainImages.size(); ++i)
     {
         auto createInfo =
-            imageViewCreateInfo().image(m_swapChainImages[i]).format(m_swapchain->imageFormat());
+            imageViewCreateInfo()
+                .image(m_swapChainImages[i])
+                .format(m_swapchainCreateInfo.imageFormat());
         createInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        m_swapChainImageViews.emplaceBack(m_swapchain->device(), std::move(createInfo));
+        m_swapChainImageViews.push_back(ImageViewHelper::create(m_context.device(), &createInfo,
+            nullptr, "failed to create swapchain image views"));
     }
 }
 

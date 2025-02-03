@@ -3,19 +3,11 @@
 #include "../include/ishader_interface_container.hpp"
 
 #include "graphics_context.hpp"
-#include "renderer.hpp"
-#include "descriptor_set_provider.hpp"
-
-#include "handles/command_buffer.hpp"
-#include "handles/descriptor_set.hpp"
-#include "handles/descriptor_pool.hpp"
-#include "handles/pipeline_layout.hpp"
-#include "handles/render_pass.hpp"
-#include "handles/shader_module.hpp"
+#include "specific_operation_target.hpp"
 
 #include <boost/pfr.hpp>
 
-namespace renderer {
+namespace renderer::vk {
 
 float toVkSampleShadingCoefficient(IGraphicsPipeline::CreateInfo::SampleShading sampleShading)
 {
@@ -98,17 +90,6 @@ VkFormat toVkAttrubuteFormat(IGraphicsPipeline::CreateInfo::Attribute::Format at
         case IGraphicsPipeline::CreateInfo::Attribute::VEC4: return VK_FORMAT_R32G32B32A32_SFLOAT;
         default: return VK_FORMAT_UNDEFINED;
     };
-}
-
-namespace vk {
-
-void GraphicsPipeline::BindContext::bind(renderer::OperationContext& context)
-{
-    PipelineBindContext::bind(context);
-    auto& specContext = get(context);
-
-    specContext.commandBuffer->bindDescriptorSet(specContext.graphicsPipeline->layout(), info.setId,
-        sets[currentSetIndex], dynamicOffsets, VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
@@ -194,36 +175,35 @@ GraphicsPipelineCreateInfo GraphicsPipeline::defaultPipeline()
         .pNext(nullptr);
 }
 
-GraphicsPipeline::GraphicsPipeline(const GraphicsContext& context, CreateInfo createInfo)
-    : Pipeline(context, createInfo)
+GraphicsPipeline::GraphicsPipeline(GraphicsContext& context, CreateInfo createInfo)
+    : SpecificPipeline<IGraphicsPipeline>(context)
     , m_topology(toVkPrimitiveTopology(createInfo.primitiveTopology()))
-    , m_shaders(std::move(createInfo.shaders()))
     , m_sampleShading(toVkSampleShadingCoefficient(createInfo.sampleShading()))
     , m_polygonMode(toVkPolygonMode(createInfo.polygonMode()))
     , m_cullMode(toVkCullMode(createInfo.cullMode()))
     , m_frontFace(toVkFrontFace(createInfo.frontFace()))
 {
-    m_bindingDescriptions.reserve(createInfo.bindings().size());
-    m_attributeDescriptions.reserve(createInfo.attributes().size());
+    //  m_bindingDescriptions.reserve(createInfo.bindings().size());
+    //  m_attributeDescriptions.reserve(createInfo.attributes().size());
 
-    for (const auto& bindingDesc : createInfo.bindings())
-    {
-        m_bindingDescriptions.push_back({
-            .binding = bindingDesc.binding,
-            .stride = bindingDesc.stride,
-            .inputRate = toVkInputRate(bindingDesc.inputRate),
-        });
-    }
+    //  for (const auto& bindingDesc : createInfo.bindings())
+    //  {
+    //      m_bindingDescriptions.push_back({
+    //          .binding = bindingDesc.binding,
+    //          .stride = bindingDesc.stride,
+    //          .inputRate = toVkInputRate(bindingDesc.inputRate),
+    //      });
+    //  }
 
-    for (const auto& attributeDesc : createInfo.attributes())
-    {
-        m_attributeDescriptions.push_back({
-            .location = attributeDesc.location,
-            .binding = attributeDesc.binding,
-            .format = toVkAttrubuteFormat(attributeDesc.format),
-            .offset = attributeDesc.offset,
-        });
-    }
+    //  for (const auto& attributeDesc : createInfo.attributes())
+    //  {
+    //      m_attributeDescriptions.push_back({
+    //          .location = attributeDesc.location,
+    //          .binding = attributeDesc.binding,
+    //          .format = toVkAttrubuteFormat(attributeDesc.format),
+    //          .offset = attributeDesc.offset,
+    //      });
+    //  }
 }
 
 GraphicsPipeline::~GraphicsPipeline() {}
@@ -231,83 +211,78 @@ GraphicsPipeline::~GraphicsPipeline() {}
 void GraphicsPipeline::bind(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
-    specContext.commandBuffer->bindPipeline(pipeline(specContext), VK_PIPELINE_BIND_POINT_GRAPHICS);
-    specContext.graphicsPipeline = this;
+    vkCmdBindPipeline(
+        specContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline(specContext));
 }
 
-const handles::Pipeline& GraphicsPipeline::pipeline(const OperationContext& context)
+handles::GraphicsPipeline GraphicsPipeline::pipeline(const vk::OperationContext& context)
 {
     if (auto el = m_pipelines.find(context.renderPass); el != m_pipelines.end())
     {
         return el->second;
     }
 
-    handles::HandleVector<handles::ShaderModule> shaders;
-    std::vector<PipelineShaderStageCreateInfo> shaderStageCreateInfos;
+    return VK_NULL_HANDLE;
 
-    for (const auto& shaderInfo : m_shaders)
-    {
-        shaders.emplaceBack(m_context.device(), shaderInfo.path);
-        shaderStageCreateInfos.push_back(
-            PipelineShaderStageCreateInfo{}
-                .stage(toShaderStageFlags(shaderInfo.type))
-                .module(shaders.back())
-                .pName("main"));
-    }
+    //  handles::HandleVector<handles::ShaderModule> shaders;
+    //  std::vector<PipelineShaderStageCreateInfo> shaderStageCreateInfos;
 
-    PipelineRasterizationStateCreateInfo rasterizer =
-        PipelineRasterizationStateCreateInfo()
-            .depthClampEnable(VK_FALSE)
-            .rasterizerDiscardEnable(VK_FALSE)
-            .polygonMode(m_polygonMode)
-            .cullMode(m_cullMode)
-            .frontFace(m_frontFace)
-            .depthBiasEnable(VK_FALSE)
-            .lineWidth(1.0f)
-            .depthBiasClamp(0.0f)
-            .depthBiasConstantFactor(0.0f)
-            .depthBiasSlopeFactor(0.0f);
+    //  for (const auto& shaderInfo : m_shaders)
+    //  {
+    //      shaders.emplaceBack(m_context.device(), shaderInfo.path);
+    //      shaderStageCreateInfos.push_back(
+    //          PipelineShaderStageCreateInfo{}
+    //              .stage(toShaderStageFlags(shaderInfo.type))
+    //              .module(shaders.back())
+    //              .pName("main"));
+    //  }
 
-    PipelineInputAssemblyStateCreateInfo inputAssembly =
-        PipelineInputAssemblyStateCreateInfo()
-            .topology(m_topology)
-            .primitiveRestartEnable(VK_FALSE);
+    //  PipelineRasterizationStateCreateInfo rasterizer =
+    //      PipelineRasterizationStateCreateInfo()
+    //          .depthClampEnable(VK_FALSE)
+    //          .rasterizerDiscardEnable(VK_FALSE)
+    //          .polygonMode(m_polygonMode)
+    //          .cullMode(m_cullMode)
+    //          .frontFace(m_frontFace)
+    //          .depthBiasEnable(VK_FALSE)
+    //          .lineWidth(1.0f)
+    //          .depthBiasClamp(0.0f)
+    //          .depthBiasConstantFactor(0.0f)
+    //          .depthBiasSlopeFactor(0.0f);
 
-    PipelineMultisampleStateCreateInfo multisampling =
-        PipelineMultisampleStateCreateInfo()
-            .sampleShadingEnable(m_sampleShading < 0.01f ? VK_FALSE : VK_TRUE)
-            .rasterizationSamples(context.renderer->sampleCount())
-            .minSampleShading(m_sampleShading)
-            .pSampleMask(nullptr)
-            .alphaToCoverageEnable(VK_FALSE)
-            .alphaToOneEnable(VK_FALSE);
+    //  PipelineInputAssemblyStateCreateInfo inputAssembly =
+    //      PipelineInputAssemblyStateCreateInfo()
+    //          .topology(m_topology)
+    //          .primitiveRestartEnable(VK_FALSE);
 
-    const auto vertexInput =
-        PipelineVertexInputStateCreateInfo()
-            .vertexBindingDescriptionCount(m_bindingDescriptions.size())
-            .pVertexBindingDescriptions(m_bindingDescriptions.data())
-            .vertexAttributeDescriptionCount(m_attributeDescriptions.size())
-            .pVertexAttributeDescriptions(m_attributeDescriptions.data());
+    //  PipelineMultisampleStateCreateInfo multisampling =
+    //      PipelineMultisampleStateCreateInfo()
+    //          .sampleShadingEnable(m_sampleShading < 0.01f ? VK_FALSE : VK_TRUE)
+    //          .rasterizationSamples(context.renderer->sampleCount())
+    //          .minSampleShading(m_sampleShading)
+    //          .pSampleMask(nullptr)
+    //          .alphaToCoverageEnable(VK_FALSE)
+    //          .alphaToOneEnable(VK_FALSE);
 
-    auto [newEl, _] = m_pipelines.emplace(context.renderPass,
-        handles::GraphicsPipeline{ m_context.device(), VK_NULL_HANDLE,
-            defaultPipeline()
-                .pMultisampleState(&multisampling)
-                .renderPass(*context.renderPass)
-                .pInputAssemblyState(&inputAssembly)
-                .layout(*m_pipelineLayout)
-                .stageCount(shaderStageCreateInfos.size())
-                .pStages(shaderStageCreateInfos.data())
-                .pVertexInputState(&vertexInput) });
+    //  const auto vertexInput =
+    //      PipelineVertexInputStateCreateInfo()
+    //          .vertexBindingDescriptionCount(m_bindingDescriptions.size())
+    //          .pVertexBindingDescriptions(m_bindingDescriptions.data())
+    //          .vertexAttributeDescriptionCount(m_attributeDescriptions.size())
+    //          .pVertexAttributeDescriptions(m_attributeDescriptions.data());
 
-    return newEl->second;
+    //  auto [newEl, _] = m_pipelines.emplace(context.renderPass,
+    //      handles::GraphicsPipeline{ m_context.device(), VK_NULL_HANDLE,
+    //          defaultPipeline()
+    //              .pMultisampleState(&multisampling)
+    //              .renderPass(*context.renderPass)
+    //              .pInputAssemblyState(&inputAssembly)
+    //              .layout(*m_pipelineLayout)
+    //              .stageCount(shaderStageCreateInfos.size())
+    //              .pStages(shaderStageCreateInfos.data())
+    //              .pVertexInputState(&vertexInput) });
+
+    //  return newEl->second;
 }
 
-GraphicsPipeline::BindContext* GraphicsPipeline::newBindContext(
-    PipelineBindContext::CreateInfo createInfo) const
-{
-    return new BindContext(std::move(createInfo));
-}
-
-}    //  namespace vk
-}    //  namespace renderer
+}    //  namespace renderer::vk

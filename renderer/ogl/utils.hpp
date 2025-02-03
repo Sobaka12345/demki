@@ -4,11 +4,6 @@
 
 #include <glad/glad.h>
 
-#include <glm/fwd.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-
 #include <map>
 #include <tuple>
 #include <cstdlib>

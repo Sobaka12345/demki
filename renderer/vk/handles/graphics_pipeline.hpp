@@ -2,6 +2,8 @@
 
 #include "pipeline.hpp"
 
+#include <crtp.hpp>
+
 namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(PipelineViewportStateCreateInfo,
@@ -134,32 +136,23 @@ BEGIN_DECLARE_VKSTRUCT(GraphicsPipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PI
     VKSTRUCT_PROPERTY(int32_t, basePipelineIndex)
 END_DECLARE_VKSTRUCT()
 
+template <typename T>
+struct GraphicsPipelineFunctions : public CRTPBase<T>
+{};
+
+template <typename T>
+struct GraphicsPipelineGroupFunctions : public CRTPBase<T>
+{};
+
+using VkGraphicsPipeline = VkPipeline;
+
 namespace handles {
+DECLARE_HANDLE_TYPE_FULL_IMPL(GraphicsPipeline,
+    vkCreateGraphicsPipelines,
+    vkDestroyPipeline,
+    GraphicsPipelineFunctions,
+    GraphicsPipelineGroupFunctions,
+    true);
+}
 
-class Device;
-
-class GraphicsPipeline : public Pipeline
-{
-    HANDLE(GraphicsPipeline);
-
-public:
-    static HandleVector<GraphicsPipeline> create(const Device& device,
-        VkPipelineCache cache,
-        std::span<const GraphicsPipelineCreateInfo> createInfos);
-
-public:
-	GraphicsPipeline(const GraphicsPipeline& other) = delete;
-    GraphicsPipeline(GraphicsPipeline&& other) noexcept;
-    GraphicsPipeline(const Device& device,
-        VkPipelineCache cache,
-        GraphicsPipelineCreateInfo createInfo) noexcept;
-
-protected:
-    GraphicsPipeline(const Device& device,
-        VkPipelineCache cache,
-        GraphicsPipelineCreateInfo createInfo,
-        VkHandleType* handlePtr) noexcept;
-};
-
-}    //  namespace handles
 }    //  namespace renderer::vk

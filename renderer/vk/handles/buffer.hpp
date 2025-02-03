@@ -1,13 +1,11 @@
 #pragma once
 
-#include <memory>
 #include "handle.hpp"
-
-#include "simemory_accessor.hpp"
-
 #include "../utils.hpp"
 
-namespace renderer::vk { namespace handles {
+#include <crtp.hpp>
+
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(BufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -19,42 +17,24 @@ BEGIN_DECLARE_VKSTRUCT(BufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
     VKSTRUCT_PROPERTY(const uint32_t*, pQueueFamilyIndices)
 END_DECLARE_VKSTRUCT()
 
-class Image;
-class Device;
-
-class Buffer
-    : public Handle<VkBuffer>
-    , public SIMemoryAccessor<Buffer>
+template <typename T>
+struct BufferFunctions : public CRTPBase<T>
 {
-    HANDLE(Buffer);
-
-public:
-    static BufferCreateInfo staging();
-
-    Buffer(Buffer&& other) noexcept;
-    Buffer(const Device& device, BufferCreateInfo bufferInfo) noexcept;
-    ~Buffer();
-
-    bool bindMemory(uint32_t bindingOffset);
-
-    std::weak_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties)
-    {
-        return allocateMemoryImpl(properties);
+    static constexpr inline BufferCreateInfo stagingInfo() noexcept {
+        return BufferCreateInfo()
+            .usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+            .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
     }
-
-    void copyTo(const Buffer& dst, VkBufferCopy copyRegion) const;
-    void copyToImage(const Image& dst, VkImageLayout dstLayout, VkBufferImageCopy copyRegion) const;
-
-    VkDeviceSize size() const { return m_size; }
-
-protected:
-    Buffer(const Device& device, BufferCreateInfo bufferInfo, VkHandleType* handlePtr) noexcept;
-
-private:
-    std::weak_ptr<Memory> allocateMemoryImpl(VkMemoryPropertyFlags properties);
-
-private:
-    VkDeviceSize m_size;
 };
 
-}}    //  namespace renderer::vk::handles
+template <typename T>
+struct BufferGroupFunctions: public CRTPBase<T>
+{
+};
+
+namespace handles {
+DECLARE_HANDLE_TYPE(Buffer, BufferFunctions, BufferGroupFunctions);
+DECLARE_HANDLE_TYPE_FULL(MemoryRequirements, vkGetBufferMemoryRequirements, stub, CRTPBase, CRTPBase)
+}
+
+}  //  namespace renderer::vk::handles

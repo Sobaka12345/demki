@@ -1,10 +1,11 @@
 #pragma once
 
 #include "handle.hpp"
+#include "../utils.hpp"
 
-#include "vk/utils.hpp"
+#include <crtp.hpp>
 
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(SubmitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -27,28 +28,16 @@ BEGIN_DECLARE_VKSTRUCT(PresentInfoKHR, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
     VKSTRUCT_PROPERTY(VkResult*, pResults)
 END_DECLARE_VKSTRUCT()
 
-class Device;
+template <typename T>
+struct QueueFunctions : public CRTPBase<T>
+{};
 
-class Queue : public Handle<VkQueue>
-{
-    HANDLE(Queue);
+template <typename T>
+struct QueueGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    Queue(const Queue& other) = delete;
-	Queue(Queue&& other) noexcept;
-	Queue& operator=(Queue&& other) noexcept;
-    Queue(const Device& device, uint32_t queueFamilyIndex, uint32_t queueIndex) noexcept;
-    virtual ~Queue();
+namespace handles {
+DECLARE_HANDLE_TYPE_FULL(Queue, vkGetDeviceQueue, stub, QueueFunctions, QueueGroupFunctions);
+}
 
-	VkResult waitIdle() const;
-    VkResult submit(uint32_t submitCount, const SubmitInfo* pSubmits, VkFence fence) const;
-    VkResult presentKHR(PresentInfoKHR presentInfo) const;
-
-protected:
-    Queue(const Device& device,
-        uint32_t queueFamilyIndex,
-        uint32_t queueIndex,
-        VkHandleType* handlePtr) noexcept;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk::handles

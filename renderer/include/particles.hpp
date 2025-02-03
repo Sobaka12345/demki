@@ -18,10 +18,7 @@ struct Particle
 };
 
 class Particles
-    : public ShaderInterfaceContainer<IShaderInterfaceContainer,
-          ShaderInterfaceBindingMeta<Particle, ShaderBlockType::STORAGE, ShaderStage::COMPUTE>,
-          ShaderInterfaceBindingMeta<Particle, ShaderBlockType::STORAGE, ShaderStage::COMPUTE>>
-    , public IComputeTarget
+    : public IComputeTarget
 {
 public:
     Particles(IGraphicsContext& context, std::span<const Particle> initialData);
@@ -34,9 +31,7 @@ public:
 
 private:
     size_t m_currentIndex;
-    std::weak_ptr<IPipelineBindContext> m_bindContext;
     std::array<std::shared_ptr<IStorageBuffer>, 2> m_particlesBuffers;
-    std::array<std::shared_ptr<IShaderResource>, 2> m_resourcesReverse;
 };
 
 }    //  namespace renderer

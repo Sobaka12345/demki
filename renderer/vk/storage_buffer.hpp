@@ -2,19 +2,16 @@
 
 #include "graphics_context.hpp"
 #include "specific_operation_target.hpp"
-#include "specific_shader_resource.hpp"
+
+#include "handles/fence.hpp"
+#include "handles/command_buffer.hpp"
 
 #include <istorage_buffer.hpp>
 
 namespace renderer::vk {
 
-namespace handles {
-class Semaphore;
-class Fence;
-}
-
 class StorageBuffer
-    : public SpecificBase<IStorageBuffer, ISpecificOperationTarget, ISpecificShaderResource>
+    : public SpecificBase<IStorageBuffer, ISpecificOperationTarget>
 {
 public:
     StorageBuffer(GraphicsContext& context, IStorageBuffer::CreateInfo createInfo);
@@ -27,11 +24,13 @@ public:
 
     virtual void waitFor(OperationContext& context) override;
     virtual void populateWaitInfo(OperationContext& context) override;
-    virtual uint32_t descriptorsRequired() const override;
+    virtual uint32_t currentFrameIndex() const override;
 
     //  IShaderResource interface
     virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const override;
-    virtual void adapt(renderer::OperationContext& context, uint32_t bindingId) override;
+
+    virtual void write(const void* data, size_t size, size_t offset = 0) override;
+    virtual const void* read(size_t size, size_t offset = 0) const override;
 
 private:
     const GraphicsContext& m_context;
@@ -41,11 +40,9 @@ private:
 
     std::vector<VkSemaphore> m_computeWaitSemaphores;
 
-    std::shared_ptr<ShaderInterfaceHandle> m_handle;
-
-    std::unique_ptr<handles::CommandBuffer> m_commandBuffer;
-    std::unique_ptr<handles::Fence> m_computeInFlightFence;
-    std::unique_ptr<handles::Semaphore> m_computeFinishedSemaphore;
+    handles::CommandBuffer m_commandBuffer;
+    handles::Fence m_computeInFlightFence;
+    handles::Semaphore m_computeFinishedSemaphore;
 };
 
 }    //  namespace renderer::vk

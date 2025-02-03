@@ -4,7 +4,7 @@
 
 namespace renderer {
 
-class IComputePipeline : virtual public IPipeline
+class IComputePipeline : public IPipeline
 {
 public:
     struct ComputeDimensions
@@ -16,7 +16,7 @@ public:
 
     class CreateInfo : public IPipeline::CreateInfo<CreateInfo>
     {
-        CREATE_INFO_PROPERTY(ComputeDimensions, computeDimensions, ComputeDimensions{});
+        CREATE_INFO_PROPERTY(ComputeDimensions, computeDimensions, {});
     };
 
 public:

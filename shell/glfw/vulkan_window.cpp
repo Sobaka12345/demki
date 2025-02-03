@@ -8,14 +8,14 @@ VulkanWindow::VulkanWindow(int width, int height, std::string name)
     : Window(GLFW_NO_API, width, height, name)
 {
     auto newContext = createContext(
-        renderer::vk::handles::ApplicationInfo()
+        renderer::vk::ApplicationInfo()
             .pApplicationName(name.c_str())
             .applicationVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
             .pEngineName("DemkiEngine")
             .engineVersion(VK_MAKE_API_VERSION(1, 0, 0, 0))
             .apiVersion(VK_API_VERSION_1_3));
 
-    m_instance = *newContext;
+    m_instance = newContext->instance();
     glfwCreateWindowSurface(m_instance, create(), nullptr, &m_surface);
 
     m_graphicsContext.reset(newContext);

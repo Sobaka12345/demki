@@ -2,9 +2,6 @@
 
 #include <cstdint>
 
-#include <glm/mat4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
-
 struct Position
 {
     int32_t x, y;

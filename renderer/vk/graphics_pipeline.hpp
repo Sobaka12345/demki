@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pipeline.hpp"
+#include "specific_pipeline.hpp"
 
 #include "handles/graphics_pipeline.hpp"
 
@@ -9,29 +9,19 @@
 namespace renderer::vk {
 
 class GraphicsPipeline
-    : public Pipeline
-    , public IGraphicsPipeline
+    : public SpecificPipeline<IGraphicsPipeline>
 {
-    struct BindContext : public PipelineBindContext
-    {
-        using PipelineBindContext::PipelineBindContext;
-
-        virtual void bind(renderer::OperationContext& context) override;
-    };
-
 private:
     static GraphicsPipelineCreateInfo defaultPipeline();
 
 public:
-    GraphicsPipeline(const GraphicsContext& context, CreateInfo createInfo);
+    GraphicsPipeline(GraphicsContext& context, CreateInfo createInfo);
     ~GraphicsPipeline();
 
     virtual void bind(renderer::OperationContext& context) override;
 
 private:
-    const handles::Pipeline& pipeline(const vk::OperationContext& context);
-
-    virtual BindContext* newBindContext(BindContext::CreateInfo createInfo) const override;
+    handles::GraphicsPipeline pipeline(const vk::OperationContext& context);
 
 private:
     VkCullModeFlags m_cullMode;
@@ -39,8 +29,8 @@ private:
     VkPolygonMode m_polygonMode;
     VkPrimitiveTopology m_topology;
     glm::float32_t m_sampleShading;
-    std::vector<ShaderInfo> m_shaders;
-    std::map<const handles::RenderPass*, handles::GraphicsPipeline> m_pipelines;
+
+    std::map<handles::RenderPass, handles::GraphicsPipeline> m_pipelines;
 };
 
 }    //  namespace renderer::vk

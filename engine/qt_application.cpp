@@ -1,7 +1,7 @@
 #include "qt_application.hpp"
 
 #include <qt/window/vulkan_window.hpp>
-#include <qt/window/opengl_window.hpp>
+//#include <qt/window/opengl_window.hpp>
 
 #include <resources.hpp>
 
@@ -21,11 +21,11 @@ QtApplication::QtApplication(int& argc, char** argv)
         m_mainWindow.reset(new shell::qt::VulkanWindow(createInfo.windowWidth,
             createInfo.windowHeight, createInfo.windowName));
     }
-    else if (createInfo.gapi == GAPI::OpenGL)
-    {
-        m_mainWindow.reset(new shell::qt::OpenGLWindow(createInfo.windowWidth,
-            createInfo.windowHeight, createInfo.windowName));
-    }
+    // else if (createInfo.gapi == GAPI::OpenGL)
+    // {
+    //     m_mainWindow.reset(new shell::qt::OpenGLWindow(createInfo.windowWidth,
+    //         createInfo.windowHeight, createInfo.windowName));
+    // }
 }
 
 QtApplication::~QtApplication() {}

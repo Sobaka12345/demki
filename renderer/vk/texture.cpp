@@ -1,11 +1,10 @@
 #include "texture.hpp"
 
 #include "graphics_context.hpp"
-#include "pipeline.hpp"
-#include "types.hpp"
-#include "shader_interface_handle.hpp"
 
+#include "types.hpp"
 #include "handles/buffer.hpp"
+#include "handles/memory.hpp"
 #include "handles/image.hpp"
 #include "handles/image_view.hpp"
 #include "handles/sampler.hpp"
@@ -16,6 +15,8 @@ constexpr auto s_imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
 
 namespace renderer::vk {
 
+using namespace handles;
+
 Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
     : m_context(context)
     , m_width(createInfo.width)
@@ -25,18 +26,25 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
 
     ASSERT(createInfo.pixels, "failed to load texture image!");
 
-    handles::Buffer stagingBuffer(m_context.device(),
-        handles::Buffer::staging().size(createInfo.imageSize));
-    stagingBuffer
-        .allocateAndBindMemory(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-        .lock()
-        ->map()
-        .lock()
-        ->write(createInfo.pixels, createInfo.imageSize);
+    auto stagingBufferCreateInfo = handles::BufferHelper::stagingInfo().size(createInfo.imageSize);
+    auto stagingBuffer =
+        handles::BufferHelper::create(m_context.device(), &stagingBufferCreateInfo, nullptr);
+    auto stagingMemoryAllocateInfo =
+        MemoryAllocateInfo{}
+            .allocationSize(createInfo.imageSize)
+            .memoryTypeIndex(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    m_image = std::make_unique<handles::Image>(m_context.device(),
-        handles::ImageCreateInfo()
+    void* mem;
+    auto memory = handles::DeviceMemoryHelper::create(m_context.device(),
+        &stagingMemoryAllocateInfo, nullptr);
+    vkMapMemory(m_context.device(), memory, 0, createInfo.imageSize, 0, &mem);
+    vkBindBufferMemory(m_context.device(), stagingBuffer, memory, 0);
+
+    //		->write(createInfo.pixels, createInfo.imageSize);
+
+    const auto imageCreateInfo =
+        ImageCreateInfo()
             .imageType(VK_IMAGE_TYPE_2D)
             .extent(
                 VkExtent3D{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height), 1 })
@@ -48,8 +56,11 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                 VK_IMAGE_USAGE_SAMPLED_BIT)
             .samples(VK_SAMPLE_COUNT_1_BIT)
-            .sharingMode(VK_SHARING_MODE_EXCLUSIVE));
-    m_image->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+
+    m_image = ImageHelper::create(m_context.device(), &imageCreateInfo, nullptr);
+
+    //  m_image->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     const auto subresourceRange =
         ImageSubresourceRange{}
@@ -59,8 +70,9 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .baseMipLevel(0)
             .levelCount(m_mipLevels);
 
-    m_image->transitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        subresourceRange);
+    handles::ImageHelper::transitionLayout(m_context.device(),
+        m_context.commandPool(QueueFamilyType::GRAPHICS_COMPUTE), m_image,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
 
     const auto copyRegion =
         BufferImageCopy{}
@@ -77,19 +89,20 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .imageExtent(
                 VkExtent3D{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height), 1 });
 
-    stagingBuffer.copyToImage(*m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegion);
+    //  stagingBuffer.copyToImage(*m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegion);
 
     generateMipmaps();
 
-    m_imageView = std::make_unique<handles::ImageView>(m_context.device(),
-        handles::ImageViewCreateInfo()
-            .image(*m_image)
+    auto imageViewCreateInfo =
+        ImageViewCreateInfo()
+            .image(m_image)
             .viewType(VK_IMAGE_VIEW_TYPE_2D)
             .format(s_imageFormat)
-            .subresourceRange(subresourceRange));
+            .subresourceRange(subresourceRange);
+    m_imageView = ImageViewHelper::create(m_context.device(), &imageViewCreateInfo, nullptr);
 
-    m_sampler = std::make_unique<handles::Sampler>(m_context.device(),
-        handles::SamplerCreateInfo()
+    auto samplerCreateInfo =
+        SamplerCreateInfo()
             .magFilter(VK_FILTER_LINEAR)
             .minFilter(VK_FILTER_LINEAR)
             .mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
@@ -100,29 +113,20 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .addressModeV(VK_SAMPLER_ADDRESS_MODE_REPEAT)
             .addressModeW(VK_SAMPLER_ADDRESS_MODE_REPEAT)
             .anisotropyEnable(VK_FALSE)
-            .maxAnisotropy(
-                m_context.device().physicalDeviceProperties().limits.maxSamplerAnisotropy)
+            .maxAnisotropy(m_context.physicalDeviceInfo().properties.limits.maxSamplerAnisotropy)
             .compareEnable(VK_FALSE)
             .compareOp(VK_COMPARE_OP_ALWAYS)
             .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-            .unnormalizedCoordinates(VK_FALSE));
+            .unnormalizedCoordinates(VK_FALSE);
+
+    m_sampler = SamplerHelper::create(m_context.device(), &samplerCreateInfo, nullptr);
 }
 
 Texture::~Texture()
 {
-    m_sampler.reset();
-    m_imageView.reset();
-    m_image.reset();
-}
-
-std::shared_ptr<ShaderResourceAllocator::Descriptor> Texture::fetchDescriptor()
-{
-    auto result = ShaderResourceAllocator::fetchDescriptor();
-    result->descriptorImageInfo.imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-        .imageView(*m_imageView)
-        .sampler(*m_sampler);
-
-    return result;
+    SamplerHelper::destroy(m_context.device(), m_sampler, nullptr);
+    ImageViewHelper::destroy(m_context.device(), m_imageView, nullptr);
+    ImageHelper::destroy(m_context.device(), m_image, nullptr);
 }
 
 void Texture::bind(renderer::OperationContext& context, uint32_t bindingId) const
@@ -130,26 +134,10 @@ void Texture::bind(renderer::OperationContext& context, uint32_t bindingId) cons
     //  NOTHING TO DO
 }
 
-void Texture::adapt(renderer::OperationContext& context, uint32_t bindingId)
-{
-    //  TEMP
-    if (!m_handle)
-    {
-        m_handle = ShaderInterfaceHandle::create(*this);
-    }
-
-    const auto writes = descriptorSetWrites(get(context), bindingId, *m_handle);
-    //  TEMP
-    vkUpdateDescriptorSets(m_context.device(), static_cast<uint32_t>(writes.size()), writes.data(),
-        0, nullptr);
-}
-
-void Texture::freeDescriptor(const ShaderResourceAllocator::Descriptor& descriptor) {}
-
 void Texture::generateMipmaps()
 {
     VkFormatProperties formatProperties;
-    vkGetPhysicalDeviceFormatProperties(m_context.device().physicalDevice(), s_imageFormat,
+    vkGetPhysicalDeviceFormatProperties(m_context.physicalDevice(), s_imageFormat,
         &formatProperties);
 
     if (!(formatProperties.optimalTilingFeatures &
@@ -158,11 +146,12 @@ void Texture::generateMipmaps()
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    auto oneTimeCommand = m_context.device().oneTimeCommand(handles::GRAPHICS_COMPUTE);
+    auto oneTimeCommand = CommandBufferHelper::OneTimeCommand{ m_context.device(),
+        m_context.commandPool(QueueFamilyType::GRAPHICS_COMPUTE), VK_COMMAND_BUFFER_LEVEL_PRIMARY };
 
     auto barrier =
         ImageMemoryBarrier{}
-            .image(*m_image)
+            .image(m_image)
             .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
             .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
             .subresourceRange(
@@ -184,8 +173,8 @@ void Texture::generateMipmaps()
             .subresourceRange()
             .baseMipLevel(i - 1);
 
-        oneTimeCommand().pipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, std::span{ &barrier, 1 });
+        vkCmdPipelineBarrier(oneTimeCommand, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
         auto blit = ImageBlit{};
         blit.srcOffsets()[0] = Offset3D{}.x(0).y(0).z(0);
@@ -206,16 +195,16 @@ void Texture::generateMipmaps()
                     .layerCount(1)
                     .mipLevel(i));
 
-        oneTimeCommand().blitImage(*m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, std::span{ &blit, 1 }, VK_FILTER_LINEAR);
+        vkCmdBlitImage(oneTimeCommand, m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 
         barrier.oldLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
             .newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             .srcAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
             .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
 
-        oneTimeCommand().pipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, std::span{ &barrier, 1 });
+        vkCmdPipelineBarrier(oneTimeCommand, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
         if (mipWidth > 1) mipWidth /= 2;
         if (mipHeight > 1) mipHeight /= 2;
@@ -228,8 +217,8 @@ void Texture::generateMipmaps()
         .subresourceRange()
         .baseMipLevel(m_mipLevels - 1);
 
-    oneTimeCommand().pipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, std::span{ &barrier, 1 });
+    vkCmdPipelineBarrier(oneTimeCommand, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
 }    //  namespace renderer::vk

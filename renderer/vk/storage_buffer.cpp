@@ -13,22 +13,7 @@ namespace renderer::vk {
 
 StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
-    , m_emitWait(false)
-    , m_elementCount(createInfo.initialDataSize)
-    , m_commandBuffer(std::make_unique<handles::CommandBuffer>(
-          context.device().commandPool(handles::GRAPHICS_COMPUTE).lock()->allocateBuffer()))
-{
-    const size_t sizeInBytes = createInfo.initialDataSize * createInfo.dataTypeMetaInfo.typeSize;
-    m_handle = context.fetchHandleSpecific(ShaderBlockType::STORAGE, sizeInBytes);
-
-    m_handle->write(createInfo.initialData, sizeInBytes);
-
-    m_computeFinishedSemaphore =
-        std::make_unique<handles::Semaphore>(context.device(), handles::SemaphoreCreateInfo{});
-
-    m_computeInFlightFence = std::make_unique<handles::Fence>(context.device(),
-        handles::FenceCreateInfo{}.flags(VK_FENCE_CREATE_SIGNALED_BIT));
-}
+{}
 
 void StorageBuffer::accept(ComputerInfoVisitor& visitor) const
 {
@@ -37,17 +22,18 @@ void StorageBuffer::accept(ComputerInfoVisitor& visitor) const
 
 bool StorageBuffer::prepare(renderer::OperationContext& context)
 {
-    vkWaitForFences(m_context.device(), 1, m_computeInFlightFence->handlePtr(), VK_TRUE,
-        UINT64_MAX);
+    //  vkWaitForFences(m_context.device(), 1, m_computeInFlightFence->handlePtr(), VK_TRUE,
+    //      UINT64_MAX);
 
-    vkResetFences(m_context.device(), 1, m_computeInFlightFence->handlePtr());
+    //  vkResetFences(m_context.device(), 1, m_computeInFlightFence->handlePtr());
 
     auto& specContext = get(context);
-    specContext.commandBuffer = m_commandBuffer.get();
+    specContext.commandBuffer = m_commandBuffer;
     specContext.specificTarget = this;
 
-    m_commandBuffer->reset();
-    return m_commandBuffer->begin() == VK_SUCCESS;
+    vkResetCommandBuffer(m_commandBuffer, 0);
+    const auto commandBufferBeginInfo = CommandBufferBeginInfo{}.pInheritanceInfo(nullptr);
+    return vkBeginCommandBuffer(m_commandBuffer, &commandBufferBeginInfo) == VK_SUCCESS;
 }
 
 void StorageBuffer::present(renderer::OperationContext& context)
@@ -56,12 +42,11 @@ void StorageBuffer::present(renderer::OperationContext& context)
     auto [x, y, z] = specContext.computePipeline->computeDimensions();
 
     //  move element count to some more logically suitable place?
-    m_commandBuffer->dispatch(m_elementCount / x, y, z);
+    vkCmdDispatch(m_commandBuffer, m_elementCount / x, y, z);
 
-    ASSERT(m_commandBuffer->end() == VK_SUCCESS, "failed to end command buffer");
+    ASSERT(vkEndCommandBuffer(m_commandBuffer) == VK_SUCCESS, "failed to end command buffer");
 
-    auto submitInfo =
-        handles::SubmitInfo{}.commandBufferCount(1).pCommandBuffers(m_commandBuffer->handlePtr());
+    auto submitInfo = SubmitInfo{}.commandBufferCount(1).pCommandBuffers(&m_commandBuffer);
 
     if (!m_computeWaitSemaphores.empty())
     {
@@ -72,25 +57,18 @@ void StorageBuffer::present(renderer::OperationContext& context)
 
     if (m_emitWait)
     {
-        submitInfo.signalSemaphoreCount(1).pSignalSemaphores(
-            m_computeFinishedSemaphore->handlePtr());
+        submitInfo.signalSemaphoreCount(1).pSignalSemaphores(&m_computeFinishedSemaphore);
         m_emitWait = false;
     }
 
-    ASSERT(m_context.device()
-                .queue(handles::GRAPHICS_COMPUTE)
-                .lock()
-                ->submit(1, &submitInfo, *m_computeInFlightFence) == VK_SUCCESS,
+    ASSERT(vkQueueSubmit(m_context.queue(QueueFamilyType::GRAPHICS_COMPUTE),
+               1,
+               &submitInfo,
+               m_computeInFlightFence) == VK_SUCCESS,
         "failed to submit compute command buffer!");
 }
 
-void StorageBuffer::draw(renderer::OperationContext& context) const
-{
-    VkBuffer buf = m_handle->currentDescriptor()->descriptorBufferInfo.buffer();
-    VkDeviceSize offset = m_handle->currentDescriptor()->descriptorBufferInfo.offset();
-    get(context).commandBuffer->bindVertexBuffer(0, 1, &buf, &offset);
-    get(context).commandBuffer->draw(m_elementCount, 1, 0, 0);
-}
+void StorageBuffer::draw(renderer::OperationContext& context) const {}
 
 void StorageBuffer::waitFor(OperationContext& context)
 {
@@ -99,15 +77,11 @@ void StorageBuffer::waitFor(OperationContext& context)
         std::back_inserter(m_computeWaitSemaphores));
 }
 
-void StorageBuffer::populateWaitInfo(OperationContext& context)
-{
-    m_emitWait = true;
-    context.waitSemaphores.push_back(*m_computeFinishedSemaphore);
-}
+void StorageBuffer::populateWaitInfo(OperationContext& context) {}
 
-uint32_t StorageBuffer::descriptorsRequired() const
+uint32_t StorageBuffer::currentFrameIndex() const
 {
-    return 1;
+    return 0;;
 }
 
 void StorageBuffer::bind(renderer::OperationContext& context, uint32_t bindingId) const
@@ -115,13 +89,14 @@ void StorageBuffer::bind(renderer::OperationContext& context, uint32_t bindingId
     //  NOTHING TO DO
 }
 
-void StorageBuffer::adapt(renderer::OperationContext& context, uint32_t bindingId)
+void StorageBuffer::write(const void *data, size_t size, size_t offset)
 {
-    const auto writes = descriptorSetWrites(get(context), bindingId, *m_handle);
-    //  TEMP
-    vkUpdateDescriptorSets(m_context.device(), static_cast<uint32_t>(writes.size()), writes.data(),
-        0, nullptr);
+
 }
 
+const void *StorageBuffer::read(size_t size, size_t offset) const
+{
+    return nullptr;
+}
 
 }    //  namespace renderer::vk

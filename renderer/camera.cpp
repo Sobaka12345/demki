@@ -5,9 +5,7 @@
 namespace renderer {
 
 Camera::Camera(IGraphicsContext& context)
-    : m_viewProjection(context.createUniformValue<ViewProjection>())
 {
-    resource(0) = m_viewProjection;
 }
 
 void Camera::setView(glm::mat4 view)
@@ -26,12 +24,12 @@ void Camera::setProjection(glm::mat4 projection)
 
 void Camera::setViewProjection(ViewProjection viewProjection)
 {
-    m_viewProjection.set(viewProjection);
+
 }
 
 ViewProjection Camera::viewProjection() const
 {
-    return m_viewProjection.get();
+    return {};
 }
 
 }    //  namespace renderer

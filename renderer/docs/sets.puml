@@ -1,0 +1,45 @@
+@startuml
+
+namespace renderer {
+
+class OperationContext {
+    specificRendererInfo...
+}
+
+interface IGraphicsContext {
+
+}
+
+interface IPool {
+    uint32_t id
+
+    virtual someActionsOnPool() = 0;
+}
+
+interface IPipeline {
+    virtual bool bind(OperationContext context)
+}
+
+namespace vk {
+    class GraphicsContext implements renderer.IGraphicsContext {
+
+    }
+
+    class Pipeline implements renderer.IPipeline {
+
+    }
+}
+
+namespace ogl {
+    class GraphicsContext implements renderer.IGraphicsContext {
+
+    }
+
+    class Pipeline implements renderer.IPipeline {
+
+    }
+}
+
+}
+
+@enduml

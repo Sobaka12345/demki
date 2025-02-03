@@ -3,9 +3,7 @@
 #include <imesh.hpp>
 #include <operation_context.hpp>
 
-#include <span>
 #include <memory>
-#include <vector>
 
 namespace renderer::vk {
 

@@ -1,25 +1,25 @@
 #pragma once
 
-#include "command.hpp"
 #include "handle.hpp"
+#include "../utils.hpp"
 
-#include <array>
-#include <limits>
-#include <map>
-#include <memory>
-#include <optional>
-#include <set>
-#include <vector>
+#include <crtp.hpp>
 
-#include <vulkan/vulkan_core.h>
+namespace renderer::vk {
 
-namespace renderer::vk { namespace handles {
+BEGIN_DECLARE_VKSTRUCT(DeviceQueueCreateInfo, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
+    VKSTRUCT_PROPERTY(const void*, pNext)
+    VKSTRUCT_PROPERTY(VkDeviceQueueCreateFlags, flags)
+    VKSTRUCT_PROPERTY(uint32_t, queueFamilyIndex)
+    VKSTRUCT_PROPERTY(uint32_t, queueCount)
+    VKSTRUCT_PROPERTY(const float*, pQueuePriorities)
+END_DECLARE_VKSTRUCT()
 
 BEGIN_DECLARE_VKSTRUCT(DeviceCreateInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
     VKSTRUCT_PROPERTY(VkDeviceCreateFlags, flags)
     VKSTRUCT_PROPERTY(uint32_t, queueCreateInfoCount)
-    VKSTRUCT_PROPERTY(const VkDeviceQueueCreateInfo*, pQueueCreateInfos)
+    VKSTRUCT_PROPERTY(const DeviceQueueCreateInfo*, pQueueCreateInfos)
     VKSTRUCT_PROPERTY(uint32_t, enabledLayerCount)
     VKSTRUCT_PROPERTY(const char* const*, ppEnabledLayerNames)
     VKSTRUCT_PROPERTY(uint32_t, enabledExtensionCount)
@@ -27,103 +27,118 @@ BEGIN_DECLARE_VKSTRUCT(DeviceCreateInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const VkPhysicalDeviceFeatures*, pEnabledFeatures)
 END_DECLARE_VKSTRUCT()
 
-class Queue;
-class CommandPool;
 
-enum QueueFamilyType : uint16_t
+template <typename T>
+struct DeviceFunctions : public CRTPBase<T>
 {
-    GRAPHICS_COMPUTE,
-    PRESENT,
-    COUNT
 };
 
-class QueueFamilies
+template <typename T>
+struct DeviceGroupFunctions: public CRTPBase<T>
 {
-    static constexpr uint32_t s_invalidIndex = (std::numeric_limits<uint32_t>::max)();
-
-public:
-    QueueFamilies();
-    QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
-
-    bool isComplete() const;
-    uint32_t queueFamilyIndex(QueueFamilyType type) const;
-
-    uint32_t operator[](QueueFamilyType type) const { return queueFamilyIndex(type); }
-
-    const auto begin() const { return m_queueFamilyIndices.begin(); };
-
-    const auto end() const { return m_queueFamilyIndices.end(); };
-
-private:
-    std::array<uint32_t, QueueFamilyType::COUNT> m_queueFamilyIndices = []() constexpr {
-        std::array<uint32_t, QueueFamilyType::COUNT> result;
-        for (int i = 0; i < QueueFamilyType::COUNT; i++) result[i] = s_invalidIndex;
-        return result;
-    }();
 };
 
-class Device : public Handle<VkDevice>
-{
-    HANDLE(Device);
+namespace handles {
+DECLARE_HANDLE_TYPE(Device, DeviceFunctions, DeviceGroupFunctions);
+}
 
-    struct SwapChainSupportDetails
-    {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
+// class Queue;
+// class CommandPool;
 
-    static const std::array<const char* const, 1> s_deviceExtensions;
-    static SwapChainSupportDetails swapChainSupportDetails(VkPhysicalDevice physicalDevice,
-        VkSurfaceKHR surface);
+// enum QueueFamilyType : uint16_t
+// {
+//     GRAPHICS_COMPUTE,
+//     PRESENT,
+//     COUNT
+// };
 
-public:
-    Device(const Device& other) = delete;
-    Device();
-    Device(Device&& other) noexcept;
-    Device(VkInstance instance, VkSurfaceKHR surface) noexcept;
-    virtual ~Device();
+// class QueueFamilies
+// {
+//     static constexpr uint32_t s_invalidIndex = (std::numeric_limits<uint32_t>::max)();
 
-    void waitIdle() const;
+// public:
+//     QueueFamilies();
+//     QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-    QueueFamilies queueFamilies() const { return m_queueFamilies; };
+//     bool isComplete() const;
+//     uint32_t queueFamilyIndex(QueueFamilyType type) const;
 
-    VkMemoryType memoryType(uint32_t index) const;
+//     uint32_t operator[](QueueFamilyType type) const { return queueFamilyIndex(type); }
 
-    std::weak_ptr<Queue> queue(QueueFamilyType type, uint32_t idx = 0) const;
-    std::weak_ptr<CommandPool> commandPool(QueueFamilyType type) const;
-    OneTimeCommand oneTimeCommand(QueueFamilyType type, uint32_t queueIdx = 0) const;
+//     const auto begin() const { return m_queueFamilyIndices.begin(); };
 
-    VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
+//     const auto end() const { return m_queueFamilyIndices.end(); };
 
-    VkPhysicalDeviceProperties physicalDeviceProperties() const
-    {
-        return m_physicalDeviceProperties;
-    }
+// private:
+//     std::array<uint32_t, QueueFamilyType::COUNT> m_queueFamilyIndices = []() constexpr {
+//         std::array<uint32_t, QueueFamilyType::COUNT> result;
+//         for (int i = 0; i < QueueFamilyType::COUNT; i++) result[i] = s_invalidIndex;
+//         return result;
+//     }();
+// };
 
-protected:
-    Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePtr) noexcept;
+// class Device : public Handle<VkDevice>
+// {
+//     HANDLE(Device);
 
-private:
-    void pickPhysicalDevice();
-    void createLogicalDevice();
+//     struct SwapChainSupportDetails
+//     {
+//         VkSurfaceCapabilitiesKHR capabilities;
+//         std::vector<VkSurfaceFormatKHR> formats;
+//         std::vector<VkPresentModeKHR> presentModes;
+//     };
 
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    static bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+//     static const std::array<const char* const, 1> s_deviceExtensions;
+//     static SwapChainSupportDetails swapChainSupportDetails(VkPhysicalDevice physicalDevice,
+//         VkSurfaceKHR surface);
 
-private:
-    const VkInstance m_instance;
-    const VkSurfaceKHR m_surface;
+// public:
+//     Device(const Device& other) = delete;
+//     Device();
+//     Device(Device&& other) noexcept;
+//     Device(VkInstance instance, VkSurfaceKHR surface) noexcept;
+//     virtual ~Device();
 
-    QueueFamilies m_queueFamilies;
-    mutable std::map<std::pair<uint32_t, uint32_t>, std::shared_ptr<Queue>> m_queues;
-    mutable std::map<uint32_t, std::shared_ptr<CommandPool>> m_commandPools;
+//     void waitIdle() const;
 
-    //  TO DO: Support for multiple devices
-    VkPhysicalDevice m_physicalDevice;
-    VkPhysicalDeviceFeatures m_physicalDeviceFeatures;
-    VkPhysicalDeviceProperties m_physicalDeviceProperties;
-    VkPhysicalDeviceMemoryProperties m_physicalDeviceMemoryProperties;
-};
+//     QueueFamilies queueFamilies() const { return m_queueFamilies; };
 
-}}    //  namespace renderer::vk::handles
+//     VkMemoryType memoryType(uint32_t index) const;
+
+//     std::weak_ptr<Queue> queue(QueueFamilyType type, uint32_t idx = 0) const;
+//     std::weak_ptr<CommandPool> commandPool(QueueFamilyType type) const;
+//     OneTimeCommand oneTimeCommand(QueueFamilyType type, uint32_t queueIdx = 0) const;
+
+//     VkPhysicalDevice physicalDevice() const { return m_physicalDevice; }
+
+//     VkPhysicalDeviceProperties physicalDeviceProperties() const
+//     {
+//         return m_physicalDeviceProperties;
+//     }
+
+// protected:
+//     Device(VkInstance instance, VkSurfaceKHR surface, VkHandleType* handlePtr) noexcept;
+
+// private:
+//     void pickPhysicalDevice();
+//     void createLogicalDevice();
+
+//     bool isDeviceSuitable(VkPhysicalDevice device);
+//     static bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+
+// private:
+//     const VkInstance m_instance;
+//     const VkSurfaceKHR m_surface;
+
+//     QueueFamilies m_queueFamilies;
+//     mutable std::map<std::pair<uint32_t, uint32_t>, std::shared_ptr<Queue>> m_queues;
+//     mutable std::map<uint32_t, std::shared_ptr<CommandPool>> m_commandPools;
+
+//     //  TO DO: Support for multiple devices
+//     VkPhysicalDevice m_physicalDevice;
+//     VkPhysicalDeviceFeatures m_physicalDeviceFeatures;
+//     VkPhysicalDeviceProperties m_physicalDeviceProperties;
+//     VkPhysicalDeviceMemoryProperties m_physicalDeviceMemoryProperties;
+// };
+
+}    //  namespace renderer::vk::handles

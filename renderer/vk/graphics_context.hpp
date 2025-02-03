@@ -1,10 +1,11 @@
 #pragma once
 
+#include "handles/command_pool.hpp"
+#include "handles/descriptor_set_layout.hpp"
+#include "handles/physical_device.hpp"
 #include "handles/device.hpp"
-#include "handles/debug_utils_messenger.hpp"
 #include "handles/instance.hpp"
-
-#include "buffer_shader_resource_allocator.hpp"
+#include "handles/queue.hpp"
 
 #include <igraphics_context.hpp>
 
@@ -20,23 +21,17 @@ class IVulkanSurface;
 
 namespace renderer { namespace vk {
 
-namespace handles {
-class RenderPass;
-class Swapchain;
-}
-
 class ResourceManager;
 
-class GraphicsContext
-    : public handles::Instance
-    , public IGraphicsContext
+class GraphicsContext: public IGraphicsContext
 {
 public:
     const static bool s_enableValidationLayers;
     const static std::vector<const char*> s_validationLayers;
+    const static std::vector<const char*> s_deviceExtensions;
 
 public:
-    GraphicsContext(handles::ApplicationInfo appInfo);
+    GraphicsContext(ApplicationInfo appInfo);
     GraphicsContext(GraphicsContext&& other) = delete;
     GraphicsContext(const GraphicsContext& other) = delete;
     virtual ~GraphicsContext();
@@ -45,13 +40,6 @@ public:
     void init(IVulkanSurface& surface);
 
 public:
-	std::weak_ptr<handles::Memory> fetchMemory(size_t size,
-		VkBufferUsageFlags usage,
-		VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    std::shared_ptr<ShaderInterfaceHandle> fetchHandleSpecific(ShaderBlockType sbt,
-        uint32_t layoutSize);
-
     std::shared_ptr<ISwapchain> createSwapchain(IVulkanSurface& surface,
         ISwapchain::CreateInfo createInfo);
     virtual std::shared_ptr<IComputer> createComputer(IComputer::CreateInfo createInfo) override;
@@ -72,30 +60,29 @@ public:
 
     virtual void waitIdle() override;
 
+    handles::DescriptorSetLayout descriptorSetLayout(uint32_t id) const;
+
     virtual Multisampling maxSampleCount() const override;
 
-    const handles::Device& device() const;
+    handles::Instance instance() const;
+    handles::Device device() const;
+    uint32_t queueIndex(QueueFamilyType familyType) const;
+    handles::Queue queue(QueueFamilyType familyType) const;
+    handles::PhysicalDevice physicalDevice() const;
+    const PhysicalDeviceInfo& physicalDeviceInfo() const;
+    handles::CommandPool commandPool(QueueFamilyType type) const;
 
     VkFormat findDepthFormat() const;
-
-private:
-    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
-        VkImageTiling tiling,
-        VkFormatFeatureFlags features) const;
-    bool hasStencilComponent(VkFormat format) const;
     uint32_t dynamicAlignment(uint32_t layoutSize) const;
 
 private:
-    handles::HandleVector<handles::Buffer> m_buffers;
-
-    std::unordered_map<uint32_t, StaticUniformBufferShaderResourceAllocator>
-        m_staticUniformShaderResources;
-    std::unordered_map<uint32_t, DynamicUniformBufferShaderResourceAllocator>
-        m_dynamicUniformShaderResources;
-    std::unordered_map<uint32_t, StorageBufferShaderResourceAllocator> m_storageShaderResources;
-
-    std::unique_ptr<handles::Device> m_device;
-    std::unique_ptr<handles::DebugUtilsMessenger> m_debugMessenger;
+    VkInstance m_instance;
+    VkDebugUtilsMessengerEXT m_debugMessenger;
+    handles::Device m_device;
+    handles::CommandPoolContainer::Array<enumT(QueueFamilyType::COUNT)> m_commandPools;
+    handles::QueueContainer::Array<enumT(QueueFamilyType::COUNT)> m_queues;
+    std::vector<std::pair<handles::PhysicalDevice, PhysicalDeviceInfo>> m_physicalDevices;
+    handles::DescriptorSetLayoutContainer::HashMap<uint32_t> m_layouts;
 };
 
 }}    //  namespace renderer::vk

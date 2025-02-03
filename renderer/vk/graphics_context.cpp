@@ -1,15 +1,15 @@
 #include "graphics_context.hpp"
 
-#include "handles/surface.hpp"
-#include "handles/memory.hpp"
+#include "handles/debug_utils_messenger.hpp"
+
 #include "compute_pipeline.hpp"
-#include "graphics_pipeline.hpp"
 #include "computer.hpp"
+#include "graphics_pipeline.hpp"
 #include "mesh.hpp"
 #include "renderer.hpp"
+#include "storage_buffer.hpp"
 #include "swapchain.hpp"
 #include "texture.hpp"
-#include "storage_buffer.hpp"
 #include "uniform_buffer.hpp"
 
 #include <operation_context.hpp>
@@ -19,11 +19,14 @@
 
 #include <cstring>
 #include <iostream>
+#include <algorithm>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 namespace renderer::vk {
+
+using namespace handles;
 
 static bool requiredExtensionsSupported(const std::vector<const char*>& required)
 {
@@ -103,7 +106,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 }
 
 constexpr static auto s_debugMessengerCreateInfo =
-    handles::DebugUtilsMessengerCreateInfoEXT()
+    DebugUtilsMessengerCreateInfoEXT()
         .messageSeverity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
@@ -123,6 +126,10 @@ const std::vector<const char*> GraphicsContext::s_validationLayers = {
     "VK_LAYER_KHRONOS_validation",
 };
 
+const std::vector<const char*> GraphicsContext::s_deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+};
+
 std::vector<const char*> getRequiredExtensions()
 {
     uint32_t glfwExtensionCount = 0;
@@ -139,9 +146,34 @@ std::vector<const char*> getRequiredExtensions()
     return extensions;
 }
 
-GraphicsContext::GraphicsContext(handles::ApplicationInfo appInfo)
+bool checkDeviceExtensionSupport(PhysicalDevice physicalDevice)
 {
-    auto createInfo = handles::InstanceCreateInfo().pApplicationInfo(&appInfo);
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount,
+        availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(GraphicsContext::s_deviceExtensions.begin(),
+        GraphicsContext::s_deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions)
+    {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
+}
+
+inline constexpr bool hasStencilComponent(VkFormat format)
+{
+    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+GraphicsContext::GraphicsContext(ApplicationInfo appInfo)
+{
+    auto createInfo = InstanceCreateInfo().pApplicationInfo(&appInfo);
 
     if (s_enableValidationLayers)
     {
@@ -163,118 +195,111 @@ GraphicsContext::GraphicsContext(handles::ApplicationInfo appInfo)
 
     createInfo.enabledExtensionCount(extensions.size()).ppEnabledExtensionNames(extensions.data());
 
-    ASSERT(Instance::create(vkCreateInstance, &createInfo, nullptr) == VK_SUCCESS,
-        "failed to create instance ;c");
-
+    m_instance = InstanceHelper::create(&createInfo, nullptr, "failed to create instance ;c");
 
     if (s_enableValidationLayers)
     {
         m_debugMessenger =
-            std::make_unique<handles::DebugUtilsMessenger>(*this, s_debugMessengerCreateInfo);
+            DebugUtilsMessengerEXTHelper::create(m_instance, &s_debugMessengerCreateInfo, nullptr);
     }
 }
 
 GraphicsContext::~GraphicsContext()
 {
-    m_buffers.clear();
-    m_dynamicUniformShaderResources.clear();
-    m_staticUniformShaderResources.clear();
-    m_storageShaderResources.clear();
-    m_device.reset();
-    m_debugMessenger.reset();
+    DeviceHelper::destroy(m_device, nullptr);
+    DebugUtilsMessengerEXTHelper::destroy(m_instance, m_debugMessenger, nullptr);
+    InstanceHelper::destroy(m_instance, nullptr);
 }
 
 void GraphicsContext::init(IVulkanSurface& surface)
 {
-    m_device = std::make_unique<handles::Device>(handle(), surface.surfaceKHR());
-}
+    uint32_t physicalDeviceCount = 0;
+    PhysicalDeviceHelper::create(m_instance, &physicalDeviceCount, nullptr);
+    ASSERT(physicalDeviceCount, "failed to find GPUs with Vulkan support!");
 
-std::weak_ptr<vk::handles::Memory> GraphicsContext::fetchMemory(
-	size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memoryProperties)
-{
-	auto& newBuffer = m_buffers.emplaceBack(device(),
-		handles::BufferCreateInfo().size(size).usage(usage).sharingMode(VK_SHARING_MODE_EXCLUSIVE));
-	return newBuffer.allocateAndBindMemory(memoryProperties);
-}
+    PhysicalDeviceContainer::Vector<> physicalDevices(physicalDeviceCount);
+    PhysicalDeviceHelper::create(m_instance, &physicalDeviceCount, physicalDevices.data());
 
-std::shared_ptr<ShaderInterfaceHandle> GraphicsContext::fetchHandleSpecific(ShaderBlockType sbt,
-    uint32_t layoutSize)
-{
-    const uint32_t alignment = dynamicAlignment(layoutSize);
+    for (auto iter = physicalDevices.begin(); iter != physicalDevices.end(); ++iter)
+    {
+        const auto deviceInfo = PhysicalDeviceHelper::info(*iter, surface.surfaceKHR());
+        constexpr uint32_t invalidIndex = std::numeric_limits<uint32_t>::max();
 
-    auto insertAndFetchSpecificHandle = [&](auto& map) {
-        if (auto el = map.find(layoutSize); el != map.end())
+        if (auto isSuitable = checkDeviceExtensionSupport(*iter) &&
+                !deviceInfo.surfaceFormats.empty() && !deviceInfo.surfacePresentModes.empty() &&
+                std::find(deviceInfo.queueFamilyIndices.begin(),
+                    deviceInfo.queueFamilyIndices.end(),
+                    enumT(QueueFamilyType::INVALID_QUEUE_FAMILY_INDEX)) ==
+                    deviceInfo.queueFamilyIndices.end();
+            isSuitable)
         {
-            return ShaderInterfaceHandle::create(el->second);
-        }
-        using PairType = typename std::remove_reference<decltype(map)>::type::value_type;
-        auto [iter, _] = map.emplace(
-            PairType{ alignment, typename PairType::second_type{ *this, alignment, 100 } });
-
-        return ShaderInterfaceHandle::create(iter->second);
-    };
-
-    if (sbt == ShaderBlockType::STORAGE)
-    {
-        return insertAndFetchSpecificHandle(m_storageShaderResources);
-    }
-    else if (sbt == ShaderBlockType::UNIFORM_DYNAMIC)
-    {
-        return insertAndFetchSpecificHandle(m_dynamicUniformShaderResources);
-    }
-    else if (sbt == ShaderBlockType::UNIFORM_STATIC)
-    {
-        return insertAndFetchSpecificHandle(m_staticUniformShaderResources);
-    }
-    //  else if (sbt == ShaderBlockType::SAMPLER)
-    //  {
-    //      return
-    //  }
-
-    ASSERT(false, "NOT DEFINED");
-    return nullptr;
-}
-
-VkFormat GraphicsContext::findSupportedFormat(const std::vector<VkFormat>& candidates,
-    VkImageTiling tiling,
-    VkFormatFeatureFlags features) const
-{
-    for (VkFormat format : candidates)
-    {
-        VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(m_device->physicalDevice(), format, &props);
-        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-        {
-            return format;
-        }
-        else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
-            (props.optimalTilingFeatures & features) == features)
-        {
-            return format;
+            m_physicalDevices.emplace_back(*iter,
+                PhysicalDeviceHelper::info(*iter, surface.surfaceKHR()));
         }
     }
 
-    ASSERT(false, "failed to find supported format!");
-    return VK_FORMAT_UNDEFINED;
+    ASSERT(!m_physicalDevices.empty(), "failed to find a suitable GPU!");
+
+    const std::array<float, 1> queuePriorities{ 1.0f };
+    const auto& familyIndices = physicalDeviceInfo().queueFamilyIndices;
+    std::array<DeviceQueueCreateInfo, enumT(QueueFamilyType::COUNT)> queueCreateInfos;
+
+    for (QueueFamilyType i = QueueFamilyType::BEGIN; i < QueueFamilyType::COUNT; ++i)
+    {
+        queueCreateInfos[enumT(i)] =
+            DeviceQueueCreateInfo{}
+                .queueFamilyIndex(familyIndices[enumT(i)])
+                .pQueuePriorities(queuePriorities.data())
+                .queueCount(queuePriorities.size());
+    }
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE;
+
+    const auto createInfo = GraphicsContext::s_enableValidationLayers ?
+        DeviceCreateInfo{}
+            .pEnabledFeatures(&deviceFeatures)
+            .queueCreateInfoCount(queueCreateInfos.size())
+            .pQueueCreateInfos(queueCreateInfos.data())
+            .enabledExtensionCount(s_deviceExtensions.size())
+            .ppEnabledExtensionNames(s_deviceExtensions.data())
+            .enabledLayerCount(GraphicsContext::s_validationLayers.size())
+            .ppEnabledLayerNames(GraphicsContext::s_validationLayers.data()) :
+        DeviceCreateInfo{}
+            .pEnabledFeatures(&deviceFeatures)
+            .pQueueCreateInfos(queueCreateInfos.data())
+            .queueCreateInfoCount(queueCreateInfos.size())
+            .enabledExtensionCount(s_deviceExtensions.size())
+            .ppEnabledExtensionNames(s_deviceExtensions.data());
+
+    m_device =
+        DeviceHelper::create(physicalDevice(), &createInfo, nullptr, "failed to create logical device!");
+
+    for (QueueFamilyType i = QueueFamilyType::BEGIN; i < QueueFamilyType::COUNT; ++i)
+    {
+        uint32_t queueFamilyIndex = familyIndices[enumT(i)];
+        auto commandPoolCreateInfo =
+            CommandPoolCreateInfo{}
+                .queueFamilyIndex(queueFamilyIndex)
+                .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+        m_commandPools[enumT(i)] = CommandPoolHelper::create(device(), &commandPoolCreateInfo, nullptr);
+        m_queues[enumT(i)] = QueueHelper::create(device(), familyIndices[enumT(i)], 0);
+    }
 }
 
 VkFormat GraphicsContext::findDepthFormat() const
 {
-    return findSupportedFormat(
+    return PhysicalDeviceHelper::findSupportedFormat(physicalDevice(),
         { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-bool GraphicsContext::hasStencilComponent(VkFormat format) const
-{
-    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
 uint32_t GraphicsContext::dynamicAlignment(uint32_t layoutSize) const
 {
-    const uint32_t minAlignment =
-        device().physicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
+    static const uint32_t minAlignment =
+        physicalDeviceInfo().properties.limits.minUniformBufferOffsetAlignment;
 
     if (minAlignment > 0)
     {
@@ -283,9 +308,39 @@ uint32_t GraphicsContext::dynamicAlignment(uint32_t layoutSize) const
     return layoutSize;
 }
 
-const handles::Device& GraphicsContext::device() const
+Instance renderer::vk::GraphicsContext::instance() const
 {
-    return *m_device;
+    return m_instance;
+}
+
+Device GraphicsContext::device() const
+{
+    return m_device;
+}
+
+uint32_t GraphicsContext::queueIndex(QueueFamilyType familyType) const
+{
+    return physicalDeviceInfo().queueFamilyIndices[enumT(familyType)];
+}
+
+renderer::vk::handles::Queue renderer::vk::GraphicsContext::queue(QueueFamilyType familyType) const
+{
+    return m_queues[enumT(familyType)];
+}
+
+PhysicalDevice GraphicsContext::physicalDevice() const
+{
+    return m_physicalDevices[0].first;
+}
+
+const PhysicalDeviceInfo& GraphicsContext::physicalDeviceInfo() const
+{
+    return m_physicalDevices[0].second;
+}
+
+CommandPool GraphicsContext::commandPool(QueueFamilyType type) const
+{
+    return m_commandPools[enumT(type)];
 }
 
 std::shared_ptr<ISwapchain> GraphicsContext::createSwapchain(IVulkanSurface& surface,
@@ -302,13 +357,13 @@ std::shared_ptr<IComputer> GraphicsContext::createComputer(IComputer::CreateInfo
 std::shared_ptr<IComputePipeline> GraphicsContext::createComputePipeline(
     IComputePipeline::CreateInfo createInfo)
 {
-    return std::make_shared<ComputePipeline>(*this, std::move(createInfo));
+    return std::make_shared<vk::ComputePipeline>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<IGraphicsPipeline> GraphicsContext::createGraphicsPipeline(
     IGraphicsPipeline::CreateInfo createInfo)
 {
-    return std::make_shared<GraphicsPipeline>(*this, std::move(createInfo));
+    return std::make_shared<vk::GraphicsPipeline>(*this, std::move(createInfo));
 }
 
 std::shared_ptr<IRenderer> GraphicsContext::createRenderer(IRenderer::CreateInfo createInfo)
@@ -350,14 +405,19 @@ std::shared_ptr<IUniformBuffer> GraphicsContext::createUniformBuffer(
 
 void GraphicsContext::waitIdle()
 {
-    m_device->waitIdle();
+    vkDeviceWaitIdle(device());
+}
+
+DescriptorSetLayout GraphicsContext::descriptorSetLayout(uint32_t id) const
+{
+    return m_layouts.at(id);
 }
 
 Multisampling GraphicsContext::maxSampleCount() const
 {
-    VkSampleCountFlags counts =
-        m_device->physicalDeviceProperties().limits.framebufferColorSampleCounts &
-        m_device->physicalDeviceProperties().limits.framebufferDepthSampleCounts;
+    const auto physicalDeviceInfo = this->physicalDeviceInfo();
+    VkSampleCountFlags counts = physicalDeviceInfo.properties.limits.framebufferColorSampleCounts &
+        physicalDeviceInfo.properties.limits.framebufferDepthSampleCounts;
     if (counts & VK_SAMPLE_COUNT_64_BIT)
     {
         return Multisampling::MSA_64X;

@@ -11,9 +11,6 @@ Particles::Particles(IGraphicsContext& context, std::span<const Particle> initia
 
     m_particlesBuffers[0] = context.createStorageBuffer(bufferInfo);
     m_particlesBuffers[1] = context.createStorageBuffer(bufferInfo);
-
-    resource(0) = m_particlesBuffers[0];
-    resource(1) = m_particlesBuffers[1];
 }
 
 void Particles::draw(OperationContext& context)
@@ -37,7 +34,6 @@ void Particles::present(OperationContext& context)
     m_particlesBuffers[m_currentIndex]->present(context);
 
     m_currentIndex = (m_currentIndex + 1) % m_particlesBuffers.size();
-    std::swap(resource(1), resource(0));
 }
 
 }    //  namespace renderer

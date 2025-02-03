@@ -2,6 +2,8 @@
 
 #include "pipeline.hpp"
 
+#include <crtp.hpp>
+
 namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(ComputePipelineCreateInfo, VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO)
@@ -13,31 +15,23 @@ BEGIN_DECLARE_VKSTRUCT(ComputePipelineCreateInfo, VK_STRUCTURE_TYPE_COMPUTE_PIPE
     VKSTRUCT_PROPERTY(int32_t, basePipelineIndex)
 END_DECLARE_VKSTRUCT();
 
+template <typename T>
+struct ComputePipelineFunctions : public CRTPBase<T>
+{};
+
+template <typename T>
+struct ComputePipelineGroupFunctions : public CRTPBase<T>
+{};
+
+using VkComputePipeline = VkPipeline;
+
 namespace handles {
+DECLARE_HANDLE_TYPE_FULL_IMPL(ComputePipeline,
+    vkCreateComputePipelines,
+    vkDestroyPipeline,
+    ComputePipelineFunctions,
+    ComputePipelineGroupFunctions,
+    true);
+}
 
-class Device;
-
-class ComputePipeline : public Pipeline
-{
-    HANDLE(ComputePipeline);
-
-public:
-    static HandleVector<ComputePipeline> create(const Device& device,
-        VkPipelineCache cache,
-        std::span<const ComputePipelineCreateInfo> createInfos);
-
-public:
-    ComputePipeline(const ComputePipeline& other) = delete;
-    ComputePipeline(ComputePipeline&& other) noexcept;
-    ComputePipeline(
-        const Device& device, VkPipelineCache cache, ComputePipelineCreateInfo createInfo) noexcept;
-
-protected:
-    ComputePipeline(const Device& device,
-        VkPipelineCache cache,
-        ComputePipelineCreateInfo createInfo,
-        VkHandleType* handlePtr) noexcept;
-};
-
-}    //  namespace handles
 }    //  namespace renderer::vk

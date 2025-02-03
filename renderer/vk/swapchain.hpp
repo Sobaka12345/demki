@@ -1,16 +1,16 @@
 #pragma once
 
+#include "handles/command_buffer.hpp"
 #include "handles/fence.hpp"
+#include "handles/framebuffer.hpp"
+#include "handles/image_view.hpp"
 #include "handles/semaphore.hpp"
 #include "handles/swapchain.hpp"
-#include "handles/image_view.hpp"
-#include "handles/framebuffer.hpp"
 
+#include "specific_context_object.hpp"
 #include "specific_operation_target.hpp"
 
 #include <iswapchain.hpp>
-
-#include <memory>
 
 namespace renderer {
 class IVulkanSurface;
@@ -23,7 +23,8 @@ namespace handles {
 class Surface;
 }
 
-class Swapchain : public SpecificOperationTarget<ISwapchain>
+class Swapchain
+    : public SpecificBase<ISwapchain, ISpecificContextObject, ISpecificOperationTarget>
 {
     struct SwapChainSupportDetails
     {
@@ -43,7 +44,7 @@ class Swapchain : public SpecificOperationTarget<ISwapchain>
 
 public:
     Swapchain(
-        const GraphicsContext& context, IVulkanSurface& surface, ISwapchain::CreateInfo createInfo);
+        GraphicsContext& context, IVulkanSurface& surface, ISwapchain::CreateInfo createInfo);
     ~Swapchain();
 
     virtual bool prepare(renderer::OperationContext& context) override;
@@ -62,7 +63,8 @@ public:
 
     virtual void populateWaitInfo(OperationContext& context) override;
     virtual void waitFor(OperationContext& context) override;
-    virtual uint32_t descriptorsRequired() const override;
+
+    virtual uint32_t currentFrameIndex() const override;
 
 private:
     void recreate();
@@ -70,26 +72,25 @@ private:
     void create();
     void populateOperationContext(OperationContext& context);
 
-    handles::Framebuffer& currentFramebuffer();
-    handles::CommandBuffer& currentCommandBuffer();
+    handles::Framebuffer currentFramebuffer();
+    handles::CommandBuffer currentCommandBuffer();
 
-    handles::ImageCreateInfo imageCreateInfo() const;
-    handles::ImageViewCreateInfo imageViewCreateInfo() const;
+    ImageCreateInfo imageCreateInfo() const;
+    ImageViewCreateInfo imageViewCreateInfo() const;
 
 private:
-    const GraphicsContext& m_context;
     IVulkanSurface& m_surface;
 
     ISwapchain::CreateInfo m_swapchainInfo;
     VkFormat m_depthFormat;
-    handles::SwapchainCreateInfoKHR m_swapchainCreateInfo;
+    SwapchainCreateInfoKHR m_swapchainCreateInfo;
 
 
-    std::unique_ptr<handles::Image> m_colorImage;
-    std::unique_ptr<handles::ImageView> m_colorImageView;
-    std::unique_ptr<handles::Image> m_depthImage;
-    std::unique_ptr<handles::ImageView> m_depthImageView;
-    std::unique_ptr<handles::Swapchain> m_swapchain;
+    handles::Image m_colorImage;
+    handles::ImageView m_colorImageView;
+    handles::Image m_depthImage;
+    handles::ImageView m_depthImageView;
+    handles::SwapchainKHR m_swapchain;
 
     std::function<void(Swapchain&)> m_drawCallback;
 
@@ -99,18 +100,16 @@ private:
     int m_currentFrame;
     int m_maxFramesInFlight;
 
-    handles::HandleVector<handles::CommandBuffer> m_commandBuffers;
+    handles::CommandBufferContainer::Vector<> m_commandBuffers;
 
-    std::vector<handles::CommandBuffer::Resources> m_resourcesInUse;
+    handles::SemaphoreContainer::Vector<> m_renderWaitSemaphores;
+    handles::SemaphoreContainer::Vector<> m_imageAvailableSemaphores;
+    handles::SemaphoreContainer::Vector<> m_renderFinishedSemaphores;
+    handles::FenceContainer::Vector<> m_inFlightFences;
 
-    std::vector<VkSemaphore> m_renderWaitSemaphores;
-    handles::HandleVector<handles::Semaphore> m_imageAvailableSemaphores;
-    handles::HandleVector<handles::Semaphore> m_renderFinishedSemaphores;
-    handles::HandleVector<handles::Fence> m_inFlightFences;
-
-    handles::HandleVector<handles::Image> m_swapChainImages;
-    handles::HandleVector<handles::ImageView> m_swapChainImageViews;
-    mutable handles::HandleVector<handles::Framebuffer> m_swapChainFramebuffers;
+    handles::ImageContainer::Vector<> m_swapChainImages;
+    handles::ImageViewContainer::Vector<> m_swapChainImageViews;
+    mutable handles::FramebufferContainer::Vector<> m_swapChainFramebuffers;
 };
 
 }    //  namespace vk

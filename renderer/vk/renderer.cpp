@@ -2,12 +2,17 @@
 
 #include "graphics_context.hpp"
 #include "swapchain.hpp"
+#include "types.hpp"
 
 #include "handles/render_pass.hpp"
 
 #include <operation_context.hpp>
 
+#include <optional>
+
 namespace renderer::vk {
+
+using namespace handles;
 
 struct RenderInfoVisitor : public renderer::RenderInfoVisitor
 {
@@ -32,7 +37,7 @@ renderer::OperationContext Renderer::start(IRenderTarget& target)
     result.emplace<vk::OperationContext>(this);
 
     auto& kek = get(result);
-    kek.renderPass = &renderPass(target);
+    kek.renderPass = renderPass(target);
 
     if (!target.prepare(result))
     {
@@ -46,15 +51,15 @@ renderer::OperationContext Renderer::start(IRenderTarget& target)
     };
 
     const auto renderPassInfo =
-        handles::RenderPassBeginInfo{}
-            .renderPass(*kek.renderPass)
-            .framebuffer(*kek.framebuffer)
+        RenderPassBeginInfo{}
+            .renderPass(kek.renderPass)
+            .framebuffer(kek.framebuffer)
 			.renderArea(
 				VkRect2D{ VkOffset2D{ 0, 0 }, VkExtent2D{ target.width(), target.height() } })
             .clearValueCount(clearValues.size())
             .pClearValues(clearValues.data());
 
-    vkCmdBeginRenderPass(*kek.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(kek.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     return result;
 }
@@ -62,7 +67,7 @@ renderer::OperationContext Renderer::start(IRenderTarget& target)
 void Renderer::finish(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
-    vkCmdEndRenderPass(*specContext.commandBuffer);
+    vkCmdEndRenderPass(specContext.commandBuffer);
 
     context.operationTarget().present(context);
 }
@@ -75,9 +80,9 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
     target.accept(renderInfo);
 
     std::vector<VkAttachmentDescription> attachments;
-    std::optional<vk::AttachmentReference> colorAttachmentRef;
-    std::optional<vk::AttachmentReference> depthAttachmentRef;
-    std::optional<vk::AttachmentReference> colorAttachmentResolveRef;
+    std::optional<AttachmentReference> colorAttachmentRef;
+    std::optional<AttachmentReference> depthAttachmentRef;
+    std::optional<AttachmentReference> colorAttachmentResolveRef;
 
     attachments.emplace_back(
         //  color attachment
@@ -150,20 +155,22 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
             .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
 
+    const auto renderPassCreateInfo =
+        RenderPassCreateInfo()
+            .attachmentCount(attachments.size())
+            .pAttachments(attachments.data())
+            .subpassCount(1)
+            .pSubpasses(&subpass)
+            .dependencyCount(1)
+            .pDependencies(&dependency);
+
     m_renderPasses.emplace(&target,
-        handles::RenderPass{ device(),
-            handles::RenderPassCreateInfo()
-                .attachmentCount(attachments.size())
-                .pAttachments(attachments.data())
-                .subpassCount(1)
-                .pSubpasses(&subpass)
-                .dependencyCount(1)
-                .pDependencies(&dependency) });
+        RenderPassHelper::create(m_context.device(), &renderPassCreateInfo, nullptr));
 
     return *this;
 }
 
-const handles::Device& Renderer::device() const
+Device Renderer::device() const
 {
     return m_context.device();
 }
@@ -173,7 +180,7 @@ VkSampleCountFlagBits Renderer::sampleCount() const
     return m_multisampling;
 }
 
-handles::RenderPass& Renderer::renderPass(IRenderTarget& target)
+RenderPass Renderer::renderPass(IRenderTarget& target)
 {
     if (auto el = m_renderPasses.find(&target); el != m_renderPasses.end())
     {

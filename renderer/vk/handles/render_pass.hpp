@@ -1,10 +1,11 @@
 #pragma once
 
 #include "handle.hpp"
+#include "../utils.hpp"
 
-#include "vk/types.hpp"
+#include <crtp.hpp>
 
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(RenderPassCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -26,27 +27,16 @@ BEGIN_DECLARE_VKSTRUCT(RenderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_
     VKSTRUCT_PROPERTY(const VkClearValue*, pClearValues)
 END_DECLARE_VKSTRUCT()
 
-class Device;
+template <typename T>
+struct RenderPassFunctions : public CRTPBase<T>
+{};
 
-class RenderPass : public Handle<VkRenderPass>
-{
-    HANDLE(RenderPass);
+template <typename T>
+struct RenderPassGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    RenderPass(const RenderPass& other) = delete;
-    RenderPass(RenderPass&& other) noexcept;
-    RenderPass(const Device& device, RenderPassCreateInfo createInfo) noexcept;
-    virtual ~RenderPass();
+namespace handles {
+DECLARE_HANDLE_TYPE(RenderPass, RenderPassFunctions, RenderPassGroupFunctions);
+}
 
-    std::span<const AttachmentDescription> attachments();
-
-protected:
-    RenderPass(
-        const Device& device, RenderPassCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
-    std::vector<AttachmentDescription> m_attachments;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

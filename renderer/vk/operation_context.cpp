@@ -45,6 +45,11 @@ OperationContext::~OperationContext() {}
 
 IPipeline* OperationContext::pipeline()
 {
+    return specificPipeline()->toBase();
+}
+
+ISpecificPipeline* OperationContext::specificPipeline()
+{
     if (graphicsPipeline) return graphicsPipeline;
     if (computePipeline) return computePipeline;
 
@@ -100,12 +105,14 @@ void OperationContext::waitForOperation(OperationContext& other)
 
 void OperationContext::setScissors(Scissors scissors) const
 {
-    commandBuffer->setScissor(toVkScissors(scissors));
+    const auto s = toVkScissors(scissors);
+    vkCmdSetScissor(commandBuffer, 0, 1, &s);
 }
 
 void OperationContext::setViewport(Viewport viewport) const
 {
-    commandBuffer->setViewport(toVkViewport(viewport));
+    const auto v = toVkViewport(viewport);
+    vkCmdSetViewport(commandBuffer, 0, 1, &v);
 }
 
 }    //  namespace renderer::vk

@@ -1,10 +1,11 @@
 #pragma once
 
 #include "handle.hpp"
+#include "../utils.hpp"
 
-#include "vk/utils.hpp"
+#include <crtp.hpp>
 
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(PipelineLayoutCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -15,25 +16,16 @@ BEGIN_DECLARE_VKSTRUCT(PipelineLayoutCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYO
     VKSTRUCT_PROPERTY(const VkPushConstantRange*, pPushConstantRanges)
 END_DECLARE_VKSTRUCT()
 
-class Device;
+template <typename T>
+struct PipelineLayoutFunctions : public CRTPBase<T>
+{};
 
-class PipelineLayout : public Handle<VkPipelineLayout>
-{
-    HANDLE(PipelineLayout);
+template <typename T>
+struct PipelineLayoutGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    PipelineLayout(const PipelineLayout& other) = delete;
-    PipelineLayout(PipelineLayout&& other) noexcept;
-    PipelineLayout(const Device& device, PipelineLayoutCreateInfo createInfo) noexcept;
-    virtual ~PipelineLayout();
+namespace handles {
+DECLARE_HANDLE_TYPE(PipelineLayout, PipelineLayoutFunctions, PipelineLayoutGroupFunctions);
+}
 
-protected:
-    PipelineLayout(const Device& device,
-        PipelineLayoutCreateInfo createInfo,
-        VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk::handles

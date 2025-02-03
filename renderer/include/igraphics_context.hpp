@@ -2,15 +2,14 @@
 
 #include <icomputer.hpp>
 #include <icompute_pipeline.hpp>
+#include <iuniform_set_pool.hpp>
 #include <igraphics_pipeline.hpp>
 #include <imesh.hpp>
 #include <itexture.hpp>
 #include <irenderer.hpp>
 #include <iswapchain.hpp>
 #include <istorage_buffer.hpp>
-#include <ishader_interface_handle.hpp>
 #include <iuniform_buffer.hpp>
-#include <uniform_value.hpp>
 
 #include <iresources.hpp>
 
@@ -39,13 +38,6 @@ public:
     virtual void waitIdle() = 0;
 
     virtual ~IGraphicsContext() {}
-
-    template <typename T>
-    UniformValue<T> createUniformValue()
-    {
-        return createUniformBuffer(
-            IUniformBuffer::CreateInfo{ .isDynamic = true, .size = sizeof(T) });
-    }
 
     template <typename T>
     auto create()

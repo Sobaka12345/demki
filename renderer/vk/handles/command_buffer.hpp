@@ -1,14 +1,13 @@
 #pragma once
 
-#include "image.hpp"
-
+#include "handle.hpp"
 #include "../utils.hpp"
 
-#include <vulkan/vulkan.h>
+#include <crtp.hpp>
 
-#include <span>
+#include <functional>
 
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(CommandBufferAllocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
     VKSTRUCT_PROPERTY(VkStructureType, sType)
@@ -24,98 +23,61 @@ BEGIN_DECLARE_VKSTRUCT(CommandBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_
     VKSTRUCT_PROPERTY(const VkCommandBufferInheritanceInfo*, pInheritanceInfo)
 END_DECLARE_VKSTRUCT()
 
-class Device;
-class CommandPool;
-class DescriptorSet;
-class Pipeline;
-class PipelineLayout;
-
-class CommandBuffer : public Handle<VkCommandBuffer>
+template <typename T>
+struct CommandBufferFunctions : public CRTPBase<T>
 {
-    HANDLE(CommandBuffer);
-
-public:
-    struct Resources
+    struct OneTimeCommand
     {
-        std::vector<std::shared_ptr<DescriptorSet>> sets;
+        OneTimeCommand(VkDevice device, VkCommandPool pool, VkCommandBufferLevel level) noexcept
+            : device(device)
+            , pool(pool)
+            , level(level)
+        {
+            const auto allocateInfo =
+                CommandBufferAllocateInfo{}.commandPool(pool).level(level).commandBufferCount(1);
+            handle = T::create(device, &allocateInfo);
+            const auto beginInfo =
+                CommandBufferBeginInfo{}
+                    .flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
+                    .pInheritanceInfo(nullptr);
+
+            ASSERT(vkBeginCommandBuffer(handle, &beginInfo) == VK_SUCCESS);
+        }
+
+        operator typename T::Handle() const { return handle; }
+
+        inline static bool exec(VkDevice device,
+            VkCommandPool pool,
+            VkCommandBufferLevel level,
+            std::function<void(typename T::Handle)> writeCommands) noexcept
+        {
+            OneTimeCommand command{ device, pool, level };
+            writeCommands(command);
+        }
+
+        ~OneTimeCommand() noexcept
+        {
+            ASSERT(vkEndCommandBuffer(handle) == VK_SUCCESS);
+            T::destroy(device, pool, 1, &handle);
+        }
+
+        T::Handle handle;
+        VkDevice device;
+        VkCommandPool pool;
+        VkCommandBufferLevel level;
     };
-
-public:
-    CommandBuffer(const CommandBuffer& other) = delete;
-    CommandBuffer(CommandBuffer&& other) noexcept;
-    CommandBuffer(
-        const Device& device, const CommandPool& pool, VkCommandBufferLevel level) noexcept;
-    ~CommandBuffer();
-
-    VkResult begin(
-        CommandBufferBeginInfo beginInfo = CommandBufferBeginInfo{}.pInheritanceInfo(
-            nullptr)) const;
-    VkResult end() const;
-    VkResult reset(VkCommandBufferResetFlags flags = 0) const;
-    void free() const;
-
-    void draw(uint32_t vertexCount,
-        uint32_t instanceCount,
-        uint32_t firstVertex,
-        uint32_t firstInstance) const;
-    void drawIndexed(uint32_t indexCount,
-        uint32_t instanceCount,
-        uint32_t firstIndex,
-        uint32_t vertexOffset,
-        uint32_t firstInstance) const;
-    void bindVertexBuffer(uint32_t firstBinding,
-        uint32_t bindingCount,
-        const VkBuffer* pBuffers,
-        const VkDeviceSize* pOffsets) const;
-    void bindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const;
-    void bindPipeline(const Pipeline& pipeline,
-        VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) const;
-    void bindDescriptorSet(const PipelineLayout& layout,
-        uint32_t firstSet,
-        std::shared_ptr<DescriptorSet> set,
-        std::span<const uint32_t> dynamicOffsets,
-        VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) const;
-
-    void copyBuffer(VkBuffer src, VkBuffer dst, std::span<const VkBufferCopy> regions) const;
-    void copyBufferToImage(VkBuffer src,
-        VkImage dst,
-        VkImageLayout dstLayout,
-        std::span<const VkBufferImageCopy> regions) const;
-    void pipelineBarrier(VkPipelineStageFlags srcStageMask,
-        VkPipelineStageFlags dstStageMask,
-        VkDependencyFlags dependencyFlags,
-        std::span<const ImageMemoryBarrier> imageMemoryBarriers = {},
-        std::span<const VkMemoryBarrier> memoryBarriers = {},
-        std::span<const VkBufferMemoryBarrier> bufferMemoryBarriers = {}) const;
-    void blitImage(VkImage srcImage,
-        VkImageLayout srcImageLayout,
-        VkImage dstImage,
-        VkImageLayout dstImageLayout,
-        std::span<const ImageBlit> regions,
-        VkFilter filter) const;
-
-    void setViewports(
-        uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const;
-    void setViewport(VkViewport viewport) const;
-
-    void setScissors(uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const;
-    void setScissor(VkRect2D scissor) const;
-
-    void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const;
-
-    Resources& resourcesInUse() const;
-
-protected:
-    CommandBuffer(const Device& device,
-        const CommandPool& pool,
-        VkCommandBufferLevel level,
-        VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
-    const CommandPool& m_pool;
-
-    mutable Resources m_resourcesInUse;
 };
 
-}}    //  namespace renderer::vk::handles
+template <typename T>
+struct CommandBufferGroupFunctions : public CRTPBase<T>
+{};
+
+namespace handles {
+DECLARE_HANDLE_TYPE_FULL(CommandBuffer,
+    vkAllocateCommandBuffers,
+    vkFreeCommandBuffers,
+    CommandBufferFunctions,
+    CommandBufferGroupFunctions);
+}
+
+}    //  namespace renderer::vk

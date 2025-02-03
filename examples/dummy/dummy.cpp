@@ -1,10 +1,10 @@
 #include "dummy.hpp"
 
-#include <glm/ext/matrix_transform.hpp>
-
 #include <camera.hpp>
 #include <imesh.hpp>
 #include <renderable.hpp>
+
+#include <spirv_reflect.h>
 
 using namespace renderer;
 
@@ -27,20 +27,6 @@ Dummy::Dummy(int& argc, char** argv)
 {
     m_timer.setIntervalMS(50);
     m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
-
-    m_pipeline = context().createGraphicsPipeline(
-        IGraphicsPipeline::CreateInfo{}
-            .addInput<Vertex3DColoredTextured>()
-            .addShader(IPipeline::ShaderInfo{
-                .type = IPipeline::ShaderType::VERTEX,
-                .path = "./shaders/shader.vert.spv",
-            })
-            .addShader(IPipeline::ShaderInfo{
-                .type = IPipeline::ShaderType::FRAGMENT,
-                .path = "./shaders/shader.frag.spv",
-            })
-            .addShaderInterfaceContainer<Camera>()
-            .addShaderInterfaceContainer<Renderable>());
 
     m_camera = std::make_unique<Camera>(context());
 
@@ -75,29 +61,28 @@ void Dummy::update(int64_t dt)
 
 void Dummy::perform()
 {
-    auto context = m_renderer->start(window());
-    context.setViewport({
-        .x = 0,
-        .y = 0,
-        .width = static_cast<float>(window().width()),
-        .height = static_cast<float>(window().height()),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    });
+    // auto context = m_renderer->start(window());
+    // context.setViewport({
+    //     .x = 0,
+    //     .y = 0,
+    //     .width = static_cast<float>(window().width()),
+    //     .height = static_cast<float>(window().height()),
+    //     .minDepth = 0.0f,
+    //     .maxDepth = 1.0f,
+    // });
 
-    context.setScissors({
-        .x = 0,
-        .y = 0,
-        .width = window().width(),
-        .height = window().height(),
-    });
+    // context.setScissors({
+    //     .x = 0,
+    //     .y = 0,
+    //     .width = window().width(),
+    //     .height = window().height(),
+    // });
 
-    m_pipeline->bind(context);
+    // m_pipeline->bind(context);
 
-    m_camera->bind(context);
 
-    m_renderable->bind(context);
-    m_renderable->draw(context);
+    // m_renderable->bind(context);
+    // m_renderable->draw(context);
 
-    context.submit();
+    // context.submit();
 }

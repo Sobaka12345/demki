@@ -6,21 +6,12 @@
 
 #include <ishader_interface_container.hpp>
 
-#include <glm/mat4x4.hpp>
-
 namespace renderer {
 
 class IGraphicsContext;
 
 class Renderable
-    : public ShaderInterfaceContainer<IShaderInterfaceContainer,
-          ShaderInterfaceBindingMeta<glm::mat4,
-              ShaderBlockType::UNIFORM_DYNAMIC,
-              ShaderStage::VERTEX>,
-          ShaderInterfaceBindingMeta<std::nullptr_t,
-              ShaderBlockType::SAMPLER,
-              ShaderStage::FRAGMENT>>
-    , public IRenderable
+    : public IRenderable
 {
 public:
     Renderable(IGraphicsContext& context);
@@ -40,8 +31,6 @@ public:
     glm::mat4 position() const;
 
 private:
-    UniformValue<glm::mat4> m_position;
-
     std::weak_ptr<IMesh> m_mesh;
     std::weak_ptr<ITexture> m_texture;
 };

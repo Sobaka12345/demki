@@ -1,14 +1,11 @@
 #pragma once
 
-#include "utils.hpp"
-#include "descriptor_set.hpp"
+#include "handle.hpp"
+#include "../utils.hpp"
 
-#include <cstdint>
-#include <unordered_set>
-#include <span>
-#include <memory>
+#include <crtp.hpp>
 
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
 
 BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorPoolSize)
     VKSTRUCT_PROPERTY(VkDescriptorType, type)
@@ -20,40 +17,19 @@ BEGIN_DECLARE_VKSTRUCT(DescriptorPoolCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_PO
     VKSTRUCT_PROPERTY(VkDescriptorPoolCreateFlags, flags)
     VKSTRUCT_PROPERTY(uint32_t, maxSets)
     VKSTRUCT_PROPERTY(uint32_t, poolSizeCount)
-    VKSTRUCT_PROPERTY(const VkDescriptorPoolSize*, pPoolSizes)
+    VKSTRUCT_PROPERTY(const DescriptorPoolSize*, pPoolSizes)
 END_DECLARE_VKSTRUCT()
 
-class Device;
-class DescriptorPool;
-class DescriptorSetLayout;
-class PipelineLayout;
+template <typename T>
+struct DescriptorPoolFunctions : public CRTPBase<T>
+{};
 
-class DescriptorPool : public Handle<VkDescriptorPool>
-{
-    HANDLE(DescriptorPool);
+template <typename T>
+struct DescriptorPoolGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    DescriptorPool(const DescriptorPool& other) = delete;
-    DescriptorPool(DescriptorPool&& other) noexcept;
-    DescriptorPool(const Device& device, DescriptorPoolCreateInfo createInfo) noexcept;
-    ~DescriptorPool();
+namespace handles {
+DECLARE_HANDLE_TYPE(DescriptorPool, DescriptorPoolFunctions, DescriptorPoolGroupFunctions);
+}
 
-    std::shared_ptr<DescriptorSet> allocateSet(const DescriptorSetLayout& layout);
-    std::vector<std::shared_ptr<DescriptorSet>> allocateSets(
-        const HandleVector<DescriptorSetLayout>& layouts);
-
-    bool isFull() const;
-    bool isEmpty() const;
-
-protected:
-    DescriptorPool(const Device& device,
-        DescriptorPoolCreateInfo createInfo,
-        VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
-    const uint32_t m_maxSetCount;
-    uint32_t m_currentSetCount;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

@@ -13,7 +13,7 @@ class ComputePipeline
     , public IComputePipeline
 {
 public:
-    ComputePipeline(const GraphicsContext& context, CreateInfo createInfo);
+    ComputePipeline(const GraphicsContext& context, IComputePipeline::CreateInfo createInfo);
     ~ComputePipeline();
 
     virtual void bind(renderer::OperationContext& context) override;

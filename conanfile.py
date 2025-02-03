@@ -1,22 +1,26 @@
 import os
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain
+from conan.tools.env import VirtualRunEnv
 
 class DemkiConan(ConanFile):
 	settings = "os", "compiler", "build_type", "arch"
 	requires = ["qt/6.7.1",
 	            "glfw/3.3.8",
-		    "tinyobjloader/2.0.0-rc10",
-		    "vulkan-loader/1.3.268.0",
-		    "glad/0.1.36",
-		    "glm/0.9.9.8",
-		    "stb/cci.20220909",
-		    "pfr/2.1.0",
-		    "tclap/1.2.5"]
+				"tinyobjloader/2.0.0-rc10",
+				"bin2header/0.3.1",
+				# "vulkan-loader/1.3.296.0",
+				"spirv-reflect/1.3.239.0",
+				"glad/0.1.36",
+				"glm/0.9.9.8",
+				"stb/cci.20220909",
+				"pfr/2.1.0",
+				"tclap/1.2.5",
+				"spirv-cross/cci.20211113"]
 	generators = "CMakeDeps"
 
 	def requirements(self):
-		    self.requires("libxml2/2.11.4", override=True)
+		self.requires("libxml2/2.11.4", override=True)
 
 	def configure(self):
 		self.options["glad"].gl_profile = 'core'

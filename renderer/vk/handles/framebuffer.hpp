@@ -1,8 +1,11 @@
 #pragma once
 
-#include "device.hpp"
+#include "handle.hpp"
+#include "../utils.hpp"
 
-namespace renderer::vk { namespace handles {
+#include <crtp.hpp>
+
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(FramebufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -15,22 +18,21 @@ BEGIN_DECLARE_VKSTRUCT(FramebufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREA
     VKSTRUCT_PROPERTY(uint32_t, layers)
 END_DECLARE_VKSTRUCT()
 
-class Framebuffer : public Handle<VkFramebuffer>
+template <typename T>
+struct FramebufferFunctions : public CRTPBase<T>
 {
-    HANDLE(Framebuffer);
-
-public:
-    Framebuffer(const Framebuffer& other) = delete;
-    Framebuffer(Framebuffer&& other) noexcept;
-    Framebuffer(const Device& device, FramebufferCreateInfo createInfo) noexcept;
-    virtual ~Framebuffer();
-
-protected:
-    Framebuffer(
-        const Device& device, FramebufferCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
 };
 
-}}    //  namespace renderer::vk::handles
+template <typename T>
+struct FramebufferGroupFunctions : public CRTPBase<T>
+{};
+
+namespace handles {
+DECLARE_HANDLE_TYPE_FULL(Framebuffer,
+    vkCreateFramebuffer,
+    vkDestroyFramebuffer,
+    FramebufferFunctions,
+    FramebufferGroupFunctions);
+}
+
+}    //  namespace renderer::vk::handles

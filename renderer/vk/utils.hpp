@@ -2,6 +2,7 @@
 
 #include <assert.hpp>
 #include <types.hpp>
+#include <ishader_interface.hpp>
 
 #include <vulkan/vulkan.h>
 

@@ -1,38 +1,19 @@
 #include "compute_pipeline.hpp"
 
 #include "graphics_context.hpp"
-#include "renderer.hpp"
-#include "descriptor_set_provider.hpp"
-
-#include "handles/command_buffer.hpp"
-#include "handles/descriptor_pool.hpp"
-#include "handles/descriptor_set.hpp"
-#include "handles/descriptor_set_layout.hpp"
-#include "handles/pipeline_layout.hpp"
-#include "handles/render_pass.hpp"
-#include "handles/shader_module.hpp"
 
 #include <ishader_interface_container.hpp>
 
 namespace renderer::vk {
 
-void ComputePipeline::BindContext::bind(renderer::OperationContext& context)
-{
-    auto& specContext = get(context);
-    PipelineBindContext::bind(context);
-
-    specContext.commandBuffer->bindDescriptorSet(specContext.computePipeline->layout(), info.setId,
-        sets[currentSetIndex], dynamicOffsets, VK_PIPELINE_BIND_POINT_COMPUTE);
-}
 
 ComputePipelineCreateInfo ComputePipeline::defaultPipeline()
 {
     return ComputePipelineCreateInfo().layout(VK_NULL_HANDLE).flags(0).pNext(nullptr);
 }
 
-ComputePipeline::ComputePipeline(const GraphicsContext& context, CreateInfo createInfo)
-    : Pipeline(context, createInfo)
-    , m_shaders(std::move(createInfo.shaders()))
+ComputePipeline::ComputePipeline(GraphicsContext& context, CreateInfo createInfo)
+    : SpecificPipeline<IComputePipeline>(context)
     , m_computeDimensions(createInfo.computeDimensions())
 {}
 
@@ -43,43 +24,36 @@ IComputePipeline::ComputeDimensions ComputePipeline::computeDimensions() const
     return m_computeDimensions;
 }
 
-void ComputePipeline::bind(renderer::OperationContext& context)
+void ComputePipeline::bind(renderer::OperationContext &context)
 {
     auto& specContext = get(context);
-    specContext.commandBuffer->bindPipeline(pipeline(specContext), VK_PIPELINE_BIND_POINT_COMPUTE);
+    vkCmdBindPipeline(specContext.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline(specContext));
     specContext.computePipeline = this;
 }
 
-const handles::Pipeline& ComputePipeline::pipeline(const OperationContext& context)
+handles::ComputePipeline ComputePipeline::pipeline(const OperationContext& context)
 {
     if (auto el = m_pipelines.find(context.renderPass); el != m_pipelines.end())
     {
         return el->second;
     }
 
-    ASSERT(m_shaders.size() == 1, "only compute shader is accepted");
-    ASSERT(m_shaders.back().type == ShaderType::COMPUTE, "only compute shader is accepted");
+    return VK_NULL_HANDLE;
 
-    handles::ShaderModule shader{ m_context.device(), m_shaders.back().path };
+    // handles::ShaderModule shader{ m_context.device(), m_shaders.back().path };
 
-    auto shaderStageCreateInfo =
-        PipelineShaderStageCreateInfo{}
-            .stage(toShaderStageFlags(ShaderType::COMPUTE))
-            .module(shader)
-            .pName("main");
+    // auto shaderStageCreateInfo =
+    //     PipelineShaderStageCreateInfo{}
+    //         .stage(toShaderStageFlags(ShaderStage::COMPUTE))
+    //         .module(shader)
+    //         .pName("main");
 
 
-    auto [newEl, _] = m_pipelines.emplace(context.renderPass,
-        handles::ComputePipeline{ m_context.device(), VK_NULL_HANDLE,
-            defaultPipeline().layout(*m_pipelineLayout).stage(shaderStageCreateInfo) });
+    // auto [newEl, _] = m_pipelines.emplace(context.renderPass,
+    //     handles::ComputePipeline{ m_context.device(), VK_NULL_HANDLE,
+    //         defaultPipeline().layout(*m_pipelineLayout).stage(shaderStageCreateInfo) });
 
-    return newEl->second;
-}
-
-ComputePipeline::BindContext* ComputePipeline::newBindContext(
-    BindContext::CreateInfo createInfo) const
-{
-    return new BindContext(std::move(createInfo));
+    // return newEl->second;
 }
 
 }    //  namespace renderer::vk

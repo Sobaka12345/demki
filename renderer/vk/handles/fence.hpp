@@ -1,33 +1,27 @@
 #pragma once
 
 #include "handle.hpp"
+#include "../utils.hpp"
 
-#include "vk/utils.hpp"
+#include <crtp.hpp>
 
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(FenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
     VKSTRUCT_PROPERTY(VkFenceCreateFlags, flags)
 END_DECLARE_VKSTRUCT()
 
-class Device;
+template <typename T>
+struct FenceFunctions : public CRTPBase<T>
+{};
 
-class Fence : public Handle<VkFence>
-{
-    HANDLE(Fence);
+template <typename T>
+struct FenceGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    Fence(const Fence& other) = delete;
-    Fence(Fence&& other) noexcept;
-    Fence(const Device& device, FenceCreateInfo createInfo = FenceCreateInfo{}) noexcept;
-    virtual ~Fence();
+namespace handles {
+DECLARE_HANDLE_TYPE(Fence, FenceFunctions, FenceGroupFunctions);
+}
 
-protected:
-    Fence(const Device& device, FenceCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

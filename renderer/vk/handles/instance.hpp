@@ -1,10 +1,11 @@
 #pragma once
 
 #include "handle.hpp"
-
 #include "../utils.hpp"
 
-namespace renderer::vk { namespace handles {
+#include <crtp.hpp>
+
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(ApplicationInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -18,25 +19,23 @@ END_DECLARE_VKSTRUCT();
 BEGIN_DECLARE_VKSTRUCT(InstanceCreateInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
     VKSTRUCT_PROPERTY(VkInstanceCreateFlags, flags)
-    VKSTRUCT_PROPERTY(const VkApplicationInfo*, pApplicationInfo)
+    VKSTRUCT_PROPERTY(const ApplicationInfo*, pApplicationInfo)
     VKSTRUCT_PROPERTY(uint32_t, enabledLayerCount)
     VKSTRUCT_PROPERTY(const char* const*, ppEnabledLayerNames)
     VKSTRUCT_PROPERTY(uint32_t, enabledExtensionCount)
     VKSTRUCT_PROPERTY(const char* const*, ppEnabledExtensionNames)
 END_DECLARE_VKSTRUCT();
 
-class Instance : public Handle<VkInstance>
-{
-    HANDLE(Instance);
+template <typename T>
+struct InstanceFunctions : public CRTPBase<T>
+{};
 
-public:
-    Instance(const Instance& other) = delete;
-    Instance(Instance&& other) = delete;
-    Instance(InstanceCreateInfo createInfo) noexcept;
-    virtual ~Instance();
+template <typename T>
+struct InstanceGroupFunctions : public CRTPBase<T>
+{};
 
-protected:
-    Instance() noexcept;
-};
+namespace handles {
+DECLARE_HANDLE_TYPE(Instance, InstanceFunctions, InstanceGroupFunctions);
+}
 
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

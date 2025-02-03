@@ -15,7 +15,7 @@ public:
     virtual VkSurfaceKHR surfaceKHR() const = 0;
 
 protected:
-    vk::GraphicsContext* createContext(vk::handles::ApplicationInfo appInfo)
+    vk::GraphicsContext* createContext(vk::ApplicationInfo appInfo)
     {
         return new vk::GraphicsContext(appInfo);
     }

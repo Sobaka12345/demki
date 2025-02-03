@@ -1,12 +1,11 @@
 #pragma once
 
 #include "handle.hpp"
+#include "../utils.hpp"
 
-#include "vk/utils.hpp"
+#include <crtp.hpp>
 
-#include <unordered_map>
-
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(DescriptorSetLayoutCreateInfo,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO)
@@ -24,27 +23,20 @@ BEGIN_DECLARE_UNTYPED_VKSTRUCT(DescriptorSetLayoutBinding)
     VKSTRUCT_PROPERTY(const VkSampler*, pImmutableSamplers)
 END_DECLARE_VKSTRUCT()
 
-class Device;
+template <typename T>
+struct DescriptorSetLayoutFunctions : public CRTPBase<T>
+{};
 
-class DescriptorSetLayout : public Handle<VkDescriptorSetLayout>
-{
-    HANDLE(DescriptorSetLayout);
+template <typename T>
+struct DescriptorSetLayoutGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    DescriptorSetLayout(const DescriptorSetLayout& other) = delete;
-    DescriptorSetLayout(DescriptorSetLayout&& other) noexcept;
-    DescriptorSetLayout(const Device& device, DescriptorSetLayoutCreateInfo info) noexcept;
-    virtual ~DescriptorSetLayout();
+namespace handles {
+DECLARE_HANDLE_TYPE_FULL(DescriptorSetLayout,
+    vkCreateDescriptorSetLayout,
+    vkDestroyDescriptorSetLayout,
+    DescriptorSetLayoutFunctions,
+    DescriptorSetLayoutGroupFunctions);
+}
 
-    const handles::DescriptorSetLayoutBinding& binding(int32_t bindingId) const;
-
-protected:
-    DescriptorSetLayout(
-        const Device& device, DescriptorSetLayoutCreateInfo info, VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
-    std::unordered_map<int32_t, handles::DescriptorSetLayoutBinding> m_bindings;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

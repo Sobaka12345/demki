@@ -1,9 +1,10 @@
 #pragma once
 
-#include <memory>
 #include "handle.hpp"
+#include "command_buffer.hpp"
+#include "../utils.hpp"
 
-#include "simemory_accessor.hpp"
+#include <crtp.hpp>
 
 namespace renderer::vk {
 
@@ -41,8 +42,6 @@ BEGIN_DECLARE_UNTYPED_VKSTRUCT(ImageBlit)
     VKSTRUCT_PROPERTY(std::span<const VkOffset3D COMMA 2>, dstOffsets)
 END_DECLARE_VKSTRUCT()
 
-namespace handles {
-
 BEGIN_DECLARE_VKSTRUCT(ImageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
     VKSTRUCT_PROPERTY(VkImageCreateFlags, flags)
@@ -58,42 +57,87 @@ BEGIN_DECLARE_VKSTRUCT(ImageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)
     VKSTRUCT_PROPERTY(uint32_t, queueFamilyIndexCount)
     VKSTRUCT_PROPERTY(const uint32_t*, pQueueFamilyIndices)
     VKSTRUCT_PROPERTY(VkImageLayout, initialLayout)
-END_DECLARE_VKSTRUCT()
+END_DECLARE_VKSTRUCT();
 
-class Swapchain;
-
-class Image
-    : public SIMemoryAccessor<Image>
-    , public Handle<VkImage>
+template <typename T>
+struct ImageFunctions : public CRTPBase<T>
 {
-    HANDLE(Image);
+    static inline auto swapChainImages(VkDevice device, VkSwapchainKHR swapchain) noexcept
+    {
+        typename T::Container::template Vector<> result;
+        uint32_t imageCount;
 
-public:
-    static HandleVector<Image> swapChainImages(const Device& device, const Swapchain& swapchain);
+        vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+        result.resize(imageCount);
+        vkGetSwapchainImagesKHR(device, swapchain, &imageCount, result.data());
 
-public:
-    Image(const Image& other) = delete;
-    Image(Image&& other) noexcept;
-    Image(const Device& device, ImageCreateInfo imageInfo) noexcept;
-    virtual ~Image();
+        return result;
+    }
 
-    bool bindMemory(uint32_t bindingOffset);
+    //  Rework
+    static inline void transitionLayout(VkDevice device,
+        VkCommandPool pool,
+        VkImage image,
+        VkImageLayout oldLayout,
+        VkImageLayout newLayout,
+        ImageSubresourceRange subresourceRange) noexcept
+    {
+        auto barrier =
+            ImageMemoryBarrier{}
+                .oldLayout(oldLayout)
+                .newLayout(newLayout)
+                .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .image(image)
+                .subresourceRange(subresourceRange);
 
-    std::weak_ptr<Memory> allocateMemory(VkMemoryPropertyFlags properties)
-	{
-        return allocateMemoryImpl(properties);
-	}
+        VkPipelineStageFlags sourceStage;
+        VkPipelineStageFlags destinationStage;
 
-    void transitionLayout(
-        VkImageLayout oldLayout, VkImageLayout newLayout, ImageSubresourceRange subresourceRange);
+        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+            newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        {
+            barrier.srcAccessMask(0);
+            barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
 
-protected:
-    Image(const Device& device, VkHandleType* handlePtr) noexcept;
-    Image(const Device& device, ImageCreateInfo imageInfo, VkHandleType* handlePtr) noexcept;
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+            newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
 
-private:
-    std::weak_ptr<Memory> allocateMemoryImpl(VkMemoryPropertyFlags properties);
+            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else
+        {
+            throw std::invalid_argument("unsupported layout transition!");
+        }
+
+        handles::CommandBufferHelper::OneTimeCommand::exec(device, pool,
+            VK_COMMAND_BUFFER_LEVEL_PRIMARY, [&](auto buffer) {
+                vkCmdPipelineBarrier(buffer, sourceStage, destinationStage, 0, 0, nullptr, 0,
+                    nullptr, 1, &barrier);
+            });
+
+        //  const auto submitInfo =
+        //      SubmitInfo{}.pCommandBuffers(&oneTimeCommand.handle).commandBufferCount(1);
+
+        //  m_queue.submit(1, &submitInfo, VK_NULL_HANDLE);
+        //  m_queue.waitIdle();
+        //  vkQueueWaitIdle(queue)
+    }
 };
 
-}    //  namespace handles
+template <typename T>
+struct ImageGroupFunctions : public CRTPBase<T>
+{};
+
+namespace handles {
+DECLARE_HANDLE_TYPE(Image, ImageFunctions, ImageGroupFunctions);
+}
+
 }    //  namespace renderer::vk

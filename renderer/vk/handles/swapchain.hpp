@@ -1,9 +1,11 @@
 #pragma once
 
-#include "utils.hpp"
-#include "image.hpp"
+#include "handle.hpp"
+#include "../utils.hpp"
 
-namespace renderer::vk { namespace handles {
+#include <crtp.hpp>
+
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(SwapchainCreateInfoKHR, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -25,34 +27,16 @@ BEGIN_DECLARE_VKSTRUCT(SwapchainCreateInfoKHR, VK_STRUCTURE_TYPE_SWAPCHAIN_CREAT
     VKSTRUCT_PROPERTY(VkSwapchainKHR, oldSwapchain)
 END_DECLARE_VKSTRUCT()
 
-class Device;
+template <typename T>
+struct SwapchainKHRFunctions : public CRTPBase<T>
+{};
 
-class Swapchain : public Handle<VkSwapchainKHR>
-{
-    HANDLE(Swapchain);
+template <typename T>
+struct SwapchainKHRGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    Swapchain(const Swapchain& other) = delete;
-    Swapchain(Swapchain&& other) noexcept;
-    Swapchain(const Device& device, SwapchainCreateInfoKHR createInfo) noexcept;
-    virtual ~Swapchain();
+namespace handles {
+DECLARE_HANDLE_TYPE(SwapchainKHR, SwapchainKHRFunctions, SwapchainKHRGroupFunctions);
+}
 
-    HandleVector<Image> images() const;
-
-    VkExtent2D extent() const { return m_extent; }
-
-    VkFormat imageFormat() const { return m_imageFormat; }
-
-    const Device& device() const { return m_device; }
-
-protected:
-    Swapchain(
-        const Device& device, SwapchainCreateInfoKHR createInfo, VkHandleType* handlePtr) noexcept;
-
-public:
-    const Device& m_device;
-    VkExtent2D m_extent;
-    VkFormat m_imageFormat;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk::handles

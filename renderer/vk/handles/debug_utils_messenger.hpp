@@ -4,7 +4,9 @@
 
 #include "../utils.hpp"
 
-namespace renderer::vk { namespace handles {
+#include <crtp.hpp>
+
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(DebugUtilsMessengerCreateInfoEXT,
     VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT)
@@ -16,34 +18,50 @@ BEGIN_DECLARE_VKSTRUCT(DebugUtilsMessengerCreateInfoEXT,
     VKSTRUCT_PROPERTY(void*, pUserData)
 END_DECLARE_VKSTRUCT();
 
-class Instance;
-
-class DebugUtilsMessenger : public Handle<VkDebugUtilsMessengerEXT>
+inline VkResult createMessenger(VkInstance app,
+    const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
-    HANDLE(DebugUtilsMessenger);
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(app,
+        "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr)
+    {
+        return func(app, pCreateInfo, pAllocator, pDebugMessenger);
+    }
+    else
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
 
-public:
-	DebugUtilsMessenger(const DebugUtilsMessenger& other) = delete;
-    DebugUtilsMessenger(DebugUtilsMessenger&& other) noexcept;
-    DebugUtilsMessenger(const Instance& app, DebugUtilsMessengerCreateInfoEXT createInfo) noexcept;
-	~DebugUtilsMessenger();
+inline void destroyMessenger(VkInstance app,
+    VkDebugUtilsMessengerEXT debugMessenger,
+    const VkAllocationCallbacks* pAllocator)
+{
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(app,
+        "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr)
+    {
+        func(app, debugMessenger, pAllocator);
+    }
+}
 
-protected:
-    DebugUtilsMessenger(const Instance& app,
-        DebugUtilsMessengerCreateInfoEXT createInfo,
-        VkHandleType* handlePtr) noexcept;
-
-private:
-    static VkResult createMessenger(const Instance& app,
-        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-        const VkAllocationCallbacks* pAllocator,
-        VkDebugUtilsMessengerEXT* pDebugMessenger);
-    static void destroyMessenger(const Instance& app,
-        VkDebugUtilsMessengerEXT debugMessenger,
-		const VkAllocationCallbacks* pAllocator);
-
-private:
-    const Instance& m_app;
+template <typename T>
+struct DebugUtilsMessengerEXTFunctions : public CRTPBase<T>
+{
 };
 
-}}    //  namespace renderer::vk::handles
+template <typename T>
+struct DebugUtilsMessengerEXTGroupFunctions : public CRTPBase<T>
+{};
+
+namespace handles {
+DECLARE_HANDLE_TYPE_FULL(DebugUtilsMessengerEXT,
+    createMessenger,
+    destroyMessenger,
+    DebugUtilsMessengerEXTFunctions,
+    DebugUtilsMessengerEXTGroupFunctions);
+}
+
+}    //  namespace renderer::vk::handles

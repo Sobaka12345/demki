@@ -18,8 +18,6 @@ public:
     virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const override;
 
 private:
-    std::shared_ptr<ShaderInterfaceHandle> m_handle;
-
     GraphicsContext& m_context;
     GLuint m_texture;
 };

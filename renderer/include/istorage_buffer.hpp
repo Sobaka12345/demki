@@ -1,9 +1,10 @@
 #pragma once
 
 #include "../utils.hpp"
-#include "ishader_resource.hpp"
 
-#include <icompute_target.hpp>
+#include "ibuffer.hpp"
+#include "icompute_target.hpp"
+#include "ishader_resource.hpp"
 
 #include <span>
 
@@ -14,23 +15,21 @@ namespace renderer {
 class IShaderInterfaceHandle;
 
 class IStorageBuffer
-    : virtual public IComputeTarget
+    : public IComputeTarget
+    , public IBuffer
     , public IShaderResource
 {
 public:
-    struct CreateInfo
+    struct CreateInfo : public IBuffer::CreateInfo
     {
         template <typename T>
         CreateInfo(std::span<const T> data, bool normalized = false)
             : normalized(normalized)
-            , initialData(data.data())
-            , initialDataSize(data.size())
             , dataTypeMetaInfo(StructMetaInfo::fromType<T>())
         {}
 
         bool normalized;
         const void* initialData;
-        size_t initialDataSize;
         StructMetaInfo dataTypeMetaInfo;
     };
 

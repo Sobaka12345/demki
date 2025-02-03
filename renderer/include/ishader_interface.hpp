@@ -1,52 +1,58 @@
 #pragma once
 
+#include <cstdint>
 #include <type_list.hpp>
 
-#include <array>
-#include <cstddef>
+#include <span>
 
 namespace renderer {
 
-enum class ShaderBlockType : int16_t
+enum class ShaderBlockType : uint16_t
 {
-    INVALID = -1,
-    UNIFORM_STATIC = 0,
+    BEGIN = 0,
+    UNIFORM_STATIC = BEGIN,
     UNIFORM_DYNAMIC,
     SAMPLER,
-    STORAGE
+    STORAGE,
+    COUNT,
+    INVALID
 };
 
-enum class ShaderStage : int16_t
+enum class ShaderStage : uint16_t
 {
-    INVALID = -1,
+    BEGIN = 0,
+    COMPUTE,
+    TASK,
     VERTEX,
+    MESH,
+    GEOMETRY,
     FRAGMENT,
-    COMPUTE
+    COUNT,
+    INVALID
 };
 
 struct ShaderInterfaceBinding
 {
     int16_t count = 1;
+    int16_t size = 1;
     ShaderBlockType type = ShaderBlockType::INVALID;
     ShaderStage stage = ShaderStage::INVALID;
 };
 
-template <size_t BindingCount = 1>
-using ShaderInterfaceLayout = std::array<ShaderInterfaceBinding, BindingCount>;
-
 template <typename BindingTypeT,
     ShaderBlockType blockTypeArg,
     ShaderStage stageArg,
-    int16_t countArg = 1>
+    uint16_t countArg = 1>
 struct ShaderInterfaceBindingMeta
 {
     using BindingType = BindingTypeT;
 
-    enum : int16_t
+    enum : uint16_t
     {
-        type = static_cast<int16_t>(blockTypeArg),
-        stage = static_cast<int16_t>(stageArg),
-        count = static_cast<int16_t>(countArg)
+        type = static_cast<uint16_t>(blockTypeArg),
+        stage = static_cast<uint16_t>(stageArg),
+        count = static_cast<uint16_t>(countArg),
+        size = static_cast<uint16_t>(sizeof(BindingType))
     };
 };
 

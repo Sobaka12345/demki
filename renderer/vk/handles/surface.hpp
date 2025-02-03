@@ -1,28 +1,19 @@
 #pragma once
 
 #include "handle.hpp"
+#include "../utils.hpp"
 
-class GLFWwindow;
+#include <crtp.hpp>
 
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
+template <typename T>
+struct SurfaceFunctions : public CRTPBase<T>
+{};
 
-class Instance;
+template <typename T>
+struct SurfaceGroupFunctions : public CRTPBase<T>
+{};
 
-class Surface : public Handle<VkSurfaceKHR>
-{
-    HANDLE(Surface);
-
-public:
-    Surface(const Surface& other) = delete;
-    Surface(Surface&& other) noexcept;
-    Surface(const Instance& instance, GLFWwindow* window) noexcept;
-    virtual ~Surface();
-
-protected:
-    Surface(const Instance& instance, GLFWwindow* window, VkHandleType* handlePtr) noexcept;
-
-private:
-    const Instance& m_instance;
-};
-
-}}    //  namespace renderer::vk::handles
+//  to do
+//  DECLARE_HANDLE_TYPE(Surface, stub, SurfaceGroupFunctions);
+}    //  namespace renderer::vk

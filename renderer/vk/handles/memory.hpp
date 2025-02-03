@@ -1,16 +1,11 @@
 #pragma once
 
 #include "handle.hpp"
-
 #include "../utils.hpp"
 
-#include "buffer.hpp"
-#include "image.hpp"
+#include <crtp.hpp>
 
-#include <memory>
-#include <variant>
-
-namespace renderer::vk { namespace handles {
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(MappedMemoryRange, VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -25,75 +20,57 @@ BEGIN_DECLARE_VKSTRUCT(MemoryAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INF
     VKSTRUCT_PROPERTY(uint32_t, memoryTypeIndex)
 END_DECLARE_VKSTRUCT()
 
-class Buffer;
-class Image;
-class Device;
-
-struct Memory : public Handle<VkDeviceMemory>
+template <typename T>
+struct MemoryFunctions : public CRTPBase<T>
 {
-    HANDLE(Memory);
-
-public:
-    struct Mapped
+    static inline uint32_t findMemoryType(
+        VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
     {
-        Mapped(const Memory& memory);
-        virtual ~Mapped();
-        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const = 0;
-        virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) = 0;
-        virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) = 0;
-        void writeAndSync(const void* src, VkDeviceSize size, ptrdiff_t offset = 0);
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
-        const Memory& memory;
-    };
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+        {
+            if ((typeFilter & (1 << i)) &&
+                (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+            {
+                return i;
+            }
+        }
 
-    struct DeviceLocalMapped : public Mapped
-    {
-        DeviceLocalMapped(const Memory& memory, VkDeviceSize offset = 0);
-        ~DeviceLocalMapped();
-        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const override;
-        virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) override;
-        virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) override;
+        ASSERT(false, "failed to find suitable memory type!");
+        return 666;
+    }
 
-        std::unique_ptr<Buffer> stagingBuffer;
-        VkDeviceSize offset;
-    };
+    //  void Memory::HostVisibleMapped::sync(VkDeviceSize size, ptrdiff_t offset)
+    //  {
+    //      const auto atomSize =
+    //      memory.device.physicalDeviceProperties().limits.nonCoherentAtomSize;
 
-    struct HostVisibleMapped : public Mapped
-    {
-        HostVisibleMapped(
-            const Memory& memory, VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
-        ~HostVisibleMapped();
-        virtual const void* read(VkDeviceSize size, ptrdiff_t offset = 0) const override;
-        virtual void write(const void* src, VkDeviceSize size, ptrdiff_t offset = 0) override;
-        virtual void sync(VkDeviceSize size, ptrdiff_t offset = 0) override;
+    //    if (auto rem = offset % atomSize; rem != 0) offset = offset - rem;
 
-        void* data;
-    };
+    //    //  TO DO: reorganize memory flushing
+    //    if (size < atomSize) size = atomSize;
+    //    else if (auto rem = size % atomSize; size > atomSize && size < memory.size && rem != 0)
+    //    {
+    //        size = size - rem + atomSize;
+    //    }
 
-public:
-    Memory(const Device& buffer, MemoryAllocateInfo allocInfo) noexcept;
-    Memory(Memory&& other) noexcept;
-    virtual ~Memory();
+    //    if (size + offset > memory.size) size = memory.size - offset;
 
-    bool bindImage(const Image& image, uint32_t offset = 0);
-    bool bindBuffer(const Buffer& buffer, uint32_t offset = 0);
+    //    const auto range = MappedMemoryRange{}.memory(memory).offset(offset).size(size);
 
-    const Buffer& buffer() const;
-    const Image& image() const;
-
-    std::weak_ptr<Mapped> map(VkMemoryMapFlags flags = 0, VkDeviceSize offset = 0);
-    void unmap();
-
-    const Device& device;
-    VkDeviceSize size;
-    std::shared_ptr<Mapped> mapped;
-    VkMemoryType memoryType;
-
-protected:
-    Memory(const Device& device, MemoryAllocateInfo allocInfo, VkHandleType* handlePtr) noexcept;
-
-private:
-    std::variant<const Buffer*, const Image*> bindedResource;
+    //    vkFlushMappedMemoryRanges(memory.device, 1, &range);
+    //  }
 };
 
-}}    //  namespace renderer::vk::handles
+template <typename T>
+struct MemoryGroupFunctions : public CRTPBase<T>
+{};
+
+namespace handles {
+DECLARE_HANDLE_TYPE_FULL(
+    DeviceMemory, vkAllocateMemory, vkFreeMemory, MemoryFunctions, MemoryGroupFunctions);
+}
+
+}    //  namespace renderer::vk

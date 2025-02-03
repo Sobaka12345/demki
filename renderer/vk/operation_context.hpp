@@ -1,11 +1,11 @@
 #pragma once
 
+#include "handles/command_buffer.hpp"
+#include "handles/framebuffer.hpp"
+#include "handles/render_pass.hpp"
 #include "handles/semaphore.hpp"
 
 #include <types.hpp>
-
-#include <unordered_map>
-#include <vector>
 
 namespace renderer {
 
@@ -19,20 +19,11 @@ namespace vk {
 class ISpecificOperationTarget;
 class Computer;
 class Renderer;
+class ISpecificPipeline;
 
 class PipelineBindContext;
 class ComputePipeline;
 class GraphicsPipeline;
-
-namespace handles {
-
-class CommandBuffer;
-class Framebuffer;
-class PipelineLayout;
-class RenderPass;
-class Semaphore;
-
-}
 
 struct OperationContext
 {
@@ -44,16 +35,19 @@ struct OperationContext
     ~OperationContext();
 
     IPipeline* pipeline();
+    ISpecificPipeline* specificPipeline();
     IOperationTarget* operationTarget();
 
-    void submit(renderer::OperationContext& context);
+    void submit(::renderer::OperationContext& context);
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;
     void setViewport(Viewport viewport) const;
 
-    std::vector<VkSemaphore> waitSemaphores;
-    handles::Framebuffer* framebuffer = nullptr;
-    handles::CommandBuffer* commandBuffer = nullptr;
+    handles::SemaphoreContainer::Vector<> waitSemaphores;
+    handles::Framebuffer framebuffer = VK_NULL_HANDLE;
+    handles::CommandBuffer commandBuffer = VK_NULL_HANDLE;
+    handles::RenderPass renderPass = VK_NULL_HANDLE;
+
     ISpecificOperationTarget* specificTarget = nullptr;
     IOperationTarget* mainTarget = nullptr;
 
@@ -62,7 +56,6 @@ struct OperationContext
     PipelineBindContext* pipelineBindContext = nullptr;
     Renderer* renderer = nullptr;
     Computer* computer = nullptr;
-    handles::RenderPass* renderPass = nullptr;
 };
 
 }    //  namespace vk

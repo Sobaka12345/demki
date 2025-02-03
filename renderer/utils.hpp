@@ -22,26 +22,6 @@
 #	include <unistd.h>    //readlink
 #endif
 
-#define CREATE_INFO_PROPERTY(type, name, def) \
-                                              \
-public:                                       \
-    CreateInfo& name(type value)              \
-    {                                         \
-        m_##name = value;                     \
-        return *this;                         \
-    }                                         \
-    const auto& name() const                  \
-    {                                         \
-        return m_##name;                      \
-    }                                         \
-    auto& name()                              \
-    {                                         \
-        return m_##name;                      \
-    }                                         \
-                                              \
-private:                                      \
-    type m_##name = def;
-
 namespace std {
 template <typename T, typename = void>
 struct is_iterable : std::false_type
@@ -317,6 +297,11 @@ class SpecificBase
     : public IBase
     , public Specifics...
 {
+public:
+    using IBase::IBase;
+    using Specifics::Specifics...;
+
+protected:
     virtual IBase* toBase() final override { return this; }
 };
 

@@ -57,8 +57,8 @@ void OperationContext::setViewport(Viewport viewport) const
 
 IPipeline* OperationContext::pipeline()
 {
-    if (graphicsPipeline) return graphicsPipeline;
-    if (computePipeline) return computePipeline;
+    // if (graphicsPipeline) return graphicsPipeline;
+    // if (computePipeline) return computePipeline;
 
     return nullptr;
 }

@@ -1,35 +1,27 @@
 #pragma once
 
 #include "handle.hpp"
-
 #include "../utils.hpp"
 
-namespace renderer::vk { namespace handles {
+#include <crtp.hpp>
+
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(SemaphoreCreateInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
     VKSTRUCT_PROPERTY(VkSemaphoreCreateFlags, flags)
 END_DECLARE_VKSTRUCT()
 
-class Device;
+template <typename T>
+struct SemaphoreFunctions : public CRTPBase<T>
+{};
 
-class Semaphore : public Handle<VkSemaphore>
-{
-    HANDLE(Semaphore);
+template <typename T>
+struct SemaphoreGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    Semaphore(const Semaphore& other) = delete;
-    Semaphore(Semaphore&& other) noexcept;
-    Semaphore(const Device& device,
-        SemaphoreCreateInfo createInfo = SemaphoreCreateInfo{}) noexcept;
-    virtual ~Semaphore();
+namespace handles {
+DECLARE_HANDLE_TYPE(Semaphore, SemaphoreFunctions, SemaphoreGroupFunctions);
+}
 
-protected:
-    Semaphore(
-        const Device& device, SemaphoreCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

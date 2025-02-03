@@ -1,15 +1,14 @@
 #pragma once
 
-
-#include "../utils.hpp"
 #include "../vertex.hpp"
 
+#include "icontext_object.hpp"
 #include "ishader_interface.hpp"
+
+#include <spirv_reflect.h>
 
 #include <filesystem>
 #include <variant>
-#include <vector>
-#include <span>
 
 namespace renderer {
 
@@ -17,87 +16,47 @@ class OperationContext;
 class IShaderInterfaceContainer;
 class IShaderInterfaceHandle;
 
-struct IPipelineBindContext
-{
-    virtual void bind(OperationContext& context) = 0;
-
-    virtual ~IPipelineBindContext() {}
-};
-
-class IPipeline
+class IPipeline : public IContextObject
 {
 public:
     typedef std::variant<Vertex3DColoredTextured, Vertex3DColored, Vertex3D> InputType;
-    typedef ShaderStage ShaderType;
 
-    enum Type
+    enum class Type
     {
-        GRAPHICS,
-        COMPUTE
+        GRAPHICS = 0,
+        COMPUTE,
+        COUNT,
+        INVALID
     };
 
-    enum InputBindingID
-    {
-        IB_ID_VERTICES = 0,
-    };
+    struct ShaderInfo {
 
-    struct InputBinding
-    {
-        InputBindingID id;
-    };
-
-    struct ShaderInfo
-    {
-        ShaderType type;
-        std::filesystem::path path;
     };
 
 protected:
-    struct InterfaceContainerInfo
-    {
-        uint32_t id = 0;
-        uint32_t batchSize = 1;
-        std::span<const ShaderInterfaceBinding> layout;
-    };
-
     template <typename Derived>
     class CreateInfo
     {
+
     public:
-        template <typename T>
-        Derived& addShaderInterfaceContainer(uint32_t batchSize = 1)
+        inline Derived& addStage(ShaderStage stage, std::filesystem::path path)
         {
-            m_interfaceContainers.push_back({ T::sId(), batchSize, T::s_layout });
+            auto& shaderInfo = m_shaders[enumT(stage)];
+
+
             return that();
         }
-
-        const auto& interfaceContainers() const { return m_interfaceContainers; }
-
-        auto& interfaceContainers() { return m_interfaceContainers; }
-
-        Derived& addShader(ShaderInfo shaderInfo)
-        {
-            m_shaders.push_back(shaderInfo);
-            return that();
-        }
-
-        const auto& shaders() const { return m_shaders; }
-
-        auto& shaders() { return m_shaders; }
 
     private:
         Derived& that() { return *static_cast<Derived*>(this); }
 
     private:
-        std::vector<ShaderInfo> m_shaders;
-        std::vector<InterfaceContainerInfo> m_interfaceContainers;
+        std::array<ShaderInfo, enumT(ShaderStage::COUNT)> m_shaders;
     };
 
 
 public:
     virtual void bind(OperationContext& context) = 0;
-    virtual std::shared_ptr<IPipelineBindContext> bindContext(
-        IShaderInterfaceContainer& container) = 0;
 
     virtual ~IPipeline() {}
 };

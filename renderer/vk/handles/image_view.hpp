@@ -1,18 +1,12 @@
 #pragma once
 
 #include "handle.hpp"
+#include "image.hpp"
+#include "../utils.hpp"
 
-#include "vk/utils.hpp"
+#include <crtp.hpp>
 
-namespace renderer::vk { namespace handles {
-
-BEGIN_DECLARE_UNTYPED_VKSTRUCT(ImageSubresourceRange)
-    VKSTRUCT_PROPERTY(VkImageAspectFlags, aspectMask)
-    VKSTRUCT_PROPERTY(uint32_t, baseMipLevel)
-    VKSTRUCT_PROPERTY(uint32_t, levelCount)
-    VKSTRUCT_PROPERTY(uint32_t, baseArrayLayer)
-    VKSTRUCT_PROPERTY(uint32_t, layerCount)
-END_DECLARE_VKSTRUCT()
+namespace renderer::vk {
 
 BEGIN_DECLARE_VKSTRUCT(ImageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO)
     VKSTRUCT_PROPERTY(const void*, pNext)
@@ -24,24 +18,16 @@ BEGIN_DECLARE_VKSTRUCT(ImageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_
     VKSTRUCT_PROPERTY(ImageSubresourceRange, subresourceRange)
 END_DECLARE_VKSTRUCT()
 
-class Device;
+template <typename T>
+struct ImageViewFunctions : public CRTPBase<T>
+{};
 
-class ImageView : public Handle<VkImageView>
-{
-    HANDLE(ImageView);
+template <typename T>
+struct ImageViewGroupFunctions : public CRTPBase<T>
+{};
 
-public:
-    ImageView(const ImageView& other) = delete;
-    ImageView(ImageView&& other) noexcept;
-    ImageView(const Device& device, ImageViewCreateInfo createInfo) noexcept;
-    virtual ~ImageView();
+namespace handles {
+DECLARE_HANDLE_TYPE(ImageView, ImageViewFunctions, ImageViewGroupFunctions);
+}
 
-protected:
-    ImageView(
-        const Device& device, ImageViewCreateInfo createInfo, VkHandleType* handlePtr) noexcept;
-
-private:
-    const Device& m_device;
-};
-
-}}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

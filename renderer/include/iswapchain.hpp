@@ -1,13 +1,14 @@
 #pragma once
 
 #include <irender_target.hpp>
+#include <icontext_object.hpp>
 #include <types.hpp>
 
 #include <cstdint>
 
 namespace renderer {
 
-class ISwapchain : virtual public IRenderTarget
+class ISwapchain : public IRenderTarget, public IContextObject
 {
 public:
     struct CreateInfo
