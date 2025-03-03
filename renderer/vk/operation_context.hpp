@@ -43,10 +43,12 @@ struct OperationContext
     void setScissors(Scissors scissors) const;
     void setViewport(Viewport viewport) const;
 
-    handles::SemaphoreContainer::Vector<> waitSemaphores;
-    handles::Framebuffer framebuffer = VK_NULL_HANDLE;
-    handles::CommandBuffer commandBuffer = VK_NULL_HANDLE;
-    handles::RenderPass renderPass = VK_NULL_HANDLE;
+    handles::Semaphore::Vector<> waitSemaphores;
+    VkFramebuffer framebuffer = VK_NULL_HANDLE;
+    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+    VkRenderPass renderPass = VK_NULL_HANDLE;
+    VkFormat depthFormat = VK_FORMAT_UNDEFINED;
+    VkFormat imageFormat = VK_FORMAT_UNDEFINED;
 
     ISpecificOperationTarget* specificTarget = nullptr;
     IOperationTarget* mainTarget = nullptr;

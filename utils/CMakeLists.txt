@@ -3,6 +3,8 @@ begin_project()
 add_library(${PROJECT_NAME} INTERFACE
 	assert.hpp
 	crtp.hpp
+	glsl_defs.hpp
+	glsl_defs.cpp
 	hierarchy.hpp
 	type_list.hpp
 	shared_ptr.hpp

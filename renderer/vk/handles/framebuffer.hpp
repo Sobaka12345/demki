@@ -21,6 +21,8 @@ END_DECLARE_VKSTRUCT()
 template <typename T>
 struct FramebufferFunctions : public CRTPBase<T>
 {
+    CREATE_FUNC(Framebuffer, Device)
+    DESTROY_FUNC(Framebuffer, Device)
 };
 
 template <typename T>
@@ -28,11 +30,8 @@ struct FramebufferGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL(Framebuffer,
-    vkCreateFramebuffer,
-    vkDestroyFramebuffer,
-    FramebufferFunctions,
-    FramebufferGroupFunctions);
+
+DECLARE_HANDLE_TYPE(Framebuffer, FramebufferFunctions, FramebufferGroupFunctions);
 }
 
-}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

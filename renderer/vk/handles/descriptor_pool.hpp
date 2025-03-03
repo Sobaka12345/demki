@@ -22,7 +22,10 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct DescriptorPoolFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(DescriptorPool, Device);
+    DESTROY_FUNC(DescriptorPool, Device);
+};
 
 template <typename T>
 struct DescriptorPoolGroupFunctions : public CRTPBase<T>

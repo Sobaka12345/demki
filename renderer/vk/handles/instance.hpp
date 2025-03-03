@@ -28,7 +28,10 @@ END_DECLARE_VKSTRUCT();
 
 template <typename T>
 struct InstanceFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(Instance);
+    DESTROY_FUNC(Instance);
+};
 
 template <typename T>
 struct InstanceGroupFunctions : public CRTPBase<T>

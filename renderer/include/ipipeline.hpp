@@ -7,8 +7,8 @@
 
 #include <spirv_reflect.h>
 
-#include <filesystem>
 #include <variant>
+#include <memory>
 
 namespace renderer {
 
@@ -21,28 +21,69 @@ class IPipeline : public IContextObject
 public:
     typedef std::variant<Vertex3DColoredTextured, Vertex3DColored, Vertex3D> InputType;
 
-    enum class Type
-    {
-        GRAPHICS = 0,
-        COMPUTE,
-        COUNT,
-        INVALID
-    };
-
-    struct ShaderInfo {
-
-    };
-
 protected:
     template <typename Derived>
     class CreateInfo
     {
-
     public:
-        inline Derived& addStage(ShaderStage stage, std::filesystem::path path)
+        inline std::span<const std::shared_ptr<SpvReflectShaderModule>> shaderModules() const
         {
-            auto& shaderInfo = m_shaders[enumT(stage)];
+            return m_shaderModules;
+        }
 
+        inline Derived& addShaderModule(std::span<const unsigned char> shader)
+        {
+            auto module =
+                std::shared_ptr<SpvReflectShaderModule>(new SpvReflectShaderModule, [](auto* p) {
+                    spvReflectDestroyShaderModule(p);
+                    delete p;
+                });
+
+            SpvReflectResult result =
+                spvReflectCreateShaderModule(shader.size_bytes(), shader.data(), module.get());
+            ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+            uint32_t count = 0;
+            result = spvReflectEnumerateDescriptorSets(module.get(), &count, NULL);
+            ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+            std::vector<SpvReflectDescriptorSet*> sets(count);
+            result = spvReflectEnumerateDescriptorSets(module.get(), &count, sets.data());
+            ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+            result = spvReflectEnumerateDescriptorBindings(module.get(), &count, NULL);
+            ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+            std::vector<SpvReflectDescriptorBinding*> bindings(count);
+            result = spvReflectEnumerateDescriptorBindings(module.get(), &count, bindings.data());
+            ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+
+            result = spvReflectEnumerateInterfaceVariables(module.get(), &count, NULL);
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+            std::vector<SpvReflectInterfaceVariable*> interface_variables(count);
+            result = spvReflectEnumerateInterfaceVariables(module.get(), &count,
+                interface_variables.data());
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+            result = spvReflectEnumerateInputVariables(module.get(), &count, NULL);
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+            std::vector<SpvReflectInterfaceVariable*> input_variables(count);
+            result =
+                spvReflectEnumerateInputVariables(module.get(), &count, input_variables.data());
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+            result = spvReflectEnumerateOutputVariables(module.get(), &count, NULL);
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+            std::vector<SpvReflectInterfaceVariable*> output_variables(count);
+            result =
+                spvReflectEnumerateOutputVariables(module.get(), &count, output_variables.data());
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+            result = spvReflectEnumeratePushConstantBlocks(module.get(), &count, NULL);
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+            std::vector<SpvReflectBlockVariable*> push_constant(count);
+            result =
+                spvReflectEnumeratePushConstantBlocks(module.get(), &count, push_constant.data());
+            assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+            m_shaderModules.push_back(module);
 
             return that();
         }
@@ -51,7 +92,7 @@ protected:
         Derived& that() { return *static_cast<Derived*>(this); }
 
     private:
-        std::array<ShaderInfo, enumT(ShaderStage::COUNT)> m_shaders;
+        std::vector<std::shared_ptr<SpvReflectShaderModule>> m_shaderModules;
     };
 
 

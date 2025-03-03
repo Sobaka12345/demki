@@ -2,7 +2,6 @@
 
 #include "graphics_context.hpp"
 #include "swapchain.hpp"
-#include "types.hpp"
 
 #include "handles/render_pass.hpp"
 
@@ -14,36 +13,62 @@ namespace renderer::vk {
 
 using namespace handles;
 
-struct RenderInfoVisitor : public renderer::RenderInfoVisitor
-{
-    virtual void populateRenderInfo(const vk::Swapchain& swapchain) override
-    {
-        depthFormat = swapchain.depthFormat();
-        imageFormat = swapchain.imageFormat();
-    };
-
-    VkFormat imageFormat;
-    VkFormat depthFormat;
-};
-
 Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createInfo)
     : m_context(context)
-    , m_multisampling(toVkSampleFlagBits(createInfo.multisampling))
-{}
+    , m_multisampling(toVkSampleFlagBits(createInfo.multisampling()))
+{
+    m_attachments.reserve(Attachment::COUNT);
+
+    m_attachments.push_back(AttachmentDescription{}
+            .samples(m_multisampling)
+            .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+            .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
+            .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+            .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+            .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+            .finalLayout(m_multisampling == VK_SAMPLE_COUNT_1_BIT ?
+                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR :
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+    m_attachments.push_back(AttachmentDescription{}
+            .samples(m_multisampling)
+            .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+            .storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+            .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+            .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+            .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+            .finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+
+    if (m_multisampling > VK_SAMPLE_COUNT_1_BIT)
+    {
+        m_attachments.push_back(AttachmentDescription{}
+                .samples(VK_SAMPLE_COUNT_1_BIT)
+                .loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
+                .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                .finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
+    }
+}
+
+Renderer::~Renderer()
+{
+    m_renderPasses.destroyAll(m_context.device());
+}
 
 renderer::OperationContext Renderer::start(IRenderTarget& target)
 {
     renderer::OperationContext result;
     result.emplace<vk::OperationContext>(this);
 
-    auto& kek = get(result);
-    kek.renderPass = renderPass(target);
-
     if (!target.prepare(result))
     {
         result.emplace<vk::OperationContext>();
         return result;
     }
+
+    auto& specificContext = get(result);
 
     const std::array<VkClearValue, 2> clearValues{
         VkClearValue{ { m_clearColor.r, m_clearColor.g, m_clearColor.b, m_clearColor.a } },
@@ -52,14 +77,15 @@ renderer::OperationContext Renderer::start(IRenderTarget& target)
 
     const auto renderPassInfo =
         RenderPassBeginInfo{}
-            .renderPass(kek.renderPass)
-            .framebuffer(kek.framebuffer)
+            .renderPass(specificContext.renderPass)
+            .framebuffer(specificContext.framebuffer)
 			.renderArea(
 				VkRect2D{ VkOffset2D{ 0, 0 }, VkExtent2D{ target.width(), target.height() } })
             .clearValueCount(clearValues.size())
             .pClearValues(clearValues.data());
 
-    vkCmdBeginRenderPass(kek.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(
+        specificContext.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     return result;
 }
@@ -72,63 +98,55 @@ void Renderer::finish(renderer::OperationContext& context)
     context.operationTarget().present(context);
 }
 
-IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
+VkDevice Renderer::device() const
 {
-    ASSERT(!m_renderPasses.contains(&target), "render target already exists");
+    return m_context.device();
+}
 
-    RenderInfoVisitor renderInfo;
-    target.accept(renderInfo);
+VkSampleCountFlagBits Renderer::sampleCount() const
+{
+    return m_multisampling;
+}
 
-    std::vector<VkAttachmentDescription> attachments;
+std::span<const AttachmentDescription> renderer::vk::Renderer::attachments() const
+{
+    return m_attachments;
+}
+
+VkRenderPass Renderer::renderPass(OperationContext& context)
+{
+    const auto target = context.specificTarget->toBase();
+    if (auto el = m_renderPasses.find(target); el != m_renderPasses.end())
+    {
+        return el->second;
+    }
+
     std::optional<AttachmentReference> colorAttachmentRef;
     std::optional<AttachmentReference> depthAttachmentRef;
     std::optional<AttachmentReference> colorAttachmentResolveRef;
 
-    attachments.emplace_back(
-        //  color attachment
-        AttachmentDescription{}
-            .format(renderInfo.imageFormat)
-            .samples(m_multisampling)
-            .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-            .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
-            .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-            .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-            .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-            .finalLayout(m_multisampling == VK_SAMPLE_COUNT_1_BIT ?
-                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR :
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-    colorAttachmentRef.emplace(
-        AttachmentReference{}.attachment(0).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-
-    attachments.emplace_back(
-        //  depth attachment =
-        AttachmentDescription{}
-            .format(renderInfo.depthFormat)
-            .samples(m_multisampling)
-            .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
-            .storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-            .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-            .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-            .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-            .finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
-    depthAttachmentRef.emplace(AttachmentReference{}.attachment(1).layout(
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
-
-    if (m_multisampling > VK_SAMPLE_COUNT_1_BIT)
+    if (m_attachments.size() > Attachment::COLOR)
     {
-        attachments.emplace_back(
-            //  color attachment resolve
-            AttachmentDescription{}
-                .format(renderInfo.imageFormat)
-                .samples(VK_SAMPLE_COUNT_1_BIT)
-                .loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-                .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
-                .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
-                .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-                .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                .finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
-        colorAttachmentResolveRef.emplace(
-            AttachmentReference{}.attachment(2).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+        m_attachments[Attachment::COLOR].format(context.imageFormat);
+        colorAttachmentRef.emplace(AttachmentReference{}
+                .attachment(Attachment::COLOR)
+                .layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+    }
+
+    if (m_attachments.size() > Attachment::DEPTH)
+    {
+        m_attachments[Attachment::DEPTH].format(context.depthFormat);
+        depthAttachmentRef.emplace(AttachmentReference{}
+                .attachment(Attachment::DEPTH)
+                .layout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+    }
+
+    if (m_attachments.size() > Attachment::RESOLVE)
+    {
+        m_attachments[Attachment::RESOLVE].format(context.imageFormat);
+        colorAttachmentResolveRef.emplace(AttachmentReference{}
+                .attachment(Attachment::RESOLVE)
+                .layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
     }
 
     const auto subpass =
@@ -157,39 +175,19 @@ IRenderer& Renderer::addRenderTarget(IRenderTarget& target)
 
     const auto renderPassCreateInfo =
         RenderPassCreateInfo()
-            .attachmentCount(attachments.size())
-            .pAttachments(attachments.data())
+            .attachmentCount(m_attachments.size())
+            .pAttachments(m_attachments.data())
             .subpassCount(1)
             .pSubpasses(&subpass)
             .dependencyCount(1)
             .pDependencies(&dependency);
 
-    m_renderPasses.emplace(&target,
-        RenderPassHelper::create(m_context.device(), &renderPassCreateInfo, nullptr));
+    auto [result, emplaced] = m_renderPasses.emplace(target,
+        RenderPass::create(m_context.device(), &renderPassCreateInfo, nullptr));
 
-    return *this;
-}
+    DASSERT(emplaced);
 
-Device Renderer::device() const
-{
-    return m_context.device();
-}
-
-VkSampleCountFlagBits Renderer::sampleCount() const
-{
-    return m_multisampling;
-}
-
-RenderPass Renderer::renderPass(IRenderTarget& target)
-{
-    if (auto el = m_renderPasses.find(&target); el != m_renderPasses.end())
-    {
-        return el->second;
-    }
-
-    addRenderTarget(target);
-
-    return m_renderPasses.at(&target);
+    return result->second;
 }
 
 }    //  namespace renderer::vk

@@ -27,9 +27,9 @@ private:
     int m_width;
     int m_height;
 
-    handles::Image m_image;
-    handles::ImageView m_imageView;
-    handles::Sampler m_sampler;
+    VkImage m_image;
+    VkImageView m_imageView;
+    VkSampler m_sampler;
 };
 
 }    //  namespace renderer::vk

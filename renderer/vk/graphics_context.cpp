@@ -146,7 +146,7 @@ std::vector<const char*> getRequiredExtensions()
     return extensions;
 }
 
-bool checkDeviceExtensionSupport(PhysicalDevice physicalDevice)
+bool checkDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 {
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
@@ -195,34 +195,35 @@ GraphicsContext::GraphicsContext(ApplicationInfo appInfo)
 
     createInfo.enabledExtensionCount(extensions.size()).ppEnabledExtensionNames(extensions.data());
 
-    m_instance = InstanceHelper::create(&createInfo, nullptr, "failed to create instance ;c");
+    m_instance = Instance::create(&createInfo, nullptr, "failed to create instance ;c");
 
     if (s_enableValidationLayers)
     {
         m_debugMessenger =
-            DebugUtilsMessengerEXTHelper::create(m_instance, &s_debugMessengerCreateInfo, nullptr);
+            DebugUtilsMessengerEXT::create(m_instance, &s_debugMessengerCreateInfo, nullptr);
     }
 }
 
 GraphicsContext::~GraphicsContext()
 {
-    DeviceHelper::destroy(m_device, nullptr);
-    DebugUtilsMessengerEXTHelper::destroy(m_instance, m_debugMessenger, nullptr);
-    InstanceHelper::destroy(m_instance, nullptr);
+    m_commandPools.destroyAll(m_device);
+    Device::destroy(m_device, nullptr);
+    DebugUtilsMessengerEXT::destroy(m_instance, m_debugMessenger, nullptr);
+    Instance::destroy(m_instance, nullptr);
 }
 
 void GraphicsContext::init(IVulkanSurface& surface)
 {
     uint32_t physicalDeviceCount = 0;
-    PhysicalDeviceHelper::create(m_instance, &physicalDeviceCount, nullptr);
+    PhysicalDevice::enumerate(m_instance, &physicalDeviceCount, nullptr);
     ASSERT(physicalDeviceCount, "failed to find GPUs with Vulkan support!");
 
-    PhysicalDeviceContainer::Vector<> physicalDevices(physicalDeviceCount);
-    PhysicalDeviceHelper::create(m_instance, &physicalDeviceCount, physicalDevices.data());
+    PhysicalDevice::Vector<> physicalDevices(physicalDeviceCount);
+    PhysicalDevice::enumerate(m_instance, &physicalDeviceCount, physicalDevices.data());
 
     for (auto iter = physicalDevices.begin(); iter != physicalDevices.end(); ++iter)
     {
-        const auto deviceInfo = PhysicalDeviceHelper::info(*iter, surface.surfaceKHR());
+        const auto deviceInfo = PhysicalDevice::info(*iter, surface.surfaceKHR());
         constexpr uint32_t invalidIndex = std::numeric_limits<uint32_t>::max();
 
         if (auto isSuitable = checkDeviceExtensionSupport(*iter) &&
@@ -234,7 +235,7 @@ void GraphicsContext::init(IVulkanSurface& surface)
             isSuitable)
         {
             m_physicalDevices.emplace_back(*iter,
-                PhysicalDeviceHelper::info(*iter, surface.surfaceKHR()));
+                PhysicalDevice::info(*iter, surface.surfaceKHR()));
         }
     }
 
@@ -274,7 +275,7 @@ void GraphicsContext::init(IVulkanSurface& surface)
             .ppEnabledExtensionNames(s_deviceExtensions.data());
 
     m_device =
-        DeviceHelper::create(physicalDevice(), &createInfo, nullptr, "failed to create logical device!");
+        Device::create(physicalDevice(), &createInfo, nullptr, "failed to create logical device!");
 
     for (QueueFamilyType i = QueueFamilyType::BEGIN; i < QueueFamilyType::COUNT; ++i)
     {
@@ -283,14 +284,14 @@ void GraphicsContext::init(IVulkanSurface& surface)
             CommandPoolCreateInfo{}
                 .queueFamilyIndex(queueFamilyIndex)
                 .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-        m_commandPools[enumT(i)] = CommandPoolHelper::create(device(), &commandPoolCreateInfo, nullptr);
-        m_queues[enumT(i)] = QueueHelper::create(device(), familyIndices[enumT(i)], 0);
+        m_commandPools[enumT(i)] = CommandPool::create(device(), &commandPoolCreateInfo, nullptr);
+        m_queues[enumT(i)] = Queue::get(device(), familyIndices[enumT(i)], 0);
     }
 }
 
 VkFormat GraphicsContext::findDepthFormat() const
 {
-    return PhysicalDeviceHelper::findSupportedFormat(physicalDevice(),
+    return PhysicalDevice::findSupportedFormat(physicalDevice(),
         { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -308,12 +309,12 @@ uint32_t GraphicsContext::dynamicAlignment(uint32_t layoutSize) const
     return layoutSize;
 }
 
-Instance renderer::vk::GraphicsContext::instance() const
+VkInstance GraphicsContext::instance() const
 {
     return m_instance;
 }
 
-Device GraphicsContext::device() const
+VkDevice GraphicsContext::device() const
 {
     return m_device;
 }
@@ -323,12 +324,12 @@ uint32_t GraphicsContext::queueIndex(QueueFamilyType familyType) const
     return physicalDeviceInfo().queueFamilyIndices[enumT(familyType)];
 }
 
-renderer::vk::handles::Queue renderer::vk::GraphicsContext::queue(QueueFamilyType familyType) const
+VkQueue renderer::vk::GraphicsContext::queue(QueueFamilyType familyType) const
 {
     return m_queues[enumT(familyType)];
 }
 
-PhysicalDevice GraphicsContext::physicalDevice() const
+VkPhysicalDevice GraphicsContext::physicalDevice() const
 {
     return m_physicalDevices[0].first;
 }
@@ -338,7 +339,7 @@ const PhysicalDeviceInfo& GraphicsContext::physicalDeviceInfo() const
     return m_physicalDevices[0].second;
 }
 
-CommandPool GraphicsContext::commandPool(QueueFamilyType type) const
+VkCommandPool GraphicsContext::commandPool(QueueFamilyType type) const
 {
     return m_commandPools[enumT(type)];
 }
@@ -408,7 +409,7 @@ void GraphicsContext::waitIdle()
     vkDeviceWaitIdle(device());
 }
 
-DescriptorSetLayout GraphicsContext::descriptorSetLayout(uint32_t id) const
+VkDescriptorSetLayout GraphicsContext::descriptorSetLayout(uint32_t id) const
 {
     return m_layouts.at(id);
 }

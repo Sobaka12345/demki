@@ -1,6 +1,5 @@
 #pragma once
 
-#include <qt_application.hpp>
 #include <graphical_application.hpp>
 #include <update_timer.hpp>
 
@@ -11,7 +10,7 @@ class Camera;
 class Renderable;
 }
 
-class Dummy : public engine::QtApplication
+class Dummy : public engine::GraphicalApplication
 {
 public:
     Dummy(int& argc, char** argv);

@@ -40,9 +40,9 @@ private:
 
     std::vector<VkSemaphore> m_computeWaitSemaphores;
 
-    handles::CommandBuffer m_commandBuffer;
-    handles::Fence m_computeInFlightFence;
-    handles::Semaphore m_computeFinishedSemaphore;
+    VkCommandBuffer m_commandBuffer;
+    VkFence m_computeInFlightFence;
+    VkSemaphore m_computeFinishedSemaphore;
 };
 
 }    //  namespace renderer::vk

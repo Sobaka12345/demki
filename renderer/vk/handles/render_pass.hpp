@@ -29,7 +29,10 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct RenderPassFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(RenderPass, Device)
+    DESTROY_FUNC(RenderPass, Device)
+};
 
 template <typename T>
 struct RenderPassGroupFunctions : public CRTPBase<T>

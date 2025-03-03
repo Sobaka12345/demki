@@ -27,8 +27,8 @@ private:
     CreateInfo m_createInfo;
 
     void* m_data;
-    handles::Buffer m_buffer;
-    handles::DeviceMemory m_memory;
+    VkBuffer m_buffer;
+    VkDeviceMemory m_memory;
 };
 
 }}    //  namespace renderer::vk

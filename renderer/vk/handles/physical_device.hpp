@@ -31,6 +31,14 @@ struct PhysicalDeviceInfo
 template <typename T>
 struct PhysicalDeviceFunctions : public CRTPBase<T>
 {
+    static constexpr inline void enumerate(VkInstance instance,
+        uint32_t* pPhysicalDeviceCount,
+        VkPhysicalDevice* pPhysicalDevices) noexcept
+    {
+        ASSERT(vkEnumeratePhysicalDevices(instance, pPhysicalDeviceCount, pPhysicalDevices) ==
+            VK_SUCCESS);
+    }
+
     static inline PhysicalDeviceInfo info(VkPhysicalDevice physicalDevice,
         VkSurfaceKHR surface) noexcept
     {
@@ -121,12 +129,7 @@ struct PhysicalDeviceGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL_IMPL(PhysicalDevice,
-    vkEnumeratePhysicalDevices,
-    stub,
-    PhysicalDeviceFunctions,
-    PhysicalDeviceGroupFunctions,
-    true);
+DECLARE_HANDLE_TYPE(PhysicalDevice, PhysicalDeviceFunctions, PhysicalDeviceGroupFunctions);
 }
 
 }    //  namespace renderer::vk

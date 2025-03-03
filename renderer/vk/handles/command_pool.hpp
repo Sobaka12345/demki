@@ -13,9 +13,12 @@ BEGIN_DECLARE_VKSTRUCT(CommandPoolCreateInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CRE
     VKSTRUCT_PROPERTY(uint32_t, queueFamilyIndex)
 END_DECLARE_VKSTRUCT();
 
+
 template <typename T>
 struct CommandPoolFunctions : public CRTPBase<T>
 {
+    CREATE_FUNC(CommandPool, Device)
+    DESTROY_FUNC(CommandPool, Device)
 };
 
 template <typename T>
@@ -23,11 +26,7 @@ struct CommandPoolGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL(CommandPool,
-    vkCreateCommandPool,
-    vkDestroyCommandPool,
-    CommandPoolFunctions,
-    CommandPoolGroupFunctions);
+DECLARE_HANDLE_TYPE(CommandPool, CommandPoolFunctions, CommandPoolGroupFunctions);
 }
 
 }    //  namespace renderer::vk

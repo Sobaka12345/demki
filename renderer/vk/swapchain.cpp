@@ -1,8 +1,10 @@
 #include "swapchain.hpp"
 
 #include "graphics_context.hpp"
+#include "renderer.hpp"
 
 #include "handles/command_pool.hpp"
+#include "handles/memory.hpp"
 #include "handles/queue.hpp"
 #include "handles/render_pass.hpp"
 
@@ -110,16 +112,16 @@ Swapchain::Swapchain(
     m_maxFramesInFlight = m_swapchainInfo.framesInFlight;
     m_surface.registerFramebufferResizeCallback([this](int, int) { m_needRecreate = true; });
 
-    constexpr auto fenceInfo = FenceCreateInfo{}.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-    constexpr auto semaphoreInfo = SemaphoreCreateInfo{};
+    constexpr static auto fenceInfo = FenceCreateInfo{}.flags(VK_FENCE_CREATE_SIGNALED_BIT);
+    constexpr static auto semaphoreInfo = SemaphoreCreateInfo{};
 
     for (size_t i = 0; i < m_maxFramesInFlight; ++i)
     {
-        m_inFlightFences.push_back(FenceHelper::create(m_context.device(), &fenceInfo, nullptr));
+        m_inFlightFences.push_back(Fence::create(m_context.device(), &fenceInfo, nullptr));
         m_imageAvailableSemaphores.push_back(
-            SemaphoreHelper::create(m_context.device(), &semaphoreInfo, nullptr));
+            Semaphore::create(m_context.device(), &semaphoreInfo, nullptr));
         m_renderFinishedSemaphores.push_back(
-            SemaphoreHelper::create(m_context.device(), &semaphoreInfo, nullptr));
+            Semaphore::create(m_context.device(), &semaphoreInfo, nullptr));
     }
 
     auto commandPool = m_context.commandPool(QueueFamilyType::GRAPHICS_COMPUTE);
@@ -130,7 +132,7 @@ Swapchain::Swapchain(
             .commandPool(commandPool)
             .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     m_commandBuffers.resize(m_maxFramesInFlight);
-    CommandBufferHelper::create(m_context.device(), &cbAllocateInfo, m_commandBuffers.data());
+    CommandBuffer::allocate(m_context.device(), &cbAllocateInfo, m_commandBuffers.data());
 
     const auto supportDetails =
         Swapchain::supportDetails(context.physicalDevice(), m_surface.surfaceKHR());
@@ -147,7 +149,6 @@ Swapchain::Swapchain(
 
     static std::vector<uint32_t> queueFamilyIndices = {};
     VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
 
     const auto graphicsComputeFamilyIndex = m_context.queueIndex(QueueFamilyType::GRAPHICS_COMPUTE);
     const auto presentFamilyIndex = m_context.queueIndex(QueueFamilyType::PRESENT);
@@ -187,9 +188,9 @@ Swapchain::~Swapchain()
 
     destroy();
 
-    m_inFlightFences.clear();
-    m_imageAvailableSemaphores.clear();
-    m_renderFinishedSemaphores.clear();
+    m_inFlightFences.destroyAll(m_context.device());
+    m_imageAvailableSemaphores.destroyAll(m_context.device());
+    m_renderFinishedSemaphores.destroyAll(m_context.device());
 }
 
 void Swapchain::populateOperationContext(OperationContext& context)
@@ -197,62 +198,94 @@ void Swapchain::populateOperationContext(OperationContext& context)
     context.specificTarget = this;
     context.commandBuffer = currentCommandBuffer();
 
-    if (!m_swapChainFramebuffers.size())
+    context.imageFormat = imageFormat();
+    context.depthFormat = depthFormat();
+    //  TO DO: MOVE TO A MORE APPROPRIATE PLACE
+    context.renderPass = context.renderer->renderPass(context);
+
+    if (m_swapChainFramebuffers.empty())
     {
         for (size_t i = 0; i < m_swapChainImageViews.size(); ++i)
         {
-            //  TO DO: remove this cringe
-            ImageViewContainer::Vector<> attachments;
-            //attachments.reserve(context.renderPass->attachments().size());
-            // for (auto attachment : context.renderPass->attachments())
-            // {
-            //     if (attachment.finalLayout() == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-            //     {
-            //         attachments.push_back(m_swapChainImageViews[i]);
-            //     }
-            //     else if (attachment.finalLayout() ==
-            //         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-            //     {
-            //         if (!m_depthImage)
-            //         {
-            //             m_depthImage = std::make_unique<handles::Image>(m_context.device(),
-            //                 imageCreateInfo()
-            //                     .format(m_depthFormat)
-            //                     .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-            //                     .samples(attachment.samples()));
-            //             m_depthImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            //  TO DO: REMOVE THIS CRINGE
+            ImageView::Vector<> attachments;
+            attachments.reserve(context.renderer->attachments().size());
+            for (auto attachment : context.renderer->attachments())
+            {
+                switch (attachment.finalLayout())
+                {
+                    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+                        attachments.push_back(m_swapChainImageViews[i]);
+                        break;
+                    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+                    {
+                        const auto depthImageCreateInfo =
+                            imageCreateInfo()
+                                .format(m_depthFormat)
+                                .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+                                .samples(attachment.samples());
+                        auto depthImage = m_images.emplace_back(handles::Image::create(
+                            m_context.device(), &depthImageCreateInfo, nullptr));
+                        VkMemoryRequirements memRequirements;
+                        vkGetImageMemoryRequirements(m_context.device(), depthImage,
+                            &memRequirements);
 
-            //             auto depthViewInfo =
-            //                 imageViewCreateInfo().image(m_depthImage).format(m_depthFormat);
-            //             depthViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-            //             m_depthImageView =
-            //                 ImageViewHelper::create(m_context.device(), &depthViewInfo, nullptr);
-            //         }
-            //         attachments.push_back(m_depthImageView);
-            //     }
-            //     else if (attachment.finalLayout() == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-            //     {
-            //         if (!m_colorImage)
-            //         {
-            //             m_colorImage = std::make_unique<handles::Image>(m_context.device(),
-            //                 imageCreateInfo()
-            //                     .format(m_swapchain->imageFormat())
-            //                     .usage(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-            //                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-            //                     .samples(attachment.samples()));
-            //             m_colorImage->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                        const auto depthImageMemoryAllocateInfo =
+                            MemoryAllocateInfo{}
+                                .allocationSize(memRequirements.size)
+                                .memoryTypeIndex(handles::DeviceMemory::findMemoryType(
+                                    m_context.physicalDevice(), memRequirements.memoryTypeBits,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
-            //             auto colorViewInfo =
-            //                 imageViewCreateInfo()
-            //                     .image(m_colorImage)
-            //                     .format(m_swapchain->imageFormat());
-            //             colorViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            //             m_colorImageView = std::make_unique<handles::ImageView>(m_context.device(),
-            //                 std::move(colorViewInfo));
-            //         }
-            //         attachments.push_back(m_colorImageView);
-            //     }
-            // }
+                        auto memory = m_imageMemory.emplace_back(handles::DeviceMemory::create(m_context.device(),
+                            &depthImageMemoryAllocateInfo, nullptr));
+                        vkBindImageMemory(m_context.device(), depthImage, memory, 0);
+
+                        auto depthViewInfo =
+                            imageViewCreateInfo().image(depthImage).format(m_depthFormat);
+                        depthViewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                        auto depthImageView = m_imageViews.emplace_back(
+                            ImageView::create(m_context.device(), &depthViewInfo, nullptr));
+                        attachments.push_back(depthImageView);
+                        break;
+                    }
+                    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                    {
+                        const auto resolveImageCreateInfo =
+                            imageCreateInfo()
+                                .format(imageFormat())
+                                .usage(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                                .samples(attachment.samples());
+                        auto resolveImage = m_images.emplace_back(handles::Image::create(
+                            m_context.device(), &resolveImageCreateInfo, nullptr));
+                        VkMemoryRequirements memRequirements;
+                        vkGetImageMemoryRequirements(m_context.device(), resolveImage,
+                            &memRequirements);
+
+                        const auto resolveImageMemoryAllocateInfo =
+                            MemoryAllocateInfo{}
+                                .allocationSize(memRequirements.size)
+                                .memoryTypeIndex(handles::DeviceMemory::findMemoryType(
+                                    m_context.physicalDevice(), memRequirements.memoryTypeBits,
+                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+
+                        auto memory = m_imageMemory.emplace_back(handles::DeviceMemory::create(m_context.device(),
+                            &resolveImageMemoryAllocateInfo, nullptr));
+                        vkBindImageMemory(m_context.device(), resolveImage, memory, 0);
+
+                        auto resolveImageViewInfo =
+                            imageViewCreateInfo().image(resolveImage).format(imageFormat());
+                        resolveImageViewInfo.subresourceRange().aspectMask(
+                            VK_IMAGE_ASPECT_COLOR_BIT);
+                        auto resolveImageView = m_imageViews.emplace_back(
+                            ImageView::create(m_context.device(), &resolveImageViewInfo, nullptr));
+                        attachments.push_back(resolveImageView);
+                        break;
+                    }
+                    default: ASSERT(false, "unknown attachment type");
+                }
+            }
 
             const auto framebufferInfo =
                 FramebufferCreateInfo{}
@@ -264,7 +297,7 @@ void Swapchain::populateOperationContext(OperationContext& context)
                     .layers(1);
 
             m_swapChainFramebuffers.emplace_back(
-                FramebufferHelper::create(m_context.device(), &framebufferInfo, nullptr));
+                Framebuffer::create(m_context.device(), &framebufferInfo, nullptr));
         }
     }
 
@@ -280,11 +313,10 @@ bool Swapchain::prepare(renderer::OperationContext& context)
     VkResult result = vkAcquireNextImageKHR(m_context.device(), m_swapchain, UINT64_MAX,
         m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_currentImage);
 
+    populateOperationContext(specContext);
+
     ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR,
         "failed to acquire swap chain image!");
-
-
-    populateOperationContext(specContext);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -310,6 +342,7 @@ void Swapchain::present(renderer::OperationContext& context)
     std::vector<VkPipelineStageFlags> waitStages = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
+
     auto submitInfo =
         SubmitInfo{}
             .commandBufferCount(1)
@@ -317,7 +350,7 @@ void Swapchain::present(renderer::OperationContext& context)
             .signalSemaphoreCount(1)
             .pSignalSemaphores(&m_renderFinishedSemaphores[m_currentFrame]);
 
-    SemaphoreContainer::Vector<> waitSemaphores{ m_imageAvailableSemaphores[m_currentFrame] };
+    Semaphore::Vector<> waitSemaphores{ m_imageAvailableSemaphores[m_currentFrame] };
 
     if (!m_renderWaitSemaphores.empty())
     {
@@ -331,7 +364,6 @@ void Swapchain::present(renderer::OperationContext& context)
         .pWaitSemaphores(waitSemaphores.data())
         .pWaitDstStageMask(waitStages.data());
 
-
     const auto queue = m_context.queue(QueueFamilyType::GRAPHICS_COMPUTE);
 
     ASSERT(vkQueueSubmit(queue, 1, &submitInfo, m_inFlightFences[m_currentFrame]) == VK_SUCCESS,
@@ -344,7 +376,6 @@ void Swapchain::present(renderer::OperationContext& context)
             .swapchainCount(1)
             .pSwapchains(&m_swapchain)
             .pImageIndices(&m_currentImage);
-
 
     VkResult result = vkQueuePresentKHR(queue, &queuePresentInfo);
 
@@ -413,12 +444,12 @@ uint32_t Swapchain::currentFrameIndex() const
     return m_currentFrame;
 }
 
-Framebuffer Swapchain::currentFramebuffer()
+VkFramebuffer Swapchain::currentFramebuffer()
 {
     return m_swapChainFramebuffers[m_currentImage];
 }
 
-CommandBuffer Swapchain::currentCommandBuffer()
+VkCommandBuffer Swapchain::currentCommandBuffer()
 {
     return m_commandBuffers[m_currentFrame];
 }
@@ -451,6 +482,7 @@ void Swapchain::recreate()
 {
     while (!m_surface.available())
     {
+        // change to common method to support QT event system
         glfwWaitEvents();
     }
     m_context.waitIdle();
@@ -464,33 +496,30 @@ void Swapchain::recreate()
 
 void Swapchain::destroy()
 {
-    ImageViewHelper::destroy(m_context.device(), m_depthImageView, nullptr);
-    ImageHelper::destroy(m_context.device(), m_depthImage, nullptr);
+    m_imageViews.destroyAll(m_context.device());
+    m_images.destroyAll(m_context.device());
+    m_imageMemory.destroyAll(m_context.device());
+    m_swapChainFramebuffers.destroyAll(m_context.device());
+    m_swapChainImageViews.destroyAll(m_context.device());
+    m_swapChainImages.clear();
 
-    ImageViewHelper::destroy(m_context.device(), m_colorImageView, nullptr);
-    ImageHelper::destroy(m_context.device(), m_colorImage, nullptr);
-
-    m_swapChainFramebuffers.destroyAll(nullptr);
-    m_swapChainImageViews.destroyAll(nullptr);
-    m_swapChainImages.destroyAll(nullptr);
-
-    SwapchainKHRHelper::destroy(m_context.device(), m_swapchain, nullptr);
+    SwapchainKHR::destroy(m_context.device(), m_swapchain, nullptr);
 }
 
 void Swapchain::create()
 {
-    m_swapchain = SwapchainKHRHelper::create(m_context.device(), &m_swapchainCreateInfo, nullptr);
-    m_swapChainImages = ImageHelper::swapChainImages(m_context.device(), m_swapchain);
+    m_swapchain = SwapchainKHR::create(m_context.device(), &m_swapchainCreateInfo, nullptr);
+    m_swapChainImages = Image::swapChainImages(m_context.device(), m_swapchain);
 
     for (size_t i = 0; i < m_swapChainImages.size(); ++i)
     {
         auto createInfo =
             imageViewCreateInfo()
                 .image(m_swapChainImages[i])
-                .format(m_swapchainCreateInfo.imageFormat());
+                .format(imageFormat());
         createInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        m_swapChainImageViews.push_back(ImageViewHelper::create(m_context.device(), &createInfo,
-            nullptr, "failed to create swapchain image views"));
+        m_swapChainImageViews.push_back(ImageView::create(m_context.device(), &createInfo, nullptr,
+            "failed to create swapchain image views"));
     }
 }
 

@@ -14,6 +14,4 @@ template <typename T>
 struct SurfaceGroupFunctions : public CRTPBase<T>
 {};
 
-//  to do
-//  DECLARE_HANDLE_TYPE(Surface, stub, SurfaceGroupFunctions);
 }    //  namespace renderer::vk

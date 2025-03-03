@@ -23,6 +23,9 @@ END_DECLARE_VKSTRUCT()
 template <typename T>
 struct MemoryFunctions : public CRTPBase<T>
 {
+    CREATE_FUNC_FULL(DeviceMemory, VkMemoryAllocateInfo, vkAllocateMemory, Device);
+    DESTROY_FUNC_FULL(DeviceMemory, vkFreeMemory, Device);
+
     static inline uint32_t findMemoryType(
         VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
     {
@@ -69,8 +72,7 @@ struct MemoryGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL(
-    DeviceMemory, vkAllocateMemory, vkFreeMemory, MemoryFunctions, MemoryGroupFunctions);
+DECLARE_HANDLE_TYPE(DeviceMemory, MemoryFunctions, MemoryGroupFunctions);
 }
 
 }    //  namespace renderer::vk

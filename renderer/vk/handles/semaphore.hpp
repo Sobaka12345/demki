@@ -14,7 +14,10 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct SemaphoreFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(Semaphore, Device)
+    DESTROY_FUNC(Semaphore, Device)
+};
 
 template <typename T>
 struct SemaphoreGroupFunctions : public CRTPBase<T>

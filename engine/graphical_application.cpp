@@ -21,8 +21,8 @@ GraphicalApplication::GraphicalApplication(int& argc, char** argv)
     }
     else if (createInfo.gapi == GAPI::OpenGL)
     {
-        m_mainWindow.reset(new shell::glfw::OpenGLWindow(createInfo.windowWidth,
-            createInfo.windowHeight, createInfo.windowName));
+        // m_mainWindow.reset(new shell::glfw::OpenGLWindow(createInfo.windowWidth,
+        //     createInfo.windowHeight, createInfo.windowName));
     }
 }
 

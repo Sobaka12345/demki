@@ -29,7 +29,10 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct SamplerFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(Sampler, Device)
+    DESTROY_FUNC(Sampler, Device)
+};
 
 template <typename T>
 struct SamplerGroupFunctions : public CRTPBase<T>
@@ -39,4 +42,4 @@ namespace handles {
 DECLARE_HANDLE_TYPE(Sampler, SamplerFunctions, SamplerGroupFunctions);
 }
 
-}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

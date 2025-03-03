@@ -136,23 +136,31 @@ BEGIN_DECLARE_VKSTRUCT(GraphicsPipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PI
     VKSTRUCT_PROPERTY(int32_t, basePipelineIndex)
 END_DECLARE_VKSTRUCT()
 
+using VkGraphicsPipeline = VkPipeline;
+
 template <typename T>
 struct GraphicsPipelineFunctions : public CRTPBase<T>
-{};
+{
+    static constexpr inline void create(VkDevice device,
+        VkPipelineCache pipelineCache,
+        uint32_t createInfoCount,
+        const GraphicsPipelineCreateInfo* pCreateInfos,
+        const VkAllocationCallbacks* pAllocator,
+        VkGraphicsPipeline* pPipelines) noexcept
+    {
+        ASSERT(vkCreateGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos,
+                   pAllocator, pPipelines) == VK_SUCCESS);
+    }
+
+    DESTROY_FUNC(Pipeline, Device)
+};
 
 template <typename T>
 struct GraphicsPipelineGroupFunctions : public CRTPBase<T>
 {};
 
-using VkGraphicsPipeline = VkPipeline;
-
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL_IMPL(GraphicsPipeline,
-    vkCreateGraphicsPipelines,
-    vkDestroyPipeline,
-    GraphicsPipelineFunctions,
-    GraphicsPipelineGroupFunctions,
-    true);
+DECLARE_HANDLE_TYPE(GraphicsPipeline, GraphicsPipelineFunctions, GraphicsPipelineGroupFunctions);
 }
 
 }    //  namespace renderer::vk

@@ -8,7 +8,7 @@
 
 namespace renderer::vk {
 
-class ComputePipeline: public SpecificPipeline<IComputePipeline>
+class ComputePipeline : public SpecificPipeline<IComputePipeline>
 {
 private:
     static ComputePipelineCreateInfo defaultPipeline();
@@ -21,12 +21,11 @@ public:
     virtual void bind(renderer::OperationContext& context) override;
 
 private:
-    handles::ComputePipeline pipeline(const OperationContext& context);
+    VkComputePipeline pipeline(const OperationContext& context);
 
 private:
-    std::vector<ShaderInfo> m_shaders;
     ComputeDimensions m_computeDimensions;
-    handles::ComputePipelineContainer::Map<handles::RenderPass> m_pipelines;
+    handles::ComputePipeline::Map<VkRenderPass> m_pipelines;
 };
 
 }    //  namespace renderer::vk

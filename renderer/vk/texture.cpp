@@ -26,9 +26,9 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
 
     ASSERT(createInfo.pixels, "failed to load texture image!");
 
-    auto stagingBufferCreateInfo = handles::BufferHelper::stagingInfo().size(createInfo.imageSize);
+    auto stagingBufferCreateInfo = handles::Buffer::stagingInfo().size(createInfo.imageSize);
     auto stagingBuffer =
-        handles::BufferHelper::create(m_context.device(), &stagingBufferCreateInfo, nullptr);
+        handles::Buffer::create(m_context.device(), &stagingBufferCreateInfo, nullptr);
     auto stagingMemoryAllocateInfo =
         MemoryAllocateInfo{}
             .allocationSize(createInfo.imageSize)
@@ -36,8 +36,8 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* mem;
-    auto memory = handles::DeviceMemoryHelper::create(m_context.device(),
-        &stagingMemoryAllocateInfo, nullptr);
+    auto memory =
+        handles::DeviceMemory::create(m_context.device(), &stagingMemoryAllocateInfo, nullptr);
     vkMapMemory(m_context.device(), memory, 0, createInfo.imageSize, 0, &mem);
     vkBindBufferMemory(m_context.device(), stagingBuffer, memory, 0);
 
@@ -58,7 +58,7 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .samples(VK_SAMPLE_COUNT_1_BIT)
             .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
-    m_image = ImageHelper::create(m_context.device(), &imageCreateInfo, nullptr);
+    m_image = Image::create(m_context.device(), &imageCreateInfo, nullptr);
 
     //  m_image->allocateAndBindMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
@@ -70,7 +70,7 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .baseMipLevel(0)
             .levelCount(m_mipLevels);
 
-    handles::ImageHelper::transitionLayout(m_context.device(),
+    handles::Image::transitionLayout(m_context.device(),
         m_context.commandPool(QueueFamilyType::GRAPHICS_COMPUTE), m_image,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
 
@@ -79,8 +79,7 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .bufferOffset(0)
             .bufferImageHeight(0)
             .bufferRowLength(0)
-            .imageSubresource(
-                ImageSubresourceLayers{}
+            .imageSubresource(ImageSubresourceLayers{}
                     .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                     .baseArrayLayer(0)
                     .layerCount(1)
@@ -99,7 +98,7 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .viewType(VK_IMAGE_VIEW_TYPE_2D)
             .format(s_imageFormat)
             .subresourceRange(subresourceRange);
-    m_imageView = ImageViewHelper::create(m_context.device(), &imageViewCreateInfo, nullptr);
+    m_imageView = ImageView::create(m_context.device(), &imageViewCreateInfo, nullptr);
 
     auto samplerCreateInfo =
         SamplerCreateInfo()
@@ -119,14 +118,14 @@ Texture::Texture(GraphicsContext& context, ITexture::CreateInfo createInfo)
             .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
             .unnormalizedCoordinates(VK_FALSE);
 
-    m_sampler = SamplerHelper::create(m_context.device(), &samplerCreateInfo, nullptr);
+    m_sampler = Sampler::create(m_context.device(), &samplerCreateInfo, nullptr);
 }
 
 Texture::~Texture()
 {
-    SamplerHelper::destroy(m_context.device(), m_sampler, nullptr);
-    ImageViewHelper::destroy(m_context.device(), m_imageView, nullptr);
-    ImageHelper::destroy(m_context.device(), m_image, nullptr);
+    Sampler::destroy(m_context.device(), m_sampler, nullptr);
+    ImageView::destroy(m_context.device(), m_imageView, nullptr);
+    Image::destroy(m_context.device(), m_image, nullptr);
 }
 
 void Texture::bind(renderer::OperationContext& context, uint32_t bindingId) const
@@ -146,7 +145,7 @@ void Texture::generateMipmaps()
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    auto oneTimeCommand = CommandBufferHelper::OneTimeCommand{ m_context.device(),
+    auto oneTimeCommand = CommandBuffer::OneTimeCommand{ m_context.device(),
         m_context.commandPool(QueueFamilyType::GRAPHICS_COMPUTE), VK_COMMAND_BUFFER_LEVEL_PRIMARY };
 
     auto barrier =
@@ -154,8 +153,7 @@ void Texture::generateMipmaps()
             .image(m_image)
             .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
             .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-            .subresourceRange(
-                ImageSubresourceRange{}
+            .subresourceRange(ImageSubresourceRange{}
                     .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                     .baseArrayLayer(0)
                     .layerCount(1)
@@ -182,14 +180,13 @@ void Texture::generateMipmaps()
         blit.dstOffsets()[0] = Offset3D{}.x(0).y(0).z(0);
         blit.dstOffsets()[1] =
             Offset3D{}.x(mipWidth > 1 ? mipWidth / 2 : 1).y(mipHeight > 1 ? mipHeight / 2 : 1).z(1);
-        blit.srcSubresource(
-                ImageSubresourceLayers{}
+        blit
+            .srcSubresource(ImageSubresourceLayers{}
                     .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                     .baseArrayLayer(0)
                     .layerCount(1)
                     .mipLevel(i - 1))
-            .dstSubresource(
-                ImageSubresourceLayers{}
+            .dstSubresource(ImageSubresourceLayers{}
                     .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                     .baseArrayLayer(0)
                     .layerCount(1)

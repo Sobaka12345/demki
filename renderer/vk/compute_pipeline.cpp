@@ -24,36 +24,31 @@ IComputePipeline::ComputeDimensions ComputePipeline::computeDimensions() const
     return m_computeDimensions;
 }
 
-void ComputePipeline::bind(renderer::OperationContext &context)
+void ComputePipeline::bind(renderer::OperationContext& context)
 {
     auto& specContext = get(context);
-    vkCmdBindPipeline(specContext.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline(specContext));
+    vkCmdBindPipeline(specContext.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+        pipeline(specContext));
     specContext.computePipeline = this;
 }
 
-handles::ComputePipeline ComputePipeline::pipeline(const OperationContext& context)
+VkComputePipeline ComputePipeline::pipeline(const OperationContext& context)
 {
     if (auto el = m_pipelines.find(context.renderPass); el != m_pipelines.end())
     {
         return el->second;
     }
 
-    return VK_NULL_HANDLE;
+    const auto pipelineCreateInfo =
+        defaultPipeline().layout(m_pipelineLayout).stage(*m_shaderStageCreateInfos.data());
 
-    // handles::ShaderModule shader{ m_context.device(), m_shaders.back().path };
+    VkComputePipeline pipeline = VK_NULL_HANDLE;
+    handles::ComputePipeline::create(m_context.device(), VK_NULL_HANDLE, 1,
+        &pipelineCreateInfo, nullptr, &pipeline);
+    auto [newEl, inserted] = m_pipelines.emplace(context.renderPass, pipeline);
+    DASSERT(inserted);
 
-    // auto shaderStageCreateInfo =
-    //     PipelineShaderStageCreateInfo{}
-    //         .stage(toShaderStageFlags(ShaderStage::COMPUTE))
-    //         .module(shader)
-    //         .pName("main");
-
-
-    // auto [newEl, _] = m_pipelines.emplace(context.renderPass,
-    //     handles::ComputePipeline{ m_context.device(), VK_NULL_HANDLE,
-    //         defaultPipeline().layout(*m_pipelineLayout).stage(shaderStageCreateInfo) });
-
-    // return newEl->second;
+    return newEl->second;
 }
 
 }    //  namespace renderer::vk

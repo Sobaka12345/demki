@@ -33,8 +33,8 @@ class IRenderer
 public:
     struct CreateInfo
     {
-        Multisampling multisampling = Multisampling::MSA_1X;
-        glm::vec4 clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
+        CREATE_INFO_PROPERTY(Multisampling, multisampling, Multisampling::MSA_1X)
+        CREATE_INFO_PROPERTY(glm::vec4, clearValue, {})
     };
 
 public:

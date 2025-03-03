@@ -11,6 +11,7 @@ add_executable(${PROJECT_NAME}
     main.cpp
     dummy.cpp
     dummy.hpp
+    glsl_types.hpp
     ${DUMMY_SHADER_SOURCES}
     ${DUMMY_TEXTURE_DIR})
 

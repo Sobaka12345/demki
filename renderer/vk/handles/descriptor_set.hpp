@@ -28,18 +28,29 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct DescriptorSetFunctions : public CRTPBase<T>
-{};
+{
+    static constexpr inline void allocate(VkDevice device,
+        const VkDescriptorSetAllocateInfo* pAllocateInfo,
+        VkDescriptorSet* pDescriptorSets) noexcept
+    {
+        ASSERT(vkAllocateDescriptorSets(device, pAllocateInfo, pDescriptorSets));
+    }
+
+    static constexpr inline void free(VkDevice device,
+        VkDescriptorPool descriptorPool,
+        uint32_t descriptorSetCount,
+        const VkDescriptorSet* pDescriptorSets) noexcept
+    {
+        vkFreeDescriptorSets(device, descriptorPool, descriptorSetCount, pDescriptorSets);
+    }
+};
 
 template <typename T>
 struct DescriptorSetGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL(DescriptorSet,
-    vkAllocateDescriptorSets,
-    vkFreeDescriptorSets,
-    DescriptorSetFunctions,
-    DescriptorSetGroupFunctions);
+DECLARE_HANDLE_TYPE(DescriptorSet, DescriptorSetFunctions, DescriptorSetGroupFunctions);
 }
 
 }    //  namespace renderer::vk

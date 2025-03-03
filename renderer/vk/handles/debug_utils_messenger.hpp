@@ -50,6 +50,8 @@ inline void destroyMessenger(VkInstance app,
 template <typename T>
 struct DebugUtilsMessengerEXTFunctions : public CRTPBase<T>
 {
+    CREATE_FUNC_FULL(DebugUtilsMessengerEXT, DebugUtilsMessengerCreateInfoEXT, createMessenger, Instance);
+    DESTROY_FUNC_FULL(DebugUtilsMessengerEXT, destroyMessenger, Instance);
 };
 
 template <typename T>
@@ -57,9 +59,7 @@ struct DebugUtilsMessengerEXTGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL(DebugUtilsMessengerEXT,
-    createMessenger,
-    destroyMessenger,
+DECLARE_HANDLE_TYPE(DebugUtilsMessengerEXT,
     DebugUtilsMessengerEXTFunctions,
     DebugUtilsMessengerEXTGroupFunctions);
 }

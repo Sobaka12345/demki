@@ -30,14 +30,22 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct QueueFunctions : public CRTPBase<T>
-{};
+{
+    static constexpr inline VkQueue get(
+        VkDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex) noexcept
+    {
+        VkQueue result = VK_NULL_HANDLE;
+        vkGetDeviceQueue(device, queueFamilyIndex, queueIndex, &result);
+        return result;
+    }
+};
 
 template <typename T>
 struct QueueGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL(Queue, vkGetDeviceQueue, stub, QueueFunctions, QueueGroupFunctions);
+DECLARE_HANDLE_TYPE(Queue, QueueFunctions, QueueGroupFunctions);
 }
 
-}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

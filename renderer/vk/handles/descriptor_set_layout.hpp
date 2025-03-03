@@ -25,18 +25,18 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct DescriptorSetLayoutFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(DescriptorSetLayout, Device);
+    DESTROY_FUNC(DescriptorSetLayout, Device);
+};
 
 template <typename T>
 struct DescriptorSetLayoutGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL(DescriptorSetLayout,
-    vkCreateDescriptorSetLayout,
-    vkDestroyDescriptorSetLayout,
-    DescriptorSetLayoutFunctions,
-    DescriptorSetLayoutGroupFunctions);
+DECLARE_HANDLE_TYPE(
+    DescriptorSetLayout, DescriptorSetLayoutFunctions, DescriptorSetLayoutGroupFunctions);
 }
 
 }    //  namespace renderer::vk

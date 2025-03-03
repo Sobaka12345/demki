@@ -29,7 +29,10 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct SwapchainKHRFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC_FULL(SwapchainKHR, SwapchainCreateInfoKHR, vkCreateSwapchainKHR, Device)
+    DESTROY_FUNC(SwapchainKHR, Device)
+};
 
 template <typename T>
 struct SwapchainKHRGroupFunctions : public CRTPBase<T>
@@ -39,4 +42,4 @@ namespace handles {
 DECLARE_HANDLE_TYPE(SwapchainKHR, SwapchainKHRFunctions, SwapchainKHRGroupFunctions);
 }
 
-}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

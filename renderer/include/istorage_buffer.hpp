@@ -6,8 +6,6 @@
 #include "icompute_target.hpp"
 #include "ishader_resource.hpp"
 
-#include <span>
-
 #include <boost/pfr.hpp>
 
 namespace renderer {
@@ -22,15 +20,8 @@ class IStorageBuffer
 public:
     struct CreateInfo : public IBuffer::CreateInfo
     {
-        template <typename T>
-        CreateInfo(std::span<const T> data, bool normalized = false)
-            : normalized(normalized)
-            , dataTypeMetaInfo(StructMetaInfo::fromType<T>())
-        {}
-
-        bool normalized;
-        const void* initialData;
-        StructMetaInfo dataTypeMetaInfo;
+        CREATE_INFO_PROPERTY(bool, normalized, false)
+        CREATE_INFO_PROPERTY(StructMetaInfo, dataTypeMetaInfo, {})
     };
 
 public:

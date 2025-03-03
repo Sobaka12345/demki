@@ -35,6 +35,7 @@ private:                                      \
 
 #include <assert.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <type_traits>
 
@@ -42,7 +43,7 @@ template <typename EnumT>
 EnumT& operator++(EnumT& e) {
     using IntType = typename std::underlying_type<EnumT>::type;
     e = static_cast<EnumT>( static_cast<IntType>(e) + 1 );
-    if (e == EnumT::COUNT) e = EnumT::BEGIN;
+    if (e > EnumT::COUNT) e = EnumT::BEGIN;
     return e;
 }
 
@@ -52,3 +53,11 @@ constexpr auto enumT(E e) -> typename std::underlying_type<E>::type
    return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
+template<size_t N>
+struct StringLiteral {
+    constexpr StringLiteral(const char (&str)[N]) {
+        std::copy_n(str, N, value);
+    }
+
+    char value[N];
+};

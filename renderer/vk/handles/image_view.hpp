@@ -20,7 +20,10 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct ImageViewFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(ImageView, Device);
+    DESTROY_FUNC(ImageView, Device);
+};
 
 template <typename T>
 struct ImageViewGroupFunctions : public CRTPBase<T>

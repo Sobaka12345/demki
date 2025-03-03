@@ -1,11 +1,17 @@
 #pragma once
 
+#include "handles/pipeline.hpp"
+#include "handles/pipeline_layout.hpp"
+#include "handles/shader_module.hpp"
+
 #include "graphics_context.hpp"
 
 #include "../utils.hpp"
 
 #include <ipipeline.hpp>
 #include <ishader_interface.hpp>
+
+struct SpvReflectShaderModule;
 
 namespace renderer::vk {
 
@@ -19,8 +25,17 @@ protected:
         : m_context(context)
     {}
 
+    ~ISpecificPipeline();
+
+    void initModules(std::span<const std::shared_ptr<SpvReflectShaderModule>> module);
+
 protected:
     const GraphicsContext& m_context;
+
+    std::vector<PipelineShaderStageCreateInfo> m_shaderStageCreateInfos;
+    handles::ShaderModule::Vector<> m_shaderModules;
+    handles::DescriptorSetLayout::Vector<> m_setLayouts;
+    VkPipelineLayout m_pipelineLayout;
 };
 
 template <typename IBase>

@@ -23,7 +23,7 @@ namespace renderer { namespace vk {
 
 class ResourceManager;
 
-class GraphicsContext: public IGraphicsContext
+class GraphicsContext : public IGraphicsContext
 {
 public:
     const static bool s_enableValidationLayers;
@@ -60,17 +60,17 @@ public:
 
     virtual void waitIdle() override;
 
-    handles::DescriptorSetLayout descriptorSetLayout(uint32_t id) const;
+    VkDescriptorSetLayout descriptorSetLayout(uint32_t id) const;
 
     virtual Multisampling maxSampleCount() const override;
 
-    handles::Instance instance() const;
-    handles::Device device() const;
+    VkInstance instance() const;
+    VkDevice device() const;
     uint32_t queueIndex(QueueFamilyType familyType) const;
-    handles::Queue queue(QueueFamilyType familyType) const;
-    handles::PhysicalDevice physicalDevice() const;
+    VkQueue queue(QueueFamilyType familyType) const;
+    VkPhysicalDevice physicalDevice() const;
     const PhysicalDeviceInfo& physicalDeviceInfo() const;
-    handles::CommandPool commandPool(QueueFamilyType type) const;
+    VkCommandPool commandPool(QueueFamilyType type) const;
 
     VkFormat findDepthFormat() const;
     uint32_t dynamicAlignment(uint32_t layoutSize) const;
@@ -78,11 +78,11 @@ public:
 private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
-    handles::Device m_device;
-    handles::CommandPoolContainer::Array<enumT(QueueFamilyType::COUNT)> m_commandPools;
-    handles::QueueContainer::Array<enumT(QueueFamilyType::COUNT)> m_queues;
-    std::vector<std::pair<handles::PhysicalDevice, PhysicalDeviceInfo>> m_physicalDevices;
-    handles::DescriptorSetLayoutContainer::HashMap<uint32_t> m_layouts;
+    VkDevice m_device;
+    handles::CommandPool::Array<enumT(QueueFamilyType::COUNT)> m_commandPools;
+    handles::Queue::Array<enumT(QueueFamilyType::COUNT)> m_queues;
+    std::vector<std::pair<VkPhysicalDevice, PhysicalDeviceInfo>> m_physicalDevices;
+    handles::DescriptorSetLayout::HashMap<uint32_t> m_layouts;
 };
 
 }}    //  namespace renderer::vk

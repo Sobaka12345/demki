@@ -20,7 +20,11 @@ END_DECLARE_VKSTRUCT()
 template <typename T>
 struct BufferFunctions : public CRTPBase<T>
 {
-    static constexpr inline BufferCreateInfo stagingInfo() noexcept {
+    CREATE_FUNC(Buffer, Device);
+    DESTROY_FUNC(Buffer, Device);
+
+    static constexpr inline BufferCreateInfo stagingInfo() noexcept
+    {
         return BufferCreateInfo()
             .usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
             .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
@@ -28,13 +32,11 @@ struct BufferFunctions : public CRTPBase<T>
 };
 
 template <typename T>
-struct BufferGroupFunctions: public CRTPBase<T>
-{
-};
+struct BufferGroupFunctions : public CRTPBase<T>
+{};
 
 namespace handles {
 DECLARE_HANDLE_TYPE(Buffer, BufferFunctions, BufferGroupFunctions);
-DECLARE_HANDLE_TYPE_FULL(MemoryRequirements, vkGetBufferMemoryRequirements, stub, CRTPBase, CRTPBase)
 }
 
-}  //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

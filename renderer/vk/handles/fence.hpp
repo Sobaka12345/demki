@@ -14,7 +14,10 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct FenceFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(Fence, Device)
+    DESTROY_FUNC(Fence, Device)
+};
 
 template <typename T>
 struct FenceGroupFunctions : public CRTPBase<T>

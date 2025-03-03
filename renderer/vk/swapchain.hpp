@@ -4,6 +4,7 @@
 #include "handles/fence.hpp"
 #include "handles/framebuffer.hpp"
 #include "handles/image_view.hpp"
+#include "handles/memory.hpp"
 #include "handles/semaphore.hpp"
 #include "handles/swapchain.hpp"
 
@@ -23,8 +24,7 @@ namespace handles {
 class Surface;
 }
 
-class Swapchain
-    : public SpecificBase<ISwapchain, ISpecificContextObject, ISpecificOperationTarget>
+class Swapchain : public SpecificBase<ISwapchain, ISpecificContextObject, ISpecificOperationTarget>
 {
     struct SwapChainSupportDetails
     {
@@ -43,8 +43,7 @@ class Swapchain
         VkSurfaceKHR surface);
 
 public:
-    Swapchain(
-        GraphicsContext& context, IVulkanSurface& surface, ISwapchain::CreateInfo createInfo);
+    Swapchain(GraphicsContext& context, IVulkanSurface& surface, ISwapchain::CreateInfo createInfo);
     ~Swapchain();
 
     virtual bool prepare(renderer::OperationContext& context) override;
@@ -72,8 +71,8 @@ private:
     void create();
     void populateOperationContext(OperationContext& context);
 
-    handles::Framebuffer currentFramebuffer();
-    handles::CommandBuffer currentCommandBuffer();
+    VkFramebuffer currentFramebuffer();
+    VkCommandBuffer currentCommandBuffer();
 
     ImageCreateInfo imageCreateInfo() const;
     ImageViewCreateInfo imageViewCreateInfo() const;
@@ -85,12 +84,10 @@ private:
     VkFormat m_depthFormat;
     SwapchainCreateInfoKHR m_swapchainCreateInfo;
 
-
-    handles::Image m_colorImage;
-    handles::ImageView m_colorImageView;
-    handles::Image m_depthImage;
-    handles::ImageView m_depthImageView;
-    handles::SwapchainKHR m_swapchain;
+    handles::Image::Vector<> m_images;
+    handles::ImageView::Vector<> m_imageViews;
+    handles::DeviceMemory::Vector<> m_imageMemory;
+    VkSwapchainKHR m_swapchain;
 
     std::function<void(Swapchain&)> m_drawCallback;
 
@@ -100,16 +97,16 @@ private:
     int m_currentFrame;
     int m_maxFramesInFlight;
 
-    handles::CommandBufferContainer::Vector<> m_commandBuffers;
+    handles::CommandBuffer::Vector<> m_commandBuffers;
 
-    handles::SemaphoreContainer::Vector<> m_renderWaitSemaphores;
-    handles::SemaphoreContainer::Vector<> m_imageAvailableSemaphores;
-    handles::SemaphoreContainer::Vector<> m_renderFinishedSemaphores;
-    handles::FenceContainer::Vector<> m_inFlightFences;
+    handles::Semaphore::Vector<> m_renderWaitSemaphores;
+    handles::Semaphore::Vector<> m_imageAvailableSemaphores;
+    handles::Semaphore::Vector<> m_renderFinishedSemaphores;
+    handles::Fence::Vector<> m_inFlightFences;
 
-    handles::ImageContainer::Vector<> m_swapChainImages;
-    handles::ImageViewContainer::Vector<> m_swapChainImageViews;
-    mutable handles::FramebufferContainer::Vector<> m_swapChainFramebuffers;
+    handles::Image::Vector<> m_swapChainImages;
+    handles::ImageView::Vector<> m_swapChainImageViews;
+    mutable handles::Framebuffer::Vector<> m_swapChainFramebuffers;
 };
 
 }    //  namespace vk

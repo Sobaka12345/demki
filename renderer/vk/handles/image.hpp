@@ -62,9 +62,12 @@ END_DECLARE_VKSTRUCT();
 template <typename T>
 struct ImageFunctions : public CRTPBase<T>
 {
+    CREATE_FUNC(Image, Device);
+    DESTROY_FUNC(Image, Device);
+
     static inline auto swapChainImages(VkDevice device, VkSwapchainKHR swapchain) noexcept
     {
-        typename T::Container::template Vector<> result;
+        typename T::template Vector<> result;
         uint32_t imageCount;
 
         vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
@@ -117,7 +120,7 @@ struct ImageFunctions : public CRTPBase<T>
             throw std::invalid_argument("unsupported layout transition!");
         }
 
-        handles::CommandBufferHelper::OneTimeCommand::exec(device, pool,
+        handles::CommandBuffer::OneTimeCommand::exec(device, pool,
             VK_COMMAND_BUFFER_LEVEL_PRIMARY, [&](auto buffer) {
                 vkCmdPipelineBarrier(buffer, sourceStage, destinationStage, 0, 0, nullptr, 0,
                     nullptr, 1, &barrier);

@@ -26,6 +26,21 @@ END_DECLARE_VKSTRUCT()
 template <typename T>
 struct CommandBufferFunctions : public CRTPBase<T>
 {
+    static constexpr inline void allocate(VkDevice device,
+        const VkCommandBufferAllocateInfo* pAllocateInfo,
+        VkCommandBuffer* pCommandBuffers) noexcept
+    {
+        ASSERT(vkAllocateCommandBuffers(device, pAllocateInfo, pCommandBuffers) == VK_SUCCESS);
+    }
+
+    static constexpr inline void free(VkDevice device,
+        VkCommandPool commandPool,
+        uint32_t commandBufferCount,
+        const VkCommandBuffer* pCommandBuffers) noexcept
+    {
+        vkFreeCommandBuffers(device, commandPool, commandBufferCount, pCommandBuffers);
+    }
+
     struct OneTimeCommand
     {
         OneTimeCommand(VkDevice device, VkCommandPool pool, VkCommandBufferLevel level) noexcept
@@ -35,7 +50,7 @@ struct CommandBufferFunctions : public CRTPBase<T>
         {
             const auto allocateInfo =
                 CommandBufferAllocateInfo{}.commandPool(pool).level(level).commandBufferCount(1);
-            handle = T::create(device, &allocateInfo);
+            allocate(device, &allocateInfo, &handle);
             const auto beginInfo =
                 CommandBufferBeginInfo{}
                     .flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
@@ -58,7 +73,7 @@ struct CommandBufferFunctions : public CRTPBase<T>
         ~OneTimeCommand() noexcept
         {
             ASSERT(vkEndCommandBuffer(handle) == VK_SUCCESS);
-            T::destroy(device, pool, 1, &handle);
+            free(device, pool, 1, &handle);
         }
 
         T::Handle handle;
@@ -73,11 +88,7 @@ struct CommandBufferGroupFunctions : public CRTPBase<T>
 {};
 
 namespace handles {
-DECLARE_HANDLE_TYPE_FULL(CommandBuffer,
-    vkAllocateCommandBuffers,
-    vkFreeCommandBuffers,
-    CommandBufferFunctions,
-    CommandBufferGroupFunctions);
+DECLARE_HANDLE_TYPE(CommandBuffer, CommandBufferFunctions, CommandBufferGroupFunctions);
 }
 
 }    //  namespace renderer::vk

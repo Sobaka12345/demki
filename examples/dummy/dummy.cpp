@@ -1,10 +1,15 @@
 #include "dummy.hpp"
 
+#include "shaders_hpp/shader.vert.spv.hpp"
+#include "shaders_hpp/shader.comp.spv.hpp"
+#include "shaders_hpp/shader.frag.spv.hpp"
+
 #include <camera.hpp>
 #include <imesh.hpp>
 #include <renderable.hpp>
 
 #include <spirv_reflect.h>
+
 
 using namespace renderer;
 
@@ -23,66 +28,42 @@ static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0,
     2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
 
 Dummy::Dummy(int& argc, char** argv)
-    : QtApplication(argc, argv)
+    : GraphicalApplication(argc, argv)
 {
-    m_timer.setIntervalMS(50);
-    m_renderer = context().createRenderer({ .multisampling = context().maxSampleCount() });
+    m_renderer = context().createRenderer(IRenderer::CreateInfo{}
+            .multisampling(Multisampling::MSA_4X)
+            .clearValue(glm::vec4{ 0, 0, 0, 0 }));
+    m_pipeline = context().createGraphicsPipeline(renderer::IGraphicsPipeline::CreateInfo{}
+            .addShaderModule(shader_vert_spv)
+            .addShaderModule(shader_frag_spv));
 
-    m_camera = std::make_unique<Camera>(context());
-
-    ViewProjection viewProjection;
-    viewProjection.view = glm::lookAt(
-        glm::vec3(0.0f, 3.0f, -4.f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    viewProjection.projection = glm::perspective(
-        glm::radians(45.0f), window().width() / static_cast<float>(window().height()), 0.1f, 8.0f);
-
-    m_camera->setViewProjection(viewProjection);
-
-    m_mesh = context().createMesh(executablePath() / "models" / "viking_room.obj");
-    m_texture = context().createTexture(executablePath() / "textures" / "viking_room.png");
-
-    m_renderable = std::make_unique<Renderable>(context());
-    m_renderable->setMesh(m_mesh);
-    m_renderable->setTexture(m_texture);
-    m_renderable->setPosition(
-        glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
+    auto buffer = context().createStorageBuffer({});
 }
 
 Dummy::~Dummy() {}
 
-void Dummy::update(int64_t dt)
-{
-    if (m_timer.timePassed(dt))
-    {
-        m_renderable->setPosition(
-            glm::rotate(m_renderable->position(), 0.01f, glm::vec3(0.f, 1.f, 0.f)));
-    }
-}
+void Dummy::update(int64_t dt) {}
 
 void Dummy::perform()
 {
-    // auto context = m_renderer->start(window());
-    // context.setViewport({
-    //     .x = 0,
-    //     .y = 0,
-    //     .width = static_cast<float>(window().width()),
-    //     .height = static_cast<float>(window().height()),
-    //     .minDepth = 0.0f,
-    //     .maxDepth = 1.0f,
-    // });
+    auto context = m_renderer->start(window());
+    context.setViewport({
+        .x = 0,
+        .y = 0,
+        .width = static_cast<float>(window().width()),
+        .height = static_cast<float>(window().height()),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    });
 
-    // context.setScissors({
-    //     .x = 0,
-    //     .y = 0,
-    //     .width = window().width(),
-    //     .height = window().height(),
-    // });
+    context.setScissors({
+        .x = 0,
+        .y = 0,
+        .width = window().width(),
+        .height = window().height(),
+    });
 
-    // m_pipeline->bind(context);
+    m_pipeline->bind(context);
 
-
-    // m_renderable->bind(context);
-    // m_renderable->draw(context);
-
-    // context.submit();
+    context.submit();
 }

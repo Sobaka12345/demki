@@ -18,7 +18,10 @@ END_DECLARE_VKSTRUCT()
 
 template <typename T>
 struct PipelineLayoutFunctions : public CRTPBase<T>
-{};
+{
+    CREATE_FUNC(PipelineLayout, Device)
+    DESTROY_FUNC(PipelineLayout, Device)
+};
 
 template <typename T>
 struct PipelineLayoutGroupFunctions : public CRTPBase<T>
@@ -28,4 +31,4 @@ namespace handles {
 DECLARE_HANDLE_TYPE(PipelineLayout, PipelineLayoutFunctions, PipelineLayoutGroupFunctions);
 }
 
-}    //  namespace renderer::vk::handles
+}    //  namespace renderer::vk

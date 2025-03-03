@@ -27,7 +27,7 @@ inline void realAssert(std::string assertType,
                 "\n\tEXPRESSION: " +
                 expr + (message.empty() ? "\n" : "\n\tMESSAGE: " + message)
                   << std::endl;
-        std::exit(EXIT_FAILURE);
+        std::abort();
     }
 }
 
