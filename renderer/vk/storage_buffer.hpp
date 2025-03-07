@@ -16,7 +16,6 @@ class StorageBuffer
 public:
     StorageBuffer(GraphicsContext& context, IStorageBuffer::CreateInfo createInfo);
 
-    virtual void accept(ComputerInfoVisitor& visitor) const override;
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
 

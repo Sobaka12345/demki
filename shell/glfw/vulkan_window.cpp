@@ -50,9 +50,4 @@ void VulkanWindow::present(renderer::OperationContext& context)
     m_swapchain->present(context);
 }
 
-void VulkanWindow::accept(renderer::RenderInfoVisitor& visitor) const
-{
-    m_swapchain->accept(visitor);
-}
-
 }    //  namespace shell::glfw

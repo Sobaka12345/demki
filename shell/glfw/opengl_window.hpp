@@ -24,8 +24,6 @@ public:
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
 
-    virtual void accept(renderer::RenderInfoVisitor& visitor) const override;
-
 private:
     std::shared_ptr<renderer::ISwapchain> m_swapchain;
     std::shared_ptr<renderer::IGraphicsContext> m_graphicsContext;

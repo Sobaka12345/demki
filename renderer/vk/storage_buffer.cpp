@@ -15,11 +15,6 @@ StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     : m_context(context)
 {}
 
-void StorageBuffer::accept(ComputerInfoVisitor& visitor) const
-{
-    visitor.populateComputerInfo(*this);
-}
-
 bool StorageBuffer::prepare(renderer::OperationContext& context)
 {
     //  vkWaitForFences(m_context.device(), 1, m_computeInFlightFence->handlePtr(), VK_TRUE,
@@ -81,7 +76,7 @@ void StorageBuffer::populateWaitInfo(OperationContext& context) {}
 
 uint32_t StorageBuffer::currentFrameIndex() const
 {
-    return 0;;
+    return 0;
 }
 
 void StorageBuffer::bind(renderer::OperationContext& context, uint32_t bindingId) const

@@ -25,7 +25,6 @@ public:
 
     void draw(OperationContext& context);
 
-    virtual void accept(ComputerInfoVisitor& visitor) const override;
     virtual bool prepare(OperationContext& context) override;
     virtual void present(OperationContext& context) override;
 

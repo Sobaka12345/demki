@@ -393,11 +393,6 @@ void Swapchain::present(renderer::OperationContext& context)
     m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;
 }
 
-void Swapchain::accept(RenderInfoVisitor& visitor) const
-{
-    visitor.populateRenderInfo(*this);
-}
-
 uint32_t Swapchain::framesInFlight() const
 {
     return m_maxFramesInFlight;

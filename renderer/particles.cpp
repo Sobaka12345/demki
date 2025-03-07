@@ -14,11 +14,6 @@ void Particles::draw(OperationContext& context)
     m_particlesBuffers[m_currentIndex]->draw(context);
 }
 
-void Particles::accept(ComputerInfoVisitor& visitor) const
-{
-    m_particlesBuffers[m_currentIndex]->accept(visitor);
-}
-
 bool Particles::prepare(OperationContext& context)
 {
     context.setOperationTarget(*this);

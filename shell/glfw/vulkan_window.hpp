@@ -24,8 +24,6 @@ public:
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
 
-    virtual void accept(renderer::RenderInfoVisitor& visitor) const override;
-
 private:
     VkSurfaceKHR m_surface;
     VkInstance m_instance;

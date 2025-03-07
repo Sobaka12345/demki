@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../vertex.hpp"
-
 #include "icontext_object.hpp"
 #include "ishader_interface.hpp"
 
@@ -13,13 +11,16 @@
 namespace renderer {
 
 class OperationContext;
-class IShaderInterfaceContainer;
-class IShaderInterfaceHandle;
+class IShaderResource;
 
 class IPipeline : public IContextObject
 {
 public:
     typedef std::variant<Vertex3DColoredTextured, Vertex3DColored, Vertex3D> InputType;
+
+    struct Descriptor {
+        virtual std::span<const IShaderResource*> bindings() const = 0;
+    };
 
 protected:
     template <typename Derived>

@@ -24,7 +24,7 @@ private:
     UpdateTimer<TimeResolution> m_timer;
 
     std::shared_ptr<renderer::IRenderer> m_renderer;
-    std::shared_ptr<renderer::IPipeline> m_pipeline;
+    std::shared_ptr<renderer::IPipeline> m_renderPipeline;
 
     std::shared_ptr<renderer::Camera> m_camera;
 

@@ -36,10 +36,6 @@ public:
 
     virtual void waitIdle() override;
 
-    virtual std::shared_ptr<IMesh> createMesh(std::filesystem::path path) override;
-    virtual std::shared_ptr<IMesh> createMesh(IMesh::CreateInfo createInfo) override;
-    virtual std::shared_ptr<ITexture> createTexture(std::filesystem::path path) override;
-    virtual std::shared_ptr<ITexture> createTexture(ITexture::CreateInfo createInfo) override;
     virtual std::shared_ptr<IUniformBuffer> createUniformBuffer(
         IUniformBuffer::CreateInfo createInfo) override;
 };

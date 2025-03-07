@@ -13,8 +13,6 @@ class IComputeTarget : public IOperationTarget
 {
 public:
     virtual ~IComputeTarget() {}
-
-    virtual void accept(ComputerInfoVisitor& visitor) const = 0;
 };
 
 }

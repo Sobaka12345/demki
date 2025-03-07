@@ -49,8 +49,6 @@ public:
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
 
-    virtual void accept(RenderInfoVisitor& visitor) const override;
-
     virtual uint32_t framesInFlight() const override;
     virtual uint32_t width() const override;
     virtual uint32_t height() const override;

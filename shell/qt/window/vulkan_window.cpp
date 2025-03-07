@@ -62,9 +62,4 @@ renderer::IGraphicsContext& VulkanWindow::graphicsContext()
     return *m_graphicsContext;
 }
 
-void VulkanWindow::accept(renderer::RenderInfoVisitor& visitor) const
-{
-    return m_swapchain->accept(visitor);
-}
-
 }    //  namespace shell::qt

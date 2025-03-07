@@ -29,8 +29,6 @@ public:
     virtual void registerFramebufferResizeCallback(
         std::function<void(int, int)> callback) const override;
 
-    virtual void accept(renderer::RenderInfoVisitor& visitor) const override;
-
     virtual renderer::IGraphicsContext& graphicsContext() override;
 
 private:

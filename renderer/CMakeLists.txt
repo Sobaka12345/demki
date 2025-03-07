@@ -58,8 +58,6 @@ add_library(${PROJECT_NAME} STATIC
     vk/uniform_set_pool.hpp
     vk/graphics_context.hpp
     vk/graphics_context.cpp
-    vk/mesh.hpp
-    vk/mesh.cpp
 	vk/computer.hpp
 	vk/computer.cpp
 	vk/compute_pipeline.hpp
@@ -78,8 +76,6 @@ add_library(${PROJECT_NAME} STATIC
 	vk/storage_buffer.cpp
     vk/swapchain.hpp
     vk/swapchain.cpp
-    vk/texture.hpp
-    vk/texture.cpp
     vk/types.hpp
     vk/uniform_buffer.hpp
     vk/uniform_buffer.cpp
@@ -92,16 +88,13 @@ add_library(${PROJECT_NAME} STATIC
 	include/iuniform_set_pool.hpp
 	include/igraphics_context.hpp
 	include/igraphics_pipeline.hpp
-	include/imesh.hpp
 	include/ipipeline.hpp
 	include/ipool.hpp
-	include/irenderable.hpp
 	include/irenderer.hpp
 	include/irender_target.hpp
 	include/ioperation_target.hpp
 	include/istorage_buffer.hpp
 	include/iswapchain.hpp
-	include/itexture.hpp
 	include/types.hpp
 	include/ishader_interface.hpp
 	include/ishader_interface_container.hpp
@@ -112,17 +105,14 @@ add_library(${PROJECT_NAME} STATIC
 	include/iopengl_surface.hpp
 	include/camera.hpp
 	include/particles.hpp
-	include/renderable.hpp
 	include/iuniform_buffer.hpp
 	include/uniform_value.hpp
 	camera.cpp
 	create_info.cpp
 	particles.cpp
-	renderable.cpp
 	operation_context.hpp
 	utils.hpp
 	shader_interface.cpp
-	vertex.hpp
 	pch.hpp
 	${RENDERER_SHADER_SOURCES}
 )

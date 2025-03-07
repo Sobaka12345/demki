@@ -5,8 +5,6 @@
 #include "shaders_hpp/shader.frag.spv.hpp"
 
 #include <camera.hpp>
-#include <imesh.hpp>
-#include <renderable.hpp>
 
 #include <spirv_reflect.h>
 
@@ -27,13 +25,25 @@ static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
 static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
     2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
 
+
+struct PipelineDescriptor: public IPipeline::Descriptor {
+    std::shared_ptr<renderer::IStorageBuffer> drawCommands;
+
+    virtual std::span<const IShaderResource*> bindings() const override {
+
+    };
+};
+
+struct RenderGroup {
+};
+
 Dummy::Dummy(int& argc, char** argv)
     : GraphicalApplication(argc, argv)
 {
     m_renderer = context().createRenderer(IRenderer::CreateInfo{}
             .multisampling(Multisampling::MSA_4X)
             .clearValue(glm::vec4{ 0, 0, 0, 0 }));
-    m_pipeline = context().createGraphicsPipeline(renderer::IGraphicsPipeline::CreateInfo{}
+    m_renderPipeline = context().createGraphicsPipeline(IGraphicsPipeline::CreateInfo{}
             .addShaderModule(shader_vert_spv)
             .addShaderModule(shader_frag_spv));
 

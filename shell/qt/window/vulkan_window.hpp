@@ -23,8 +23,6 @@ public:
     virtual void present(renderer::OperationContext& context) override;
     virtual renderer::IGraphicsContext& graphicsContext() override;
 
-    virtual void accept(renderer::RenderInfoVisitor& visitor) const override;
-
 private:
     VkSurfaceKHR m_surface;
     QVulkanInstance m_instance;

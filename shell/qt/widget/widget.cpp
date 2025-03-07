@@ -46,11 +46,6 @@ void Widget::registerFramebufferResizeCallback(std::function<void(int, int)> cal
     return window()->registerFramebufferResizeCallback(callback);
 }
 
-void Widget::accept(renderer::RenderInfoVisitor& visitor) const
-{
-    return window()->accept(visitor);
-}
-
 renderer::IGraphicsContext& Widget::graphicsContext()
 {
     return window()->graphicsContext();

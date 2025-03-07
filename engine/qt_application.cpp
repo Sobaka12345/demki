@@ -13,7 +13,7 @@ QtApplication::QtApplication(int& argc, char** argv)
     : QGuiApplication(argc, argv)
     , AbstractApplication()
 {
-    m_resources = std::make_unique<shell::Resources>(renderer::executablePath());
+    m_resources = std::make_unique<resources::Resources>(renderer::executablePath());
 
     const auto createInfo = CreateInfo::readFromCmd(argc, argv);
     if (createInfo.gapi == GAPI::Vulkan)

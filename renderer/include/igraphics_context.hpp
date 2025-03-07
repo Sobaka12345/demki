@@ -4,8 +4,6 @@
 #include <icompute_pipeline.hpp>
 #include <iuniform_set_pool.hpp>
 #include <igraphics_pipeline.hpp>
-#include <imesh.hpp>
-#include <itexture.hpp>
 #include <irenderer.hpp>
 #include <iswapchain.hpp>
 #include <istorage_buffer.hpp>
@@ -26,10 +24,6 @@ public:
     virtual std::shared_ptr<IRenderer> createRenderer(IRenderer::CreateInfo createInfo) = 0;
     virtual std::shared_ptr<IStorageBuffer> createStorageBuffer(
         IStorageBuffer::CreateInfo createInfo) = 0;
-    virtual std::shared_ptr<IMesh> createMesh(IMesh::CreateInfo createInfo) = 0;
-    virtual std::shared_ptr<IMesh> createMesh(std::filesystem::path path) = 0;
-    virtual std::shared_ptr<ITexture> createTexture(std::filesystem::path path) = 0;
-    virtual std::shared_ptr<ITexture> createTexture(ITexture::CreateInfo createInfo) = 0;
     virtual std::shared_ptr<IUniformBuffer> createUniformBuffer(
         IUniformBuffer::CreateInfo createInfo) = 0;
 

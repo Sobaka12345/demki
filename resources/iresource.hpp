@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace shell {
+namespace resources {
 
 class IResource
 {
@@ -26,4 +26,4 @@ private:
     uint64_t m_id;
 };
 
-}    //  namespace shell
+}    //  namespace resources

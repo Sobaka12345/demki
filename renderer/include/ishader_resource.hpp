@@ -6,7 +6,7 @@ namespace renderer {
 
 class OperationContext;
 
-struct IShaderResource : public shell::IResource
+struct IShaderResource : public resources::IResource
 {
     virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const = 0;
 };

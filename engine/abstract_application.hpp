@@ -41,7 +41,6 @@ public:
 
     virtual shell::IWindow& window() = 0;
 
-
     renderer::IGraphicsContext& context();
 
     virtual int exec() = 0;
@@ -53,7 +52,7 @@ protected:
     virtual void perform() = 0;
 
 protected:
-    std::unique_ptr<shell::IResources> m_resources;
+    std::unique_ptr<resources::IResources> m_resources;
 };
 
 }    //  namespace engine

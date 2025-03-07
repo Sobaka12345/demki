@@ -378,26 +378,6 @@ std::shared_ptr<IStorageBuffer> GraphicsContext::createStorageBuffer(
     return std::make_shared<StorageBuffer>(*this, std::move(createInfo));
 }
 
-std::shared_ptr<IMesh> GraphicsContext::createMesh(std::filesystem::path path)
-{
-    return createMesh(IMesh::CreateInfo{ path });
-}
-
-std::shared_ptr<IMesh> GraphicsContext::createMesh(IMesh::CreateInfo createInfo)
-{
-    return std::make_shared<Mesh>(*this, std::move(createInfo));
-}
-
-std::shared_ptr<ITexture> GraphicsContext::createTexture(std::filesystem::path path)
-{
-    return createTexture(ITexture::CreateInfo{ path });
-}
-
-std::shared_ptr<ITexture> GraphicsContext::createTexture(ITexture::CreateInfo createInfo)
-{
-    return std::make_shared<Texture>(*this, std::move(createInfo));
-}
-
 std::shared_ptr<IUniformBuffer> GraphicsContext::createUniformBuffer(
     IUniformBuffer::CreateInfo createInfo)
 {
