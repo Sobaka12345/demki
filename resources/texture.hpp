@@ -6,14 +6,14 @@
 
 namespace resources {
 
-class Texture : public IResource
+struct Image : public IResource
 {
 public:
-    explicit Texture(std::filesystem::path path) noexcept;
-    explicit Texture(std::filesystem::path path, uint32_t mipLevels) noexcept;
+    explicit Image(std::filesystem::path path) noexcept;
 
-public:
-    virtual ~Texture() {}
+    virtual ~Image() {}
+
+
 };
 
 }    //  namespace resources

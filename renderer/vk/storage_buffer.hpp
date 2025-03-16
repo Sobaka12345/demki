@@ -2,6 +2,7 @@
 
 #include "graphics_context.hpp"
 #include "specific_operation_target.hpp"
+#include "specific_buffer.hpp"
 
 #include "handles/fence.hpp"
 #include "handles/command_buffer.hpp"
@@ -11,10 +12,11 @@
 namespace renderer::vk {
 
 class StorageBuffer
-    : public SpecificBase<IStorageBuffer, ISpecificOperationTarget>
+    : public SpecificBase<IStorageBuffer, ISpecificOperationTarget, ISpecificBuffer>
 {
 public:
     StorageBuffer(GraphicsContext& context, IStorageBuffer::CreateInfo createInfo);
+    ~StorageBuffer();
 
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
@@ -32,8 +34,6 @@ public:
     virtual const void* read(size_t size, size_t offset = 0) const override;
 
 private:
-    const GraphicsContext& m_context;
-
     bool m_emitWait;
     uint64_t m_elementCount;
 

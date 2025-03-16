@@ -1,15 +1,14 @@
 #pragma once
 
-#include <iuniform_buffer.hpp>
+#include "specific_buffer.hpp"
 
-#include "handles/buffer.hpp"
-#include "handles/memory.hpp"
+#include <iuniform_buffer.hpp>
 
 namespace renderer { namespace vk {
 
 class GraphicsContext;
 
-class UniformBuffer : public IUniformBuffer
+class UniformBuffer : public SpecificBuffer<IUniformBuffer>
 {
 public:
     UniformBuffer(GraphicsContext& context, IUniformBuffer::CreateInfo createInfo);
@@ -22,13 +21,8 @@ public:
     virtual void write(const void* data, size_t size, size_t offset) override;
     virtual const void* read(size_t size, size_t offset) const override;
 
-private:
-    GraphicsContext& m_context;
-    CreateInfo m_createInfo;
-
-    void* m_data;
-    VkBuffer m_buffer;
-    VkDeviceMemory m_memory;
+    virtual size_t size() const override;
+    virtual void reallocate(size_t newSize) override;
 };
 
 }}    //  namespace renderer::vk

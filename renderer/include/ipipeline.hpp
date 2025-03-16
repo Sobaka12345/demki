@@ -19,7 +19,7 @@ public:
     typedef std::variant<Vertex3DColoredTextured, Vertex3DColored, Vertex3D> InputType;
 
     struct Descriptor {
-        virtual std::span<const IShaderResource*> bindings() const = 0;
+        virtual std::span<const IShaderResource*> binding(uint32_t id) const = 0;
     };
 
 protected:

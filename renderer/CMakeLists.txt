@@ -65,7 +65,9 @@ add_library(${PROJECT_NAME} STATIC
 	vk/graphics_pipeline.hpp
 	vk/graphics_pipeline.cpp
 	vk/specific_pipeline.hpp
-	vk/specific_pipeline.cpp
+        vk/specific_pipeline.cpp
+        vk/specific_buffer.hpp
+        vk/specific_buffer.cpp
 	vk/renderer.hpp
 	vk/renderer.cpp
 	vk/operation_context.hpp

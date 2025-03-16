@@ -9,11 +9,22 @@
 
 #include "compute_pipeline.hpp"
 
+#include <cstring>
+
 namespace renderer::vk {
 
 StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
-    : m_context(context)
-{}
+    : SpecificBase<IStorageBuffer, ISpecificOperationTarget, ISpecificBuffer>(context)
+{
+    allocateBuffer(createInfo.size(),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+}
+
+StorageBuffer::~StorageBuffer()
+{
+    destroy();
+}
 
 bool StorageBuffer::prepare(renderer::OperationContext& context)
 {
@@ -84,14 +95,15 @@ void StorageBuffer::bind(renderer::OperationContext& context, uint32_t bindingId
     //  NOTHING TO DO
 }
 
-void StorageBuffer::write(const void *data, size_t size, size_t offset)
+void StorageBuffer::write(const void* data, size_t size, size_t offset)
 {
-
+    std::memcpy(reinterpret_cast<void*>(reinterpret_cast<ptrdiff_t>(m_data) + offset), data,
+        static_cast<size_t>(size));
 }
 
-const void *StorageBuffer::read(size_t size, size_t offset) const
+const void* StorageBuffer::read(size_t size, size_t offset) const
 {
-    return nullptr;
+    return (static_cast<char*>(m_data)) + offset;
 }
 
 }    //  namespace renderer::vk

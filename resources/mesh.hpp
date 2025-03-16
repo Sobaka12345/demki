@@ -9,15 +9,17 @@ namespace resources {
 
 class OperationContext;
 
-class Mesh : public IResource
+struct Mesh : public IResource
 {
-public:
     explicit Mesh(std::filesystem::path path) noexcept;
     explicit Mesh(std::span<const Vertex3DColoredTextured> vertices,
         std::span<const uint32_t> indices) noexcept;
-
-public:
     virtual ~Mesh() {};
+
+    std::vector<Vertex3DColoredTextured> vertices;
+    std::vector<uint16_t> indices;
+
+    size_t sizeBytes() const;
 };
 
 }    //  namespace resources

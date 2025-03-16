@@ -23,7 +23,7 @@ END_DECLARE_VKSTRUCT()
 template <typename T>
 struct MemoryFunctions : public CRTPBase<T>
 {
-    CREATE_FUNC_FULL(DeviceMemory, VkMemoryAllocateInfo, vkAllocateMemory, Device);
+    CREATE_FUNC_FULL(DeviceMemory, MemoryAllocateInfo, vkAllocateMemory, Device);
     DESTROY_FUNC_FULL(DeviceMemory, vkFreeMemory, Device);
 
     static inline uint32_t findMemoryType(

@@ -28,7 +28,9 @@ struct HandleGroupBase
             if constexpr (requires(Container::value_type& t) { t.second; })
             {
                 Functions::destroy(args..., it->second, nullptr);
-            } else {
+            }
+            else
+            {
                 Functions::destroy(args..., *it, nullptr);
             }
         }
@@ -88,22 +90,27 @@ struct HandleGroupBase
 
 #define CREATE_FUNC_FULL(Type, CreateInfoType, CreateFunc, ...)                                   \
     [[nodiscard]] static constexpr inline Vk##Type create(                                        \
-        FOR_EACH(VK_TYPE_VAR_DEF, __VA_ARGS__) const CreateInfoType* pCreateInfo,                 \
-        const VkAllocationCallbacks* pAllocator, std::string message = {}) noexcept               \
+        FOR_EACH(VK_TYPE_VAR_DEF, __VA_ARGS__) const Vk##CreateInfoType* pCreateInfo,             \
+        const VkAllocationCallbacks* pAllocator = nullptr, std::string message = {}) noexcept     \
     {                                                                                             \
         Vk##Type result = VK_NULL_HANDLE;                                                         \
         ASSERT(CreateFunc(FOR_EACH(VK_TYPE_VAR, __VA_ARGS__) pCreateInfo, pAllocator, &result) == \
                 VK_SUCCESS,                                                                       \
             message);                                                                             \
         return result;                                                                            \
+    }                                                                                             \
+    [[nodiscard]] static constexpr inline Vk##Type create(                                        \
+        FOR_EACH(VK_TYPE_VAR_DEF, __VA_ARGS__) CreateInfoType createInfo,                         \
+        const VkAllocationCallbacks* pAllocator = nullptr, std::string message = {}) noexcept     \
+    {                                                                                             \
+        return create(FOR_EACH(VK_TYPE_VAR, __VA_ARGS__) & createInfo, pAllocator, message);      \
     }
 
-#define CREATE_FUNC(Type, ...) \
-    CREATE_FUNC_FULL(Type, Vk##Type##CreateInfo, vkCreate##Type, __VA_ARGS__)
+#define CREATE_FUNC(Type, ...) CREATE_FUNC_FULL(Type, Type##CreateInfo, vkCreate##Type, __VA_ARGS__)
 
 #define DESTROY_FUNC_FULL(Type, DestroyFunc, ...)                                                \
     static constexpr inline void destroy(FOR_EACH(VK_TYPE_VAR_DEF, __VA_ARGS__) Vk##Type handle, \
-        const VkAllocationCallbacks* pAllocator) noexcept                                        \
+        const VkAllocationCallbacks* pAllocator = nullptr) noexcept                              \
     {                                                                                            \
         DestroyFunc(FOR_EACH(VK_TYPE_VAR, __VA_ARGS__) handle, pAllocator);                      \
     }

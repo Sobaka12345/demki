@@ -9,37 +9,17 @@ namespace renderer::vk {
 using namespace handles;
 
 UniformBuffer::UniformBuffer(GraphicsContext& context, IUniformBuffer::CreateInfo createInfo)
-    : m_context(context)
-    , m_createInfo(std::move(createInfo))
+    : SpecificBuffer<IUniformBuffer>(context)
 {
-    auto bufferCreateInfo =
-        BufferCreateInfo{}
-            .size(createInfo.size())
-            .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-            .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
-    m_buffer = Buffer::create(context.device(), &bufferCreateInfo, nullptr);
+    allocateBuffer(createInfo.size(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(context.device(), m_buffer, &memRequirements);
-
-    //  TO DO: Change memory types
-    const auto properties =
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    const auto memAllocInfo =
-        MemoryAllocateInfo{}
-            .allocationSize(memRequirements.size)
-            .memoryTypeIndex(DeviceMemory::findMemoryType(context.physicalDevice(),
-                memRequirements.memoryTypeBits, properties));
-    m_memory = DeviceMemory::create(context.device(), &memAllocInfo, nullptr);
-
-    ASSERT(vkMapMemory(context.device(), m_memory, 0, createInfo.size(), 0, &m_data) == VK_SUCCESS);
+    ASSERT(vkMapMemory(context.device(), m_bufferMemory, 0, m_size, 0, &m_data) == VK_SUCCESS);
 }
 
 UniformBuffer::~UniformBuffer()
 {
-    DeviceMemory::destroy(m_context.device(), m_memory, nullptr);
-    Buffer::destroy(m_context.device(), m_buffer, nullptr);
+    destroy();
 }
 
 void UniformBuffer::bind(::renderer::OperationContext& context, uint32_t bindingId) const {}
@@ -53,6 +33,20 @@ void UniformBuffer::write(const void* data, size_t size, size_t offset)
 const void* UniformBuffer::read(size_t size, size_t offset) const
 {
     return (static_cast<char*>(m_data)) + offset;
+}
+
+size_t UniformBuffer::size() const
+{
+    return m_size;
+}
+
+void UniformBuffer::reallocate(size_t newSize)
+{
+    destroy();
+    allocateBuffer(newSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+    ASSERT(vkMapMemory(m_context.device(), m_bufferMemory, 0, m_size, 0, &m_data) == VK_SUCCESS);
 }
 
 }    //  namespace renderer::vk

@@ -11,9 +11,8 @@ class IUniformBuffer
     , public IShaderResource
 {
 public:
-    struct CreateInfo : public IBuffer::CreateInfo
+    struct CreateInfo : public IBuffer::CreateInfoBase<CreateInfo>
     {
-        CREATE_INFO_PROPERTY(bool, dynamic, false)
     };
 };
 

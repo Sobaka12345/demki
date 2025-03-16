@@ -53,6 +53,11 @@ constexpr auto enumT(E e) -> typename std::underlying_type<E>::type
    return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
+template <typename EnumT>
+EnumT operator&(EnumT lhs, EnumT rhs) {
+    return static_cast<EnumT>(enumT(lhs) & enumT(rhs));
+}
+
 template<size_t N>
 struct StringLiteral {
     constexpr StringLiteral(const char (&str)[N]) {

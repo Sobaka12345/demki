@@ -8,6 +8,9 @@ class IResources
 {
 public:
     virtual ~IResources() {}
+
+public:
+
 };
 
 }

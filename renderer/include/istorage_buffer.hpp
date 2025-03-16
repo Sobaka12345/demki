@@ -18,7 +18,7 @@ class IStorageBuffer
     , public IShaderResource
 {
 public:
-    struct CreateInfo : public IBuffer::CreateInfo
+    struct CreateInfo : public IBuffer::CreateInfoBase<CreateInfo>
     {
         CREATE_INFO_PROPERTY(bool, normalized, false)
         CREATE_INFO_PROPERTY(StructMetaInfo, dataTypeMetaInfo, {})

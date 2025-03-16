@@ -2,9 +2,19 @@
 
 namespace resources {
 
-Texture::Texture(std::filesystem::path path) noexcept {}
+Image::Image(std::filesystem::path path) noexcept
+{
+    pixels = stbi_load(path.string().c_str(), &width, &height, &textureChannels, STBI_rgb_alpha);
+    imageSize = width * height * 4;
+}
 
-Texture::Texture(std::filesystem::path path, uint32_t mipLevels) noexcept {}
+Image::~Image()
+{
+    if (pixels)
+    {
+        stbi_image_free(pixels);
+    }
+}
 
 
 }    //  namespace resources
