@@ -10,6 +10,8 @@ class Camera;
 class Renderable;
 }
 
+struct DrawPipelineObject;
+
 class Dummy : public engine::GraphicalApplication
 {
 public:
@@ -22,6 +24,10 @@ private:
 
 private:
     UpdateTimer<TimeResolution> m_timer;
+
+    std::shared_ptr<DrawPipelineObject> m_object;
+    std::shared_ptr<renderer::IStorageBuffer> m_indexBuffer;
+    std::shared_ptr<renderer::IStorageBuffer> m_vertexBuffer;
 
     std::shared_ptr<renderer::IRenderer> m_renderer;
     std::shared_ptr<renderer::IPipeline> m_renderPipeline;

@@ -193,6 +193,11 @@ Swapchain::~Swapchain()
     m_renderFinishedSemaphores.destroyAll(m_context.device());
 }
 
+GraphicsContext& Swapchain::context()
+{
+    return m_context;
+}
+
 void Swapchain::populateOperationContext(OperationContext& context)
 {
     context.specificTarget = this;
@@ -237,8 +242,8 @@ void Swapchain::populateOperationContext(OperationContext& context)
                                     m_context.physicalDevice(), memRequirements.memoryTypeBits,
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
-                        auto memory = m_imageMemory.emplace_back(handles::DeviceMemory::create(m_context.device(),
-                            &depthImageMemoryAllocateInfo, nullptr));
+                        auto memory = m_imageMemory.emplace_back(handles::DeviceMemory::create(
+                            m_context.device(), &depthImageMemoryAllocateInfo, nullptr));
                         vkBindImageMemory(m_context.device(), depthImage, memory, 0);
 
                         auto depthViewInfo =
@@ -270,8 +275,8 @@ void Swapchain::populateOperationContext(OperationContext& context)
                                     m_context.physicalDevice(), memRequirements.memoryTypeBits,
                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
-                        auto memory = m_imageMemory.emplace_back(handles::DeviceMemory::create(m_context.device(),
-                            &resolveImageMemoryAllocateInfo, nullptr));
+                        auto memory = m_imageMemory.emplace_back(handles::DeviceMemory::create(
+                            m_context.device(), &resolveImageMemoryAllocateInfo, nullptr));
                         vkBindImageMemory(m_context.device(), resolveImage, memory, 0);
 
                         auto resolveImageViewInfo =
@@ -477,7 +482,7 @@ void Swapchain::recreate()
 {
     while (!m_surface.available())
     {
-        // change to common method to support QT event system
+        //  change to common method to support QT event system
         glfwWaitEvents();
     }
     m_context.waitIdle();
@@ -508,10 +513,7 @@ void Swapchain::create()
 
     for (size_t i = 0; i < m_swapChainImages.size(); ++i)
     {
-        auto createInfo =
-            imageViewCreateInfo()
-                .image(m_swapChainImages[i])
-                .format(imageFormat());
+        auto createInfo = imageViewCreateInfo().image(m_swapChainImages[i]).format(imageFormat());
         createInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
         m_swapChainImageViews.push_back(ImageView::create(m_context.device(), &createInfo, nullptr,
             "failed to create swapchain image views"));

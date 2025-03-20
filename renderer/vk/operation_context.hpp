@@ -20,6 +20,7 @@ class ISpecificOperationTarget;
 class Computer;
 class Renderer;
 class ISpecificPipeline;
+struct ISpecificPipelineDescriptor;
 
 class PipelineBindContext;
 class ComputePipeline;
@@ -30,7 +31,7 @@ struct OperationContext
     OperationContext() = default;
     OperationContext(Computer* computer);
     OperationContext(Renderer* renderer);
-    OperationContext(OperationContext&& other);
+    OperationContext(OperationContext&& other) = default;
     OperationContext(const OperationContext& other) = delete;
     ~OperationContext();
 
@@ -38,6 +39,7 @@ struct OperationContext
     ISpecificPipeline* specificPipeline();
     IOperationTarget* operationTarget();
 
+    void draw();
     void submit(::renderer::OperationContext& context);
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;
@@ -50,6 +52,7 @@ struct OperationContext
     VkFormat depthFormat = VK_FORMAT_UNDEFINED;
     VkFormat imageFormat = VK_FORMAT_UNDEFINED;
 
+    ISpecificPipelineDescriptor* pipelineDescriptor = nullptr;
     ISpecificOperationTarget* specificTarget = nullptr;
     IOperationTarget* mainTarget = nullptr;
 

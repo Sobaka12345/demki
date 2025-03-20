@@ -1,5 +1,7 @@
 #include "dummy.hpp"
 
+#include "glsl_types.hpp"
+
 #include "shaders_hpp/shader.vert.spv.hpp"
 #include "shaders_hpp/shader.comp.spv.hpp"
 #include "shaders_hpp/shader.frag.spv.hpp"
@@ -11,33 +13,46 @@
 
 using namespace renderer;
 
-static constexpr std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
-    Vertex3DColoredTextured{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
-    Vertex3DColoredTextured{ { 0.5f, -0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
-    Vertex3DColoredTextured{ { -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
-    Vertex3DColoredTextured{ { 0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
-    Vertex3DColoredTextured{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
-    Vertex3DColoredTextured{ { 0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
-    Vertex3DColoredTextured{ { -0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
-    Vertex3DColoredTextured{ { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
-};
-
-static constexpr std::array<uint32_t, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
-    2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
-
-struct MultiUniformBuffer : public IShaderResource
+static std::span<const Vertex3DColoredTextured> cubeVertices()
 {
-    void bind(OperationContext& context, uint32_t bindingId) const {}
+    static const std::array<Vertex3DColoredTextured, 8> s_cubeVertices = {
+        Vertex3DColoredTextured{ { -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
+        Vertex3DColoredTextured{ { 0.5f, -0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
+        Vertex3DColoredTextured{ { -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+        Vertex3DColoredTextured{ { 0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+        Vertex3DColoredTextured{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
+        Vertex3DColoredTextured{ { 0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
+        Vertex3DColoredTextured{ { -0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
+        Vertex3DColoredTextured{ { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+    };
 
-    std::vector<std::shared_ptr<IUniformBuffer>> m_buffers;
-};
+    return s_cubeVertices;
+}
 
-struct DrawPipelineDescriptor : public IPipeline::Descriptor
+static std::span<const IndexType> cubeIndices()
 {
-    std::shared_ptr<renderer::IStorageBuffer> drawCommands;
+    static const std::array<IndexType, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0, 2,
+        6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
+
+    return s_cubeIndices;
+}
+
+struct DrawPipelineObject : public IPipeline::Object
+{
+    std::shared_ptr<renderer::IStorageBuffer> vertices;
+    std::shared_ptr<renderer::IStorageBuffer> indices;
     std::shared_ptr<renderer::IUniformBuffer> uniforms;
 
-    virtual std::span<const IShaderResource*> binding(uint32_t id) const override {}
+    using IPipeline::Object::Object;
+
+    virtual void init() override {
+        setBinding(0, indices);
+        setBinding(1, vertices);
+    }
+
+    void draw(OperationContext& context) {
+        context.draw();
+    }
 };
 
 struct RenderGroup
@@ -53,8 +68,19 @@ Dummy::Dummy(int& argc, char** argv)
             .addShaderModule(shader_vert_spv)
             .addShaderModule(shader_frag_spv));
 
-    auto buffer = context().createStorageBuffer(IStorageBuffer::CreateInfo{}.size(500));
-    auto uniformBuffer = context().createUniformBuffer(IUniformBuffer::CreateInfo{}.size(100));
+    m_vertexBuffer = context().createStorageBuffer(
+        IStorageBuffer::CreateInfo{}.size(cubeVertices().size_bytes()));
+    m_vertexBuffer->write(cubeVertices().data(), cubeVertices().size_bytes());
+
+    m_indexBuffer = context().createStorageBuffer(
+        IStorageBuffer::CreateInfo{}.size(cubeIndices().size_bytes()));
+    m_indexBuffer->write(cubeIndices().data(), cubeIndices().size_bytes());
+
+    m_object = std::make_shared<DrawPipelineObject>(*m_renderPipeline);
+    m_object->indices = m_indexBuffer;
+    m_object->vertices = m_vertexBuffer;
+    m_object->init();
+    //auto uniformBuffer = context().createUniformBuffer(IUniformBuffer::CreateInfo{}.size(100));
 }
 
 Dummy::~Dummy() {}
@@ -81,6 +107,9 @@ void Dummy::perform()
     });
 
     m_renderPipeline->bind(context);
+    m_object->bind(context);
+
+    m_object->draw(context);
 
     context.submit();
 }

@@ -16,6 +16,7 @@ using namespace handles;
 Renderer::Renderer(const GraphicsContext& context, IRenderer::CreateInfo createInfo)
     : m_context(context)
     , m_multisampling(toVkSampleFlagBits(createInfo.multisampling()))
+    , m_clearColor(createInfo.clearValue())
 {
     m_attachments.reserve(Attachment::COUNT);
 

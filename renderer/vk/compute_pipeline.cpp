@@ -19,6 +19,11 @@ ComputePipeline::ComputePipeline(GraphicsContext& context, CreateInfo createInfo
 
 ComputePipeline::~ComputePipeline() {}
 
+GraphicsContext& ComputePipeline::context()
+{
+    return m_context;
+}
+
 IComputePipeline::ComputeDimensions ComputePipeline::computeDimensions() const
 {
     return m_computeDimensions;
@@ -32,6 +37,11 @@ void ComputePipeline::bind(renderer::OperationContext& context)
     specContext.computePipeline = this;
 }
 
+std::shared_ptr<IPipeline::Descriptor> ComputePipeline::spawnDescriptor()
+{
+    return std::make_shared<ISpecificPipelineDescriptor>(*this);
+}
+
 VkComputePipeline ComputePipeline::pipeline(const OperationContext& context)
 {
     if (auto el = m_pipelines.find(context.renderPass); el != m_pipelines.end())
@@ -43,8 +53,8 @@ VkComputePipeline ComputePipeline::pipeline(const OperationContext& context)
         defaultPipeline().layout(m_pipelineLayout).stage(*m_shaderStageCreateInfos.data());
 
     VkComputePipeline pipeline = VK_NULL_HANDLE;
-    handles::ComputePipeline::create(m_context.device(), VK_NULL_HANDLE, 1,
-        &pipelineCreateInfo, nullptr, &pipeline);
+    handles::ComputePipeline::create(m_context.device(), VK_NULL_HANDLE, 1, &pipelineCreateInfo,
+        nullptr, &pipeline);
     auto [newEl, inserted] = m_pipelines.emplace(context.renderPass, pipeline);
     DASSERT(inserted);
 

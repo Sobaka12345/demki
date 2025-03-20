@@ -17,8 +17,11 @@ public:
     ComputePipeline(GraphicsContext& context, CreateInfo createInfo);
     ~ComputePipeline();
 
+    virtual GraphicsContext& context() override;
+
     virtual ComputeDimensions computeDimensions() const override;
     virtual void bind(renderer::OperationContext& context) override;
+    virtual std::shared_ptr<IPipeline::Descriptor> spawnDescriptor() override;
 
 private:
     VkComputePipeline pipeline(const OperationContext& context);

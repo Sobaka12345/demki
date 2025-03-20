@@ -60,6 +60,11 @@ public:
         std::visit([&](auto& context) { context.setViewport(std::move(viewport)); }, *this);
     };
 
+    void draw()
+    {
+        std::visit([&](auto& context) { context.draw(); }, *this);
+    };
+
 private:
     static size_t createId()
     {

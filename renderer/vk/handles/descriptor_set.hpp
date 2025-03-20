@@ -33,7 +33,14 @@ struct DescriptorSetFunctions : public CRTPBase<T>
         const VkDescriptorSetAllocateInfo* pAllocateInfo,
         VkDescriptorSet* pDescriptorSets) noexcept
     {
-        ASSERT(vkAllocateDescriptorSets(device, pAllocateInfo, pDescriptorSets));
+        ASSERT(vkAllocateDescriptorSets(device, pAllocateInfo, pDescriptorSets) == VK_SUCCESS);
+    }
+
+    static constexpr inline void allocate(VkDevice device,
+        DescriptorSetAllocateInfo allocateInfo,
+        VkDescriptorSet* pDescriptorSets) noexcept
+    {
+        return allocate(device, &allocateInfo, pDescriptorSets);
     }
 
     static constexpr inline void free(VkDevice device,

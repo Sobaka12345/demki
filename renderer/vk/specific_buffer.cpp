@@ -19,6 +19,7 @@ void ISpecificBuffer::allocateBuffer(
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(m_context.device(), m_buffer, &memRequirements);
 
+    m_alignment = memRequirements.alignment;
     m_bufferMemory = DeviceMemory::create(m_context.device(),
         MemoryAllocateInfo{}
             .allocationSize(memRequirements.size)
@@ -32,6 +33,12 @@ void ISpecificBuffer::destroy()
 {
     DeviceMemory::destroy(m_context.device(), m_bufferMemory);
     Buffer::destroy(m_context.device(), m_buffer);
+}
+
+void ISpecificBuffer::setActiveRange(size_t size, size_t offset)
+{
+    m_dynamicSize = size;
+    m_dynamicOffset = offset;
 }
 
 }    //  namespace renderer::vk

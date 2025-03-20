@@ -11,9 +11,14 @@ class IUniformBuffer
     , public IShaderResource
 {
 public:
-    struct CreateInfo : public IBuffer::CreateInfoBase<CreateInfo>
+    struct CreateInfo : public IBuffer::CreateInfo<CreateInfo>
     {
     };
+
+protected:
+    IUniformBuffer()
+        : IShaderResource(IResource::TYPE_UNIFORM_BUFFER)
+    {}
 };
 
 }    //  namespace renderer

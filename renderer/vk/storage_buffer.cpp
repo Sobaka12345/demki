@@ -7,6 +7,8 @@
 #include "handles/semaphore.hpp"
 #include "handles/queue.hpp"
 
+#include "types.hpp"
+
 #include "compute_pipeline.hpp"
 
 #include <cstring>
@@ -19,6 +21,8 @@ StorageBuffer::StorageBuffer(GraphicsContext& context, CreateInfo createInfo)
     allocateBuffer(createInfo.size(),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+    ASSERT(vkMapMemory(context.device(), m_bufferMemory, 0, m_size, 0, &m_data) == VK_SUCCESS);
 }
 
 StorageBuffer::~StorageBuffer()
@@ -90,20 +94,63 @@ uint32_t StorageBuffer::currentFrameIndex() const
     return 0;
 }
 
+void StorageBuffer::init(renderer::OperationContext& context, uint32_t bindingId) const
+{
+    auto pipelineDescriptor = get(context).pipelineDescriptor;
+
+    auto bufferInfo = DescriptorBufferInfo{}.buffer(m_buffer).offset(0).range(size());
+    auto writeDescriptor =
+        pipelineDescriptor->writeDescriptorSetTemplate(bindingId).pBufferInfo(&bufferInfo);
+
+    vkUpdateDescriptorSets(m_context.device(), 1, &writeDescriptor, 0, nullptr);
+
+    pipelineDescriptor->initDynamicOffset(bindingId);
+}
+
 void StorageBuffer::bind(renderer::OperationContext& context, uint32_t bindingId) const
 {
-    //  NOTHING TO DO
+    auto& specContext = get(context);
+    specContext.pipelineDescriptor->setDynamicOffset(bindingId, dynamicOffset());
 }
 
 void StorageBuffer::write(const void* data, size_t size, size_t offset)
 {
-    std::memcpy(reinterpret_cast<void*>(reinterpret_cast<ptrdiff_t>(m_data) + offset), data,
+    std::memcpy(static_cast<void*>(static_cast<char*>(m_data) + offset), data,
         static_cast<size_t>(size));
 }
 
 const void* StorageBuffer::read(size_t size, size_t offset) const
 {
-    return (static_cast<char*>(m_data)) + offset;
+    return static_cast<char*>(m_data) + offset;
+}
+
+void StorageBuffer::setDynamicRange(size_t size, size_t offset)
+{
+    ISpecificBuffer::setActiveRange(size, offset);
+}
+
+size_t StorageBuffer::dynamicSize() const
+{
+    return m_dynamicSize;
+}
+
+size_t StorageBuffer::dynamicOffset() const
+{
+    return m_dynamicOffset;
+}
+
+size_t StorageBuffer::size() const
+{
+    return m_size;
+}
+
+void StorageBuffer::reallocate(size_t newSize)
+{
+    destroy();
+    allocateBuffer(newSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+    ASSERT(vkMapMemory(m_context.device(), m_bufferMemory, 0, m_size, 0, &m_data) == VK_SUCCESS);
 }
 
 }    //  namespace renderer::vk

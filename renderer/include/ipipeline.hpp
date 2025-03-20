@@ -7,6 +7,7 @@
 
 #include <variant>
 #include <memory>
+#include <map>
 
 namespace renderer {
 
@@ -18,9 +19,44 @@ class IPipeline : public IContextObject
 public:
     typedef std::variant<Vertex3DColoredTextured, Vertex3DColored, Vertex3D> InputType;
 
-    struct Descriptor {
-        virtual std::span<const IShaderResource*> binding(uint32_t id) const = 0;
+    struct Descriptor
+    {
+        virtual void bind(OperationContext& context);
+        virtual void setBinding(uint32_t bindingId, std::shared_ptr<IShaderResource> resource);
+
+        std::map<uint32_t, std::shared_ptr<IShaderResource>> resources;
+
+    protected:
+        Descriptor() = default;
     };
+
+    class Object
+    {
+    public:
+        Object(IPipeline& pipeline)
+            : descriptor(pipeline.spawnDescriptor())
+        {}
+
+        virtual void init() = 0;
+
+        void setBinding(uint32_t bindingId, std::shared_ptr<IShaderResource> resource)
+        {
+            descriptor->setBinding(bindingId, resource);
+        }
+
+        void bind(OperationContext& context) { return descriptor->bind(context); }
+
+    private:
+        std::shared_ptr<Descriptor> descriptor;
+    };
+
+    // template <typename PipelineObjectT>
+    // std::shared_ptr<PipelineObjectT> createPipelineObjectFactory()
+    // {
+    //     auto result = std::make_shared<PipelineObjectT>(*this);
+
+    //     return result;
+    // }
 
 protected:
     template <typename Derived>
@@ -101,6 +137,9 @@ public:
     virtual void bind(OperationContext& context) = 0;
 
     virtual ~IPipeline() {}
+
+private:
+    virtual std::shared_ptr<IPipeline::Descriptor> spawnDescriptor() = 0;
 };
 
 }    //  namespace renderer

@@ -18,7 +18,7 @@ class IStorageBuffer
     , public IShaderResource
 {
 public:
-    struct CreateInfo : public IBuffer::CreateInfoBase<CreateInfo>
+    struct CreateInfo : public IBuffer::CreateInfo<CreateInfo>
     {
         CREATE_INFO_PROPERTY(bool, normalized, false)
         CREATE_INFO_PROPERTY(StructMetaInfo, dataTypeMetaInfo, {})
@@ -28,6 +28,11 @@ public:
     virtual ~IStorageBuffer() {}
 
     virtual void draw(OperationContext& context) const = 0;
+
+protected:
+    IStorageBuffer()
+        : IShaderResource(IResource::TYPE_STORAGE_BUFFER)
+    {}
 };
 
 }    //  namespace renderer

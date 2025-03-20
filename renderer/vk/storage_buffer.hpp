@@ -27,15 +27,25 @@ public:
     virtual void populateWaitInfo(OperationContext& context) override;
     virtual uint32_t currentFrameIndex() const override;
 
-    //  IShaderResource interface
+    virtual void init(renderer::OperationContext& context, uint32_t bindingId) const override;
     virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const override;
 
     virtual void write(const void* data, size_t size, size_t offset = 0) override;
     virtual const void* read(size_t size, size_t offset = 0) const override;
 
+    virtual void setDynamicRange(size_t size, size_t offset = 0) override;
+    virtual size_t dynamicSize() const override;
+    virtual size_t dynamicOffset() const override;
+
+    virtual size_t size() const override;
+    virtual void reallocate(size_t newSize) override;
+
 private:
     bool m_emitWait;
     uint64_t m_elementCount;
+
+    size_t m_activeSize;
+    size_t m_activeOffset;
 
     std::vector<VkSemaphore> m_computeWaitSemaphores;
 

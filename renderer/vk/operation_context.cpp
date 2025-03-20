@@ -23,24 +23,6 @@ OperationContext::OperationContext(Renderer* renderer)
     : renderer(renderer)
 {}
 
-OperationContext::OperationContext(OperationContext&& other)
-    : graphicsPipeline(std::move(other.graphicsPipeline))
-    , computePipeline(std::move(other.computePipeline))
-    , waitSemaphores(std::move(other.waitSemaphores))
-    , framebuffer(std::move(other.framebuffer))
-    , commandBuffer(std::move(other.commandBuffer))
-    , specificTarget(std::move(other.specificTarget))
-    , renderer(std::move(other.renderer))
-    , computer(std::move(other.computer))
-    , renderPass(std::move(other.renderPass))
-    , mainTarget(std::move(other.mainTarget))
-{
-    other.renderer = nullptr;
-    other.computer = nullptr;
-    other.computePipeline = nullptr;
-    other.graphicsPipeline = nullptr;
-}
-
 OperationContext::~OperationContext() {}
 
 IPipeline* OperationContext::pipeline()
@@ -61,6 +43,11 @@ IOperationTarget* OperationContext::operationTarget()
     if (mainTarget) return mainTarget;
 
     return specificTarget->toBase();
+}
+
+void OperationContext::draw()
+{
+    vkCmdDraw(commandBuffer, 36, 1, 0, 0);
 }
 
 void OperationContext::submit(renderer::OperationContext& context)

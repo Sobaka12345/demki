@@ -11,7 +11,9 @@ public:
     {
         UNDEFINED = 0,
         TYPE_MESH = 0x01,
-        TYPE_IMAGE = 0x02
+        TYPE_IMAGE = 0x02,
+        TYPE_UNIFORM_BUFFER = 0x04,
+        TYPE_STORAGE_BUFFER = 0x08
     };
 
     IResource(Flags flags)
@@ -20,7 +22,7 @@ public:
 
     uint64_t id() const { return m_id; }
 
-    virtual size_t sizeBytes() const = 0;
+    virtual size_t size() const = 0;
 
     virtual ~IResource() {}
 

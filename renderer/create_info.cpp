@@ -1,9 +1,20 @@
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "include/ipipeline.hpp"
 
-#include <tiny_obj_loader.h>
+#include "include/ishader_resource.hpp"
 
 namespace renderer {
+
+void IPipeline::Descriptor::bind(OperationContext& context) {
+    for(auto& [bindingId, resource] : resources) {
+        resource->bind(context, bindingId);
+    }
+};
+
+void IPipeline::Descriptor::setBinding(uint32_t bindingId, std::shared_ptr<IShaderResource> resource)
+{
+    resources[bindingId] = resource;
+};
+
 
 // IMesh::CreateInfo::CreateInfo(std::filesystem::path path)
 // {

@@ -1,18 +1,22 @@
 #include "texture.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 namespace resources {
 
 Image::Image(std::filesystem::path path) noexcept
-{
-    pixels = stbi_load(path.string().c_str(), &width, &height, &textureChannels, STBI_rgb_alpha);
-    imageSize = width * height * 4;
+    : IResource(TYPE_IMAGE)
+{   
+    m_pixels = stbi_load(path.string().c_str(), &m_width, &m_height, &m_channels, STBI_rgb_alpha);
+    std::cout << m_channels;
 }
 
 Image::~Image()
 {
-    if (pixels)
+    if (m_pixels)
     {
-        stbi_image_free(pixels);
+        stbi_image_free(m_pixels);
     }
 }
 

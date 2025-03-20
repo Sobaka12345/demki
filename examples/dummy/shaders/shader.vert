@@ -6,15 +6,26 @@
 // layout(location = 1) in vec2 velocity;
 // layout(location = 2) in vec4 inColor;
 
-layout(binding = 0) readonly buffer DrawCommands
+
+layout(binding = 0) readonly buffer Indices
 {
-	Draw drawCommands[];
+	IndexType indices[];
 };
+
+layout(binding = 1) readonly buffer Vertices
+{
+	Vertex3DColoredTextured vertices[];
+};
+
+// layout(binding = 2) readonly buffer DrawCommands
+// {
+// 	Draw drawCommands[];
+// };
 
 layout(location = 0) out vec4 fragColor;
 
 void main() {
-
-    // gl_Position = camera.projection * camera.view * position.model * vec4(inPosition, 1.0);
-     fragColor = vec4(1,1,1,1);
+	Vertex3DColoredTextured vt = vertices[indices[gl_VertexIndex]];
+	gl_Position = vec4(vt.pos, 1);
+	fragColor = vec4(vt.color, 1);
 }

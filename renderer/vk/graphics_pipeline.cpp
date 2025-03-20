@@ -2,6 +2,8 @@
 
 #include "../include/ishader_interface_container.hpp"
 
+#include "handles/descriptor_set.hpp"
+
 #include "graphics_context.hpp"
 #include "renderer.hpp"
 #include "specific_operation_target.hpp"
@@ -220,8 +222,12 @@ GraphicsPipeline::GraphicsPipeline(GraphicsContext& context, CreateInfo createIn
 
 GraphicsPipeline::~GraphicsPipeline()
 {
-    handles::PipelineLayout::destroy(m_context.device(), m_layout, nullptr);
     m_pipelines.destroyAll(m_context.device());
+}
+
+GraphicsContext& GraphicsPipeline::context()
+{
+    return m_context;
 }
 
 void GraphicsPipeline::bind(renderer::OperationContext& context)
@@ -229,6 +235,25 @@ void GraphicsPipeline::bind(renderer::OperationContext& context)
     auto& specContext = get(context);
     vkCmdBindPipeline(specContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipeline(specContext));
+}
+
+std::shared_ptr<IPipeline::Descriptor> GraphicsPipeline::spawnDescriptor()
+{
+    struct Descriptor : public ISpecificPipelineDescriptor
+    {
+        using ISpecificPipelineDescriptor::ISpecificPipelineDescriptor;
+
+        virtual void bind(renderer::OperationContext& context) override
+        {
+            ISpecificPipelineDescriptor::bind(context);
+            auto& specContext = get(context);
+            vkCmdBindDescriptorSets(specContext.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipelineLayout(), 0, descriptorSets.size(), descriptorSets.data(),
+                dynamicOffsets.size(), dynamicOffsets.data());
+        }
+    };
+
+    return std::make_shared<Descriptor>(*this);
 }
 
 VkGraphicsPipeline GraphicsPipeline::pipeline(const vk::OperationContext& context)

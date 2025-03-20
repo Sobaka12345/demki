@@ -1,5 +1,7 @@
 #pragma once
 
+#include "handles/descriptor_set.hpp"
+#include "handles/descriptor_pool.hpp"
 #include "handles/pipeline.hpp"
 #include "handles/pipeline_layout.hpp"
 #include "handles/shader_module.hpp"
@@ -15,12 +17,16 @@ struct SpvReflectShaderModule;
 
 namespace renderer::vk {
 
+struct ISpecificPipelineDescriptor;
+
 class ISpecificPipeline
 {
 public:
     virtual IPipeline* toBase() = 0;
 
 protected:
+    friend struct ISpecificPipelineDescriptor;
+
     ISpecificPipeline(GraphicsContext& context)
         : m_context(context)
     {}
@@ -30,12 +36,34 @@ protected:
     void initModules(std::span<const std::shared_ptr<SpvReflectShaderModule>> module);
 
 protected:
-    const GraphicsContext& m_context;
+    GraphicsContext& m_context;
 
     std::vector<PipelineShaderStageCreateInfo> m_shaderStageCreateInfos;
+    std::map<uint32_t, WriteDescriptorSet> m_writeDescriptorSetTemplateByBinding;
+    std::map<uint32_t, size_t> m_descriptorSetLayoutIdByBinding;
     handles::ShaderModule::Vector<> m_shaderModules;
     handles::DescriptorSetLayout::Vector<> m_setLayouts;
     VkPipelineLayout m_pipelineLayout;
+    VkDescriptorPool m_descriptorPool;
+};
+
+struct ISpecificPipelineDescriptor : public IPipeline::Descriptor
+{
+    ISpecificPipelineDescriptor(ISpecificPipeline& specificPipeline);
+
+    virtual void bind(renderer::OperationContext& context) override;
+
+    void initDynamicOffset(uint32_t bindingId);
+    void setDynamicOffset(uint32_t bindingId, uint32_t offset);
+    virtual void setBinding(uint32_t bindingId, std::shared_ptr<IShaderResource> resource) override;
+    VkDescriptorSet descriptorSet(uint32_t bindingId) const;
+    WriteDescriptorSet writeDescriptorSetTemplate(uint32_t bindingId) const;
+    VkPipelineLayout pipelineLayout() const;
+
+    std::vector<uint32_t> dynamicOffsets;
+    handles::DescriptorSet::Vector<> descriptorSets;
+    ISpecificPipeline& specificPipeline;
+    std::map<uint32_t, size_t> bindingIdToDynamicOffsetId;
 };
 
 template <typename IBase>

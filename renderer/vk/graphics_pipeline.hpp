@@ -18,7 +18,10 @@ public:
     GraphicsPipeline(GraphicsContext& context, CreateInfo createInfo);
     ~GraphicsPipeline();
 
+    virtual GraphicsContext& context() override;
+
     virtual void bind(renderer::OperationContext& context) override;
+    virtual std::shared_ptr<IPipeline::Descriptor> spawnDescriptor() override;
 
 private:
     VkGraphicsPipeline pipeline(const vk::OperationContext& context);
@@ -30,7 +33,6 @@ private:
     VkPrimitiveTopology m_topology;
     glm::float32_t m_sampleShading;
 
-    VkPipelineLayout m_layout;
     PipelineRasterizationStateCreateInfo m_rasterizationStateCreateInfo;
     PipelineInputAssemblyStateCreateInfo m_inputAssemblyCreateInfo;
     PipelineMultisampleStateCreateInfo m_multisampleStateCreateInfo;

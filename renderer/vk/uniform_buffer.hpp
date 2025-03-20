@@ -15,11 +15,16 @@ public:
     virtual ~UniformBuffer() override;
 
 public:
-    virtual void bind(::renderer::OperationContext& context, uint32_t bindingId) const override;
+    virtual void init(renderer::OperationContext& context, uint32_t bindingId) const override;
+    virtual void bind(renderer::OperationContext& context, uint32_t bindingId) const override;
 
 public:
     virtual void write(const void* data, size_t size, size_t offset) override;
     virtual const void* read(size_t size, size_t offset) const override;
+
+    virtual void setDynamicRange(size_t size, size_t offset = 0) override;
+    virtual size_t dynamicSize() const override;
+    virtual size_t dynamicOffset() const override;
 
     virtual size_t size() const override;
     virtual void reallocate(size_t newSize) override;

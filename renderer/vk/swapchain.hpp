@@ -46,6 +46,8 @@ public:
     Swapchain(GraphicsContext& context, IVulkanSurface& surface, ISwapchain::CreateInfo createInfo);
     ~Swapchain();
 
+    virtual GraphicsContext& context() override;
+
     virtual bool prepare(renderer::OperationContext& context) override;
     virtual void present(renderer::OperationContext& context) override;
 

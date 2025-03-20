@@ -1,10 +1,9 @@
 #ifndef GLSL_TYPES_HPP
 #define GLSL_TYPES_HPP
 
-#ifdef GLSL_HOST
-#	include <glsl_defs.hpp>
-#else
-#	define REGISTER_GLSL_TYPE(Type)
+// TO DO: THINK ABOUT ANOTHER WAY OF INCLUDING EXTERNAL HEADERS TO GLSL
+#ifndef GLSL_HOST
+#include "../../utils/glsl_defs.hpp"
 #endif
 
 struct Draw

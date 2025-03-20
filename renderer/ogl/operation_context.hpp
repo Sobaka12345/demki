@@ -28,6 +28,7 @@ struct OperationContext
     OperationContext(const OperationContext& other) = delete;
     ~OperationContext();
 
+    void draw(){};
     void submit(renderer::OperationContext& context);
     void waitForOperation(OperationContext& other);
     void setScissors(Scissors scissors) const;

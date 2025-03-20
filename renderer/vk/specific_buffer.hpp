@@ -25,11 +25,16 @@ protected:
     void allocateBuffer(size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
     void destroy();
 
+    void setActiveRange(size_t size, size_t offset);
+
 protected:
     GraphicsContext& m_context;
 
     void* m_data = nullptr;
+    size_t m_alignment = 0;
     size_t m_size = 0;
+    size_t m_dynamicSize = m_size;
+    size_t m_dynamicOffset = 0;
     VkBuffer m_buffer = VK_NULL_HANDLE;
     VkDeviceMemory m_bufferMemory = VK_NULL_HANDLE;
 };

@@ -13,23 +13,43 @@
 #include <glm/gtx/hash.hpp>
 
 #define CREATE_INFO_PROPERTY(type, name, default) \
-                                              \
-public:                                       \
-    CreateInfo& name(type value)              \
-    {                                         \
-        m_##name = value;                     \
-        return *this;                         \
-    }                                         \
-    const auto& name() const                  \
-    {                                         \
-        return m_##name;                      \
-    }                                         \
-    auto& name()                              \
-    {                                         \
-        return m_##name;                      \
-    }                                         \
-                                              \
-private:                                      \
+                                                  \
+public:                                           \
+    CreateInfo& name(type value)                  \
+    {                                             \
+        m_##name = value;                         \
+        return *this;                             \
+    }                                             \
+    const auto& name() const                      \
+    {                                             \
+        return m_##name;                          \
+    }                                             \
+    auto& name()                                  \
+    {                                             \
+        return m_##name;                          \
+    }                                             \
+                                                  \
+private:                                          \
+    type m_##name = default;
+
+#define CREATE_INFO_PROPERTY_BASE(DerivedType, type, name, default) \
+                                                                    \
+public:                                                             \
+    DerivedType& name(type value)                                   \
+    {                                                               \
+        m_##name = value;                                           \
+        return *static_cast<DerivedType*>(this);                    \
+    }                                                               \
+    const auto& name() const                                        \
+    {                                                               \
+        return m_##name;                                            \
+    }                                                               \
+    auto& name()                                                    \
+    {                                                               \
+        return m_##name;                                            \
+    }                                                               \
+                                                                    \
+private:                                                            \
     type m_##name = default;
 
 
@@ -40,63 +60,31 @@ private:                                      \
 #include <type_traits>
 
 template <typename EnumT>
-EnumT& operator++(EnumT& e) {
+EnumT& operator++(EnumT& e)
+{
     using IntType = typename std::underlying_type<EnumT>::type;
-    e = static_cast<EnumT>( static_cast<IntType>(e) + 1 );
+    e = static_cast<EnumT>(static_cast<IntType>(e) + 1);
     if (e > EnumT::COUNT) e = EnumT::BEGIN;
     return e;
 }
 
-template<typename E>
+template <typename E>
 constexpr auto enumT(E e) -> typename std::underlying_type<E>::type
 {
-   return static_cast<typename std::underlying_type<E>::type>(e);
+    return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
-template <typename EnumT>
-EnumT operator&(EnumT lhs, EnumT rhs) {
-    return static_cast<EnumT>(enumT(lhs) & enumT(rhs));
-}
-
-template<size_t N>
-struct StringLiteral {
-    constexpr StringLiteral(const char (&str)[N]) {
-        std::copy_n(str, N, value);
-    }
+template <size_t N>
+struct StringLiteral
+{
+    constexpr StringLiteral(const char (&str)[N]) { std::copy_n(str, N, value); }
 
     char value[N];
 };
 
+#define GLSL_HOST
 
-struct Vertex3D
-{
-    glm::vec3 pos;
-
-    bool operator==(const Vertex3D& other) const { return pos == other.pos; }
-};
-
-struct Vertex3DColored
-{
-    glm::vec3 pos;
-    glm::vec3 color;
-
-    bool operator==(const Vertex3DColored& other) const
-    {
-        return pos == other.pos && color == other.color;
-    }
-};
-
-struct Vertex3DColoredTextured
-{
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 texture;
-
-    bool operator==(const Vertex3DColoredTextured& other) const
-    {
-        return pos == other.pos && color == other.color && texture == other.texture;
-    }
-};
+#include "glsl_defs.hpp"
 
 namespace std {
 
