@@ -45,9 +45,9 @@ IOperationTarget* OperationContext::operationTarget()
     return specificTarget->toBase();
 }
 
-void OperationContext::draw()
+void OperationContext::draw(uint32_t count, uint32_t instances)
 {
-    vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+    vkCmdDraw(commandBuffer, count, instances, 0, 0);
 }
 
 void OperationContext::submit(renderer::OperationContext& context)

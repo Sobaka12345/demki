@@ -50,9 +50,6 @@ struct DrawPipelineObject : public IPipeline::Object
         setBinding(1, vertices);
     }
 
-    void draw(OperationContext& context) {
-        context.draw();
-    }
 };
 
 struct RenderGroup
@@ -81,6 +78,8 @@ Dummy::Dummy(int& argc, char** argv)
     m_object->vertices = m_vertexBuffer;
     m_object->init();
     //auto uniformBuffer = context().createUniformBuffer(IUniformBuffer::CreateInfo{}.size(100));
+
+    setFpsCap(60);
 }
 
 Dummy::~Dummy() {}
@@ -109,7 +108,7 @@ void Dummy::perform()
     m_renderPipeline->bind(context);
     m_object->bind(context);
 
-    m_object->draw(context);
+    context.draw(cubeIndices().size());
 
     context.submit();
 }

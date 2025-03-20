@@ -58,6 +58,11 @@ AbstractApplication::~AbstractApplication()
     glfwTerminate();
 }
 
+void AbstractApplication::setFpsCap(uint32_t framesPerSec)
+{
+    m_fpsCap.setIntervalMS(1000.0f / framesPerSec);
+}
+
 renderer::IGraphicsContext& AbstractApplication::context()
 {
     return window().graphicsContext();

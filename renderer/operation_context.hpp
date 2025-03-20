@@ -60,9 +60,9 @@ public:
         std::visit([&](auto& context) { context.setViewport(std::move(viewport)); }, *this);
     };
 
-    void draw()
+    void draw(uint32_t count, uint32_t instances = 1)
     {
-        std::visit([&](auto& context) { context.draw(); }, *this);
+        std::visit([&](auto& context) { context.draw(count, instances); }, *this);
     };
 
 private:

@@ -1,7 +1,7 @@
 #include "qt_application.hpp"
 
 #include <qt/window/vulkan_window.hpp>
-//#include <qt/window/opengl_window.hpp>
+//  #include <qt/window/opengl_window.hpp>
 
 #include <resources.hpp>
 
@@ -21,11 +21,11 @@ QtApplication::QtApplication(int& argc, char** argv)
         m_mainWindow.reset(new shell::qt::VulkanWindow(createInfo.windowWidth,
             createInfo.windowHeight, createInfo.windowName));
     }
-    // else if (createInfo.gapi == GAPI::OpenGL)
-    // {
-    //     m_mainWindow.reset(new shell::qt::OpenGLWindow(createInfo.windowWidth,
-    //         createInfo.windowHeight, createInfo.windowName));
-    // }
+    //  else if (createInfo.gapi == GAPI::OpenGL)
+    //  {
+    //      m_mainWindow.reset(new shell::qt::OpenGLWindow(createInfo.windowWidth,
+    //          createInfo.windowHeight, createInfo.windowName));
+    //  }
 }
 
 QtApplication::~QtApplication() {}
@@ -37,11 +37,17 @@ int QtApplication::exec()
         m_mainWindow.get(), &shell::qt::Window::render, this,
         [start, this]() mutable {
             auto end = std::chrono::steady_clock::now();
-            update(std::chrono::duration_cast<std::chrono::duration<int64_t, TimeResolution>>(
-                end - start)
-                       .count());
-            start = end;
-            perform();
+            const auto dt =
+                std::chrono::duration_cast<std::chrono::duration<int64_t, TimeResolution>>(
+                    end - start)
+                    .count();
+
+            if (m_fpsCap.timePassed(dt))
+            {
+                update(dt);
+                start = end;
+                perform();
+            }
         },
         Qt::DirectConnection);
 

@@ -5,6 +5,7 @@
 #include <glfw/opengl_window.hpp>
 
 #include <GLFW/glfw3.h>
+#include <thread>
 
 namespace engine {
 
@@ -21,8 +22,8 @@ GraphicalApplication::GraphicalApplication(int& argc, char** argv)
     }
     else if (createInfo.gapi == GAPI::OpenGL)
     {
-        // m_mainWindow.reset(new shell::glfw::OpenGLWindow(createInfo.windowWidth,
-        //     createInfo.windowHeight, createInfo.windowName));
+        //  m_mainWindow.reset(new shell::glfw::OpenGLWindow(createInfo.windowWidth,
+        //      createInfo.windowHeight, createInfo.windowName));
     }
 }
 
@@ -47,9 +48,14 @@ int GraphicalApplication::mainLoop()
     while (!m_mainWindow->shouldClose())
     {
         auto end = std::chrono::steady_clock::now();
-        update(
+        const auto dt =
             std::chrono::duration_cast<std::chrono::duration<int64_t, TimeResolution>>(end - start)
-                .count());
+                .count();
+        if (!m_fpsCap.timePassed(dt)) {
+            std::this_thread::sleep_for(std::chrono::duration<int64_t, TimeResolution>(m_fpsCap.timeLeft()));
+            continue;
+        };
+        update(dt);
         perform();
         start = end;
         glfwPollEvents();

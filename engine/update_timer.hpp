@@ -7,7 +7,7 @@ template <typename T>
 class UpdateTimer
 {
 public:
-    UpdateTimer(int32_t interval = T::den)
+    UpdateTimer(int32_t interval = 0)
         : m_interval(interval)
         , m_timer(0)
         , m_speedUpCoeff(1.0f)
@@ -22,6 +22,10 @@ public:
     int64_t interval() const
     {
         return (m_interval / double(T::den)) * ResolutionType::den;
+    }
+
+    int64_t timeLeft() const {
+        return m_interval - m_timer;
     }
 
     void setNormalSpeed() { m_speedUpCoeff = 1.0f; }

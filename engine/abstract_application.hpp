@@ -1,5 +1,7 @@
 #pragma once
 
+#include "update_timer.hpp"
+
 #include <iresources.hpp>
 #include <irender_target.hpp>
 #include <igraphics_context.hpp>
@@ -41,6 +43,7 @@ public:
 
     virtual shell::IWindow& window() = 0;
 
+    void setFpsCap(uint32_t framesPerSec);
     renderer::IGraphicsContext& context();
 
     virtual int exec() = 0;
@@ -52,6 +55,7 @@ protected:
     virtual void perform() = 0;
 
 protected:
+    UpdateTimer<TimeResolution> m_fpsCap;
     std::unique_ptr<resources::IResources> m_resources;
 };
 
