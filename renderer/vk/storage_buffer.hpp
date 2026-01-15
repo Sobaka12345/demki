@@ -44,9 +44,6 @@ private:
     bool m_emitWait;
     uint64_t m_elementCount;
 
-    size_t m_activeSize;
-    size_t m_activeOffset;
-
     std::vector<VkSemaphore> m_computeWaitSemaphores;
 
     VkCommandBuffer m_commandBuffer;

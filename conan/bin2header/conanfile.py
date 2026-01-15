@@ -1,6 +1,6 @@
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
-from conan.tools.files import copy, get
+from conan.tools.files import copy, apply_conandata_patches, export_conandata_patches
 from conan.tools.scm import Git
 import os
 
@@ -29,6 +29,9 @@ class Bin2HeaderConan(ConanFile):
         layout_folder = f"bin2header-{self.version}"
         cmake_layout(self, src_folder=layout_folder, build_folder=layout_folder)
 
+    def export_sources(self):
+        export_conandata_patches(self)
+
     def source(self):
         git = Git(self)
         git.clone("https://github.com/Sobaka12345/bin2header.git", target=".")
@@ -40,9 +43,11 @@ class Bin2HeaderConan(ConanFile):
         tc.cache_variables["NATIVE"] = True
         tc.cache_variables["STATIC"] = True
         tc.cache_variables["EMBED_ICON"] = True
+        tc.cache_variables["CMAKE_POLICY_VERSION_MINIMUM"] = "3.5"
         tc.generate()
 
     def build(self):
+        apply_conandata_patches(self)
         cmake = CMake(self)
         cmake.configure()
         cmake.build()

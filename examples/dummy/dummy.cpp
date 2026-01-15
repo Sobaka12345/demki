@@ -31,29 +31,35 @@ static std::span<const Vertex3DColoredTextured> cubeVertices()
 
 static std::span<const IndexType> cubeIndices()
 {
-    static const std::array<IndexType, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0, 2,
-        6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
+    static const std::array<IndexType, 36> s_cubeIndices = { 7, 6, 2, 2, 3, 7, 0, 4, 5, 5, 1, 0, 0,
+        2, 6, 6, 4, 0, 7, 3, 1, 1, 5, 7, 3, 2, 0, 0, 1, 3, 4, 6, 7, 7, 5, 4 };
 
     return s_cubeIndices;
 }
 
-struct DrawPipelineObject : public IPipeline::Object
+struct RenderPool : public IPipeline::ObjectPool
 {
-    std::shared_ptr<renderer::IStorageBuffer> vertices;
-    std::shared_ptr<renderer::IStorageBuffer> indices;
-    std::shared_ptr<renderer::IUniformBuffer> uniforms;
+    struct Factory : public IPipeline::ObjectPool::Factory
+    {
+        virtual void populateDescriptor(IPipeline::Descriptor& d, uint32_t poolSize) override
+        {
+            d.setBinding(0, indexBuffer);
+            d.setBinding(1, vertexBuffer);
+            d.setBinding(2,
+                context().createStorageBuffer(
+                    IStorageBuffer::CreateInfo{}.size(sizeof(DrawCommand) * poolSize)));
+        }
 
-    using IPipeline::Object::Object;
+        std::shared_ptr<renderer::IStorageBuffer> vertexBuffer;
+        std::shared_ptr<renderer::IStorageBuffer> indexBuffer;
+    };
 
-    virtual void init() override {
-        setBinding(0, indices);
-        setBinding(1, vertices);
-    }
+    const IStorageBuffer& indices() const { return binding<IStorageBuffer>(0); }
 
+    const IStorageBuffer& vertices() const { return binding<IStorageBuffer>(1); }
+
+    IStorageBuffer& drawCommands() { return binding<IStorageBuffer>(2); }
 };
-
-struct RenderGroup
-{};
 
 Dummy::Dummy(int& argc, char** argv)
     : GraphicalApplication(argc, argv)
@@ -73,11 +79,10 @@ Dummy::Dummy(int& argc, char** argv)
         IStorageBuffer::CreateInfo{}.size(cubeIndices().size_bytes()));
     m_indexBuffer->write(cubeIndices().data(), cubeIndices().size_bytes());
 
-    m_object = std::make_shared<DrawPipelineObject>(*m_renderPipeline);
-    m_object->indices = m_indexBuffer;
-    m_object->vertices = m_vertexBuffer;
-    m_object->init();
-    //auto uniformBuffer = context().createUniformBuffer(IUniformBuffer::CreateInfo{}.size(100));
+    auto poolFactory = m_renderPipeline->createPoolFactory<RenderPool::Factory>();
+    poolFactory->indexBuffer = m_indexBuffer;
+    poolFactory->vertexBuffer = m_vertexBuffer;
+    m_drawPool = poolFactory->spawn<RenderPool>(1);
 
     setFpsCap(60);
 }
@@ -106,7 +111,7 @@ void Dummy::perform()
     });
 
     m_renderPipeline->bind(context);
-    m_object->bind(context);
+    m_drawPool->bind(context);
 
     context.draw(cubeIndices().size());
 

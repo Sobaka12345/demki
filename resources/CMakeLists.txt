@@ -7,8 +7,8 @@ add_library(${PROJECT_NAME} STATIC
 	mesh.cpp
 	resources.hpp
 	resources.cpp
-	texture.hpp
-	texture.cpp
+	image.hpp
+	image.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

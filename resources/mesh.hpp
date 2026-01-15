@@ -16,10 +16,10 @@ struct Mesh : public IResource
         std::span<const uint32_t> indices) noexcept;
     virtual ~Mesh() {};
 
+    virtual size_t size() const override;
+
     std::vector<Vertex3DColoredTextured> vertices;
     std::vector<uint16_t> indices;
-
-    size_t sizeBytes() const;
 };
 
 }    //  namespace resources

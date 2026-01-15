@@ -12,7 +12,7 @@ using namespace handles;
 void ISpecificBuffer::allocateBuffer(
     size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
-    m_size = size;
+    m_dynamicSize = m_size = size;
     m_buffer = Buffer::create(m_context.device(),
         BufferCreateInfo{}.size(size).usage(usage).sharingMode(VK_SHARING_MODE_EXCLUSIVE));
 

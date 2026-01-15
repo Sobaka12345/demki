@@ -6,7 +6,6 @@
 
 namespace renderer {
 
-class ComputerInfoVisitor;
 class OperationContext;
 
 class IComputeTarget : public IOperationTarget

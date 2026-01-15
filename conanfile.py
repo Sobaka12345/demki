@@ -5,7 +5,7 @@ from conan.tools.env import VirtualRunEnv
 
 class DemkiConan(ConanFile):
 	settings = "os", "compiler", "build_type", "arch"
-	requires = ["qt/6.7.1",
+	requires = ["qt/6.8.3",
 	            "glfw/3.3.8",
 				"tinyobjloader/2.0.0-rc10",
 				"bin2header/0.3.1",
@@ -15,8 +15,9 @@ class DemkiConan(ConanFile):
 				"glm/0.9.9.8",
 				"stb/cci.20220909",
 				"pfr/2.1.0",
-				"tclap/1.2.5",
-				"spirv-cross/cci.20211113"]
+				"tclap/1.2.5"
+				#"spirv-cross/cci.20211113"
+		]
 	generators = "CMakeDeps"
 
 	def requirements(self):

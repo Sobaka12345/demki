@@ -22,6 +22,7 @@ public:
 
     uint64_t id() const { return m_id; }
 
+    // Resource's size in bytes
     virtual size_t size() const = 0;
 
     virtual ~IResource() {}

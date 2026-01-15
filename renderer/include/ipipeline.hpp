@@ -19,44 +19,96 @@ class IPipeline : public IContextObject
 public:
     typedef std::variant<Vertex3DColoredTextured, Vertex3DColored, Vertex3D> InputType;
 
-    struct Descriptor
-    {
-        virtual void bind(OperationContext& context);
-        virtual void setBinding(uint32_t bindingId, std::shared_ptr<IShaderResource> resource);
-
-        std::map<uint32_t, std::shared_ptr<IShaderResource>> resources;
-
-    protected:
-        Descriptor() = default;
-    };
-
-    class Object
+    class Descriptor
     {
     public:
-        Object(IPipeline& pipeline)
-            : descriptor(pipeline.spawnDescriptor())
-        {}
+        virtual void bind(OperationContext& context);
+        virtual void setBinding(uint32_t bindingId, std::shared_ptr<IShaderResource> resource);
+        std::shared_ptr<IShaderResource> binding(uint32_t bindingId);
 
-        virtual void init() = 0;
+    private:
+        std::map<uint32_t, std::shared_ptr<IShaderResource>> m_resources;
+    };
+
+    class ObjectPool
+    {
+    public:
+        class Factory : public IContextObject
+        {
+        public:
+            virtual IGraphicsContext& context() final override { return pipeline().context(); }
+
+            template <typename ObjectPoolT>
+            std::shared_ptr<ObjectPoolT> spawn(uint32_t poolSize)
+            {
+                auto descriptor = pipeline().spawnDescriptor();
+                populateDescriptor(*descriptor, poolSize);
+                return std::shared_ptr<ObjectPoolT>{ ObjectPool::create<ObjectPoolT>(descriptor,
+                    poolSize) };
+            }
+
+        protected:
+            virtual void populateDescriptor(Descriptor& descriptor, uint32_t poolSize) = 0;
+
+            IPipeline& pipeline() { return *m_pipeline; }
+
+        private:
+            template <typename FactoryT>
+            static FactoryT* create(IPipeline* p)
+            {
+                auto result = new FactoryT;
+                result->m_pipeline = p;
+                return result;
+            }
+            friend class IPipeline;
+
+        private:
+            IPipeline* m_pipeline = nullptr;
+        };
+        friend class Factory;
+
+    public:
+        void bind(OperationContext& context) { m_descriptor->bind(context); }
+
+    protected:
+        ObjectPool() = default;
 
         void setBinding(uint32_t bindingId, std::shared_ptr<IShaderResource> resource)
         {
-            descriptor->setBinding(bindingId, resource);
+            m_descriptor->setBinding(bindingId, resource);
         }
 
-        void bind(OperationContext& context) { return descriptor->bind(context); }
+        template <typename T>
+        T& binding(uint32_t bindingId)
+        {
+            return static_cast<T&>(*m_descriptor->binding(bindingId).get());
+        }
+
+        template <typename T>
+        const T& binding(uint32_t bindingId) const
+        {
+            return static_cast<const T&>(*m_descriptor->binding(bindingId).get());
+        }
+
+        uint32_t size() const { return m_size; }
+
+        virtual void init() {};
 
     private:
-        std::shared_ptr<Descriptor> descriptor;
+        template <typename ObjectPoolT>
+        static ObjectPoolT* create(std::shared_ptr<Descriptor> descriptor, uint32_t size)
+        {
+            auto result = new ObjectPoolT;
+            result->m_descriptor = descriptor;
+            result->m_size = size;
+            result->init();
+            return result;
+        }
+
+    private:
+        std::shared_ptr<Descriptor> m_descriptor;
+        uint32_t m_size;
     };
-
-    // template <typename PipelineObjectT>
-    // std::shared_ptr<PipelineObjectT> createPipelineObjectFactory()
-    // {
-    //     auto result = std::make_shared<PipelineObjectT>(*this);
-
-    //     return result;
-    // }
 
 protected:
     template <typename Derived>
@@ -136,10 +188,17 @@ protected:
 public:
     virtual void bind(OperationContext& context) = 0;
 
-    virtual ~IPipeline() {}
-
-private:
     virtual std::shared_ptr<IPipeline::Descriptor> spawnDescriptor() = 0;
+
+    template <typename ObjectPoolFactoryT>
+    std::shared_ptr<ObjectPoolFactoryT> createPoolFactory()
+    {
+        return std::shared_ptr<ObjectPoolFactoryT>{
+            ObjectPoolFactoryT::template create<ObjectPoolFactoryT>(this)
+        };
+    }
+
+    virtual ~IPipeline() {}
 };
 
 }    //  namespace renderer

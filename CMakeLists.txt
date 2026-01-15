@@ -41,7 +41,7 @@ add_subdirectory(examples/dummy)
 add_subdirectory(examples/sandbox)
 
 target_link_libraries(utils INTERFACE glm::glm)
-target_link_libraries(renderer PUBLIC utils bin2header::bin2header resources spirv-reflect::spirv-reflect glad::glad stb::stb tinyobjloader::tinyobjloader pfr::pfr tclap::tclap Vulkan::Vulkan)
+target_link_libraries(renderer PUBLIC utils bin2header::bin2header spirv-reflect::spirv-reflect glad::glad stb::stb tinyobjloader::tinyobjloader pfr::pfr tclap::tclap Vulkan::Vulkan)
 target_link_libraries(resources PUBLIC renderer)
 target_link_libraries(shell PUBLIC resources glfw qt::qt)
 target_link_libraries(engine PUBLIC shell)
@@ -60,4 +60,5 @@ add_custom_target(conan SOURCES
     conan/export.bat
     conan/spirv_reflect/conanfile.py
     conan/bin2header/conanfile.py
+    conan/bin2header/conandata.yml
 )

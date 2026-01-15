@@ -6,12 +6,12 @@
 #include "../../utils/glsl_defs.hpp"
 #endif
 
-struct Draw
+struct alignas(16) DrawCommand
 {
-    vec3 position;
-    float scale;
+    vec4 position;
     vec4 orientation;
+    float scale;
 };
-REGISTER_GLSL_TYPE(Draw)
+REGISTER_GLSL_TYPE(DrawCommands)
 
 #endif    //  GLSL_TYPES_HPP

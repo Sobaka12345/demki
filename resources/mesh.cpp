@@ -50,7 +50,7 @@ Mesh::Mesh(std::span<const Vertex3DColoredTextured> vertices,
     , vertices(vertices.begin(), vertices.end())
 {}
 
-size_t Mesh::sizeBytes() const
+size_t Mesh::size() const
 {
     return vertices.size() * sizeof(decltype(vertices)::value_type) +
         indices.size() * sizeof(decltype(indices)::value_type);

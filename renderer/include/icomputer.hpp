@@ -15,20 +15,6 @@ class StorageBuffer;
 
 class IComputeTarget;
 
-class ComputerInfoVisitor
-{
-public:
-    virtual void populateComputerInfo(const vk::StorageBuffer& computeTarget)
-    {
-        ASSERT(false, "not implemented");
-    };
-
-    virtual void populateComputerInfo(const ogl::StorageBuffer& computeTarget)
-    {
-        ASSERT(false, "not implemented");
-    };
-};
-
 class IComputer
 {
 public:

@@ -42,6 +42,7 @@ class SPIRVReflectConan(ConanFile):
         tc.cache_variables["SPIRV_REFLECT_EXAMPLES"] = False
         tc.cache_variables["SPIRV_REFLECT_EXECUTABLE"] = False
         tc.cache_variables["SPIRV_REFLECT_STATIC_LIB"] = True
+        tc.cache_variables["CMAKE_POLICY_VERSION_MINIMUM"] = "3.5"
         tc.generate()
 
     def build(self):
