@@ -1,30 +1,37 @@
 begin_project()
 
 add_library(${PROJECT_NAME} STATIC
-	iwindow.hpp
-	iopengl_window.hpp
-	ivulkan_window.hpp
+	abstract/ogl/application.hpp
+	abstract/ogl/application.cpp
+	abstract/ogl/window.hpp
+	abstract/vk/window.hpp
+	abstract/vk/application.hpp
+	abstract/vk/application.cpp
+	abstract/application.hpp
+	abstract/application.cpp
+	abstract/window.hpp
+	abstract/widget.hpp
 
-	glfw/window.hpp
-	glfw/window.cpp
-	glfw/vulkan_window.hpp
-	glfw/vulkan_window.cpp#[[
-	glfw/opengl_window.hpp
-	glfw/opengl_window.cpp]]
+	glfw/ogl/window.hpp
+	#glfw/ogl/window.cpp
+	glfw/vk/window.hpp
+	#glfw/vk/window.cpp
+	glfw/application.hpp
+	glfw/application.cpp
 
-	qt/widget/widget.hpp
-	qt/widget/widget.cpp
-	qt/widget/vulkan_widget.hpp
-	qt/widget/vulkan_widget.cpp#[[
-	qt/widget/opengl_widget.hpp
-	qt/widget/opengl_widget.cpp]]
-
-	qt/window/window.hpp
-	qt/window/window.cpp
-	qt/window/vulkan_window.hpp
-	qt/window/vulkan_window.cpp#[[
-	qt/window/opengl_window.hpp
-	qt/window/opengl_window.cpp]]
+	qt/ogl/widget.hpp
+	qt/vk/widget.hpp
+	qt/ogl/window.hpp
+	qt/vk/window.hpp
+	qt/window.hpp
+	qt/window.cpp
+	qt/widget.hpp
+	qt/widget.cpp
+	qt/application.hpp
+	qt/application.cpp
+ 
+	shell_fwd.hpp
+	update_timer.hpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC TRUE)

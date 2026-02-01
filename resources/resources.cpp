@@ -1,7 +1,5 @@
 #include "resources.hpp"
-#include <assert.hpp>
 
-#include <type_list.hpp>
 
 namespace resources {
 
