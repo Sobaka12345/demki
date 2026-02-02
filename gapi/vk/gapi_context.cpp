@@ -1,4 +1,5 @@
 #include "gapi_context.hpp"
+#include "gapi_fwd.hpp"
 
 
 namespace gapi::__private {
@@ -74,6 +75,31 @@ void GApiContext<Vk>::fetchPhysicalDevices() noexcept {
             }
         }
     }
+}
+
+VkFormat GApiContext<Vk>::PhysicalDevice::findSupportedFormat(
+    const std::vector<VkFormat>& candidates,
+    VkImageTiling tiling,
+    VkFormatFeatureFlags features) 
+{
+    for (VkFormat format : candidates)
+    {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(handle, format, &props);
+        if (tiling == VK_IMAGE_TILING_LINEAR &&
+            (props.linearTilingFeatures & features) == features)
+        {
+            return format;
+        }
+        else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
+            (props.optimalTilingFeatures & features) == features)
+        {
+            return format;
+        }
+    }
+
+    ASSERT(false, "failed to find supported format!");
+    return VK_FORMAT_UNDEFINED;
 }
 
 }

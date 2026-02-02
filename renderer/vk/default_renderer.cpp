@@ -1,4 +1,4 @@
-#include "default_renderer.hpp"
+#include "renderer.hpp"
 #include "renderer_fwd.hpp"
 
 #include <cstring>
@@ -59,7 +59,7 @@ VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availabl
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-void DefaultRenderer<Vk>::createSwapchain(Context& ctx) noexcept
+void DefaultRenderer::createSwapchain(Context& ctx) noexcept
 {
     const auto& surfaceInfo = ctx.physicalDeviceInUse->surfaceInfo;
 
@@ -112,6 +112,7 @@ void DefaultRenderer<Vk>::createSwapchain(Context& ctx) noexcept
     ASSERT(VK_SUCCESS == vkCreateSwapchainKHR(ctx.device, &swapchainCreateInfo, nullptr, &ctx.swapchain.handle),
         "failed to create swapchain");
 
+    ctx.swapchain.imageFormat = surfaceFormat.format;
     ASSERT(VK_SUCCESS == vkGetSwapchainImagesKHR(ctx.device, ctx.swapchain.handle, &ctx.swapchain.size, nullptr));
     ctx.swapchain.images.resize(ctx.swapchain.size);
     ASSERT(VK_SUCCESS == vkGetSwapchainImagesKHR(ctx.device, ctx.swapchain.handle, &ctx.swapchain.size, ctx.swapchain.images.data()));
@@ -139,7 +140,7 @@ void DefaultRenderer<Vk>::createSwapchain(Context& ctx) noexcept
 
 }
 
-void DefaultRenderer<Vk>::destroySwapchain(Context& ctx) noexcept
+void DefaultRenderer::destroySwapchain(Context& ctx) noexcept
 {
     for (size_t i = 0; i < ctx.swapchain.size; ++i) {
         vkDestroyImageView(ctx.device, ctx.swapchain.imageViews[i], nullptr);
@@ -148,7 +149,7 @@ void DefaultRenderer<Vk>::destroySwapchain(Context& ctx) noexcept
     vkDestroySwapchainKHR(ctx.device, ctx.swapchain.handle, nullptr);
 }
 
-void DefaultRenderer<Vk>::recreateSwapchain(Context& ctx) noexcept
+void DefaultRenderer::recreateSwapchain(Context& ctx) noexcept
 {
     while (!ctx.iSurface->available()) {
         ctx.iSurface->waitForEvents();
@@ -159,7 +160,7 @@ void DefaultRenderer<Vk>::recreateSwapchain(Context& ctx) noexcept
     createSwapchain(ctx);
 }
 
-void DefaultRenderer<Vk>::pickSuitablePhysicalDevices(DefaultRenderer<Vk>::Context& ctx) noexcept
+void DefaultRenderer::pickSuitablePhysicalDevices(DefaultRenderer::Context& ctx) noexcept
 {
     const std::vector<const char *> static s_requiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -189,9 +190,27 @@ void DefaultRenderer<Vk>::pickSuitablePhysicalDevices(DefaultRenderer<Vk>::Conte
             ctx.suitablePhysicalDevices.push_back(physicalDevice);
         }
     }
+
+    ASSERT(ctx.suitablePhysicalDevices.size(), "failed to find a suitable GPU");
+    
+    ctx.physicalDeviceInUse = &ctx.suitablePhysicalDevices[0];
+    for (size_t i = 1; i < ctx.suitablePhysicalDevices.size(); ++i) {
+        DefaultRenderer::Context::PhysicalDevice* d = &ctx.suitablePhysicalDevices[i]; 
+        if (d->properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && 
+            d->memoryProperties.memoryHeapCount > ctx.physicalDeviceInUse->memoryProperties.memoryHeapCount
+        ) {
+            ctx.physicalDeviceInUse = d;
+        }
+    }
+
+    ctx.depthFormat = ctx.physicalDeviceInUse->findSupportedFormat(
+        { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
 }
 
-void DefaultRenderer<Vk>::createDevice(Context& ctx) noexcept
+void DefaultRenderer::createDevice(Context& ctx) noexcept
 {
     const std::array deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -253,7 +272,7 @@ void DefaultRenderer<Vk>::createDevice(Context& ctx) noexcept
 
 }
 
-void DefaultRenderer<Vk>::destroyDevice(Context& ctx) noexcept
+void DefaultRenderer::destroyDevice(Context& ctx) noexcept
 {
     for (size_t i = 0; i < ctx.commandPools.size(); ++i) {
         vkDestroyCommandPool(ctx.device, ctx.commandPools[i], nullptr);
@@ -261,7 +280,7 @@ void DefaultRenderer<Vk>::destroyDevice(Context& ctx) noexcept
     vkDestroyDevice(ctx.device, nullptr);
 }
 
-void DefaultRenderer<Vk>::createSynchronization(Context& ctx) noexcept {
+void DefaultRenderer::createSynchronization(Context& ctx) noexcept {
     constexpr static auto fenceInfo = VkFenceCreateInfo {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .flags = VK_FENCE_CREATE_SIGNALED_BIT
@@ -282,7 +301,7 @@ void DefaultRenderer<Vk>::createSynchronization(Context& ctx) noexcept {
     }
 }
 
-void DefaultRenderer<Vk>::destroySynchronization(Context& ctx) noexcept {
+void DefaultRenderer::destroySynchronization(Context& ctx) noexcept {
     for (size_t i = 0; i < ctx.maxFramesInFlight; ++i)
     {
         vkDestroyFence(ctx.device, ctx.inFlightFences[i], nullptr);
@@ -292,38 +311,104 @@ void DefaultRenderer<Vk>::destroySynchronization(Context& ctx) noexcept {
     }
 }
 
-DefaultRenderer<Vk>::Context DefaultRenderer<Vk>::init(gapi::GApiContext<Vk>& gApiContext) 
-{
-    Context result = { gApiContext };
-    pickSuitablePhysicalDevices(result);
-    ASSERT(result.suitablePhysicalDevices.size(), "failed to find a suitable GPU");
-    
-    result.physicalDeviceInUse = &result.suitablePhysicalDevices[0];
-    for (size_t i = 1; i < result.suitablePhysicalDevices.size(); ++i) {
-        Context::PhysicalDevice* d = &result.suitablePhysicalDevices[i]; 
-        if (d->properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && 
-            d->memoryProperties.memoryHeapCount > result.physicalDeviceInUse->memoryProperties.memoryHeapCount
-        ) {
-            result.physicalDeviceInUse = d;
-        }
-    }
+void DefaultRenderer::createAttachments(Context &ctx) noexcept {
+    ctx.attachments.references = {
+        VkAttachmentReference {
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        },
+        VkAttachmentReference {
+            .attachment = 1,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        },
+        VkAttachmentReference {
+            .attachment = 2,
+            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        },
+    };
 
-    createDevice(result);
-    createSynchronization(result);
-    createSwapchain(result);
-    
+    ctx.attachments.data.resize(3);
+    ctx.attachments.data[0] = VkAttachmentDescription {
+        .format = ctx.swapchain.imageFormat,
+        .samples = VK_SAMPLE_COUNT_8_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+    // Resolve Attachment
+    ctx.attachments.data[1] = VkAttachmentDescription {
+        .format = ctx.swapchain.imageFormat,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    };
+    ctx.attachments.colorAttachmentCount = 1;
 
-    return result;
+    ctx.attachments.data[2] = VkAttachmentDescription {
+        .format = ctx.depthFormat,
+        .samples = VK_SAMPLE_COUNT_8_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+    };
 }
 
-void DefaultRenderer<Vk>::teardown(Context& ctx)
-{
-    destroySwapchain(ctx);
-    destroySynchronization(ctx);
-    destroyDevice(ctx);
+void DefaultRenderer::destroyAttachments(Context &ctx) noexcept {
+    ctx.attachments.data.clear();
+    ctx.attachments.colorAttachmentCount = 0;
 }
 
-void DefaultRenderer<Vk>::prepareSwapchain(Context& ctx) {
+void DefaultRenderer::createRenderPasses(Context& ctx) noexcept {
+    const auto subpass = VkSubpassDescription {
+        .pipelineBindPoint =VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount = ctx.attachments.colorAttachmentCount,
+        .pColorAttachments = ctx.attachments.colorAttachmentReferences(),
+        .pResolveAttachments = ctx.attachments.resolveAttachmentReferences(),
+        .pDepthStencilAttachment = ctx.attachments.depthStencilAttachmentReference(),
+    };
+
+    const auto dependency = VkSubpassDependency {
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+    };
+
+    const auto renderPassCreateInfo = VkRenderPassCreateInfo {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = static_cast<uint32_t>(ctx.attachments.data.size()),
+        .pAttachments = ctx.attachments.data.data(),
+        .subpassCount = 1,
+        .pSubpasses = &subpass,
+        .dependencyCount = 1,
+        .pDependencies = &dependency,
+    };      
+
+    ASSERT(VK_SUCCESS == vkCreateRenderPass(ctx.device, &renderPassCreateInfo, nullptr, &ctx.renderPass), 
+        "failed to create render pass");
+}
+
+void DefaultRenderer::destroyRenderPasses(Context& ctx) noexcept {
+    vkDestroyRenderPass(ctx.device, ctx.renderPass, nullptr);
+}
+
+void DefaultRenderer::prepareSwapchain(Context& ctx) noexcept
+{
     vkWaitForFences(ctx.device, 1, ctx.inFlightFences.data(), VK_TRUE, UINT64_MAX);
     
     VkResult result = vkAcquireNextImageKHR(ctx.device, ctx.swapchain.handle, UINT64_MAX,
@@ -340,7 +425,7 @@ void DefaultRenderer<Vk>::prepareSwapchain(Context& ctx) {
 
     vkResetFences(ctx.device, 1, &ctx.inFlightFences[ctx.currentFrameInFlight]);
     
-    auto commandBuffer = ctx.commandBuffers[Context::QueueFamily::PRESENT][ctx.currentFrameInFlight];
+    auto commandBuffer = ctx.commandBuffers[Context::QueueFamily::GRAPHICS_COMPUTE][ctx.currentFrameInFlight];
     vkResetCommandBuffer(commandBuffer, 0);
     const auto commandBufferBeginInfo = VkCommandBufferBeginInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -351,12 +436,14 @@ void DefaultRenderer<Vk>::prepareSwapchain(Context& ctx) {
         "failed to begin recording command buffer!");
 }
 
-void DefaultRenderer<Vk>::presentSwapchain(Context& ctx) {
-    auto commandBuffer = ctx.commandBuffers[Context::QueueFamily::PRESENT][ctx.currentFrameInFlight];
+void DefaultRenderer::presentSwapchain(Context& ctx) noexcept
+{
+    auto commandBuffer = ctx.commandBuffers[Context::QueueFamily::GRAPHICS_COMPUTE][ctx.currentFrameInFlight];
     ASSERT(vkEndCommandBuffer(commandBuffer) == VK_SUCCESS, "failed to record command buffer!");
 
     auto submitInfo =
         VkSubmitInfo {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .commandBufferCount = 1,
             .pCommandBuffers = &commandBuffer,
             .signalSemaphoreCount = 1,
@@ -380,6 +467,7 @@ void DefaultRenderer<Vk>::presentSwapchain(Context& ctx) {
         "failed to submit draw command buffer!");
 
     const auto queuePresentInfo = VkPresentInfoKHR {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &ctx.renderFinishedSemaphores[ctx.currentFrameInFlight],
         .swapchainCount = 1,
@@ -402,10 +490,49 @@ void DefaultRenderer<Vk>::presentSwapchain(Context& ctx) {
     ctx.currentFrameInFlight = (ctx.currentFrameInFlight + 1) % ctx.maxFramesInFlight;
 }
 
-void DefaultRenderer<Vk>::render(Context& context) {
-    prepareSwapchain(context);
+void DefaultRenderer::prepareFrame(Context& ctx) noexcept {
+    prepareSwapchain(ctx);
+}
 
-    presentSwapchain(context);
+void DefaultRenderer::presentFrame(Context& ctx) noexcept
+{
+    presentSwapchain(ctx);
+}
+
+void DefaultRenderer::prepareRenderPass(Context& ctx) noexcept
+{
+    
+}
+
+void DefaultRenderer::presentRenderPass(Context& ctx) noexcept
+{
+
+}
+
+
+template <>
+DefaultRenderer::Context setupRenderer<Vk, DefaultRenderer>(gapi::GApiContext<Vk>& ctx) noexcept
+{
+    DefaultRenderer::Context result = { ctx };
+    DefaultRenderer::pickSuitablePhysicalDevices(result);
+
+    DefaultRenderer::createDevice(result);
+    DefaultRenderer::createSynchronization(result);
+    DefaultRenderer::createSwapchain(result);
+    DefaultRenderer::createAttachments(result);
+    DefaultRenderer::createRenderPasses(result);
+
+    return result;
+}
+
+template <>
+void teardownRenderer<Vk, DefaultRenderer>(DefaultRenderer::Context& ctx) noexcept
+{
+    DefaultRenderer::destroyRenderPasses(ctx);
+    DefaultRenderer::destroyAttachments(ctx);
+    DefaultRenderer::destroySwapchain(ctx);
+    DefaultRenderer::destroySynchronization(ctx);
+    DefaultRenderer::destroyDevice(ctx);
 }
 
 }

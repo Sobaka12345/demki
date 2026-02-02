@@ -2,7 +2,7 @@
 #include <qt/application.hpp>
 #include <qt/window.hpp>
 
-#include <default_renderer.hpp>
+#include <renderer.hpp>
 
 #include <QVulkanInstance>
 
@@ -17,14 +17,16 @@ int main(int argc, char** argv)
     mainWindow.setVulkanInstance(&qVkInstance);
 
     auto gapiContext = mainWindow.spawnContext();
-    auto renderCtx = renderer::DefaultRenderer<Vk>::init(gapiContext);
+    using namespace renderer;
+    auto renderCtx = setup<Renderer<Vk>>(gapiContext);
 
     QObject::connect(&mainWindow, &shell::qt::Window<Vk>::render, [&renderCtx]() {
-        renderer::DefaultRenderer<Vk>::render(renderCtx);
+        Renderer<Vk>::prepareFrame(renderCtx);
+        Renderer<Vk>::presentFrame(renderCtx);
     });
 
     QObject::connect(&mainWindow, &shell::qt::Window<Vk>::aboutToClose, [&renderCtx] () {
-        renderer::DefaultRenderer<Vk>::teardown(renderCtx);
+        teardown<Renderer<Vk>>(renderCtx);
     });
 
     return app.run();
