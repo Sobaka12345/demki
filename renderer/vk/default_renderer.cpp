@@ -7,6 +7,9 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "shaders_hpp/shader.frag.spv.hpp"
+#include "shaders_hpp/shader.vert.spv.hpp"
+
 namespace renderer::__private {
 
 VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, const gapi::ISurface* surface)
@@ -65,7 +68,7 @@ void DefaultRenderer::createSwapchain(Context& ctx) noexcept
 
     VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(surfaceInfo.formats);
     VkPresentModeKHR presentMode = choosePresentMode(surfaceInfo.presentModes);
-    VkExtent2D extent = chooseExtent(surfaceInfo.capabilities, ctx.iSurface);
+    ctx.swapchain.extent = chooseExtent(surfaceInfo.capabilities, ctx.iSurface);
 
     const uint32_t graphicsComputeFamilyIndex = 
         ctx.physicalDeviceInUse->queueFamilies[Context::QueueFamily::Type::GRAPHICS_COMPUTE].index;
@@ -96,7 +99,7 @@ void DefaultRenderer::createSwapchain(Context& ctx) noexcept
         .minImageCount = ctx.swapchain.size,
         .imageFormat = surfaceFormat.format,
         .imageColorSpace = surfaceFormat.colorSpace,
-        .imageExtent = extent,
+        .imageExtent = ctx.swapchain.extent,
         .imageArrayLayers = 1,
         .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .imageSharingMode = sharingMode,
@@ -156,10 +159,13 @@ void DefaultRenderer::recreateSwapchain(Context& ctx) noexcept
     }
     vkDeviceWaitIdle(ctx.device);
 
+    destroyFramebuffers(ctx);
     destroySwapchain(ctx);
-    createSwapchain(ctx);
-}
 
+    createSwapchain(ctx);
+    createFramebuffers(ctx);
+}
+    
 void DefaultRenderer::pickSuitablePhysicalDevices(DefaultRenderer::Context& ctx) noexcept
 {
     const std::vector<const char *> static s_requiredDeviceExtensions = {
@@ -330,7 +336,7 @@ void DefaultRenderer::createAttachments(Context &ctx) noexcept {
     ctx.attachments.data.resize(3);
     ctx.attachments.data[0] = VkAttachmentDescription {
         .format = ctx.swapchain.imageFormat,
-        .samples = VK_SAMPLE_COUNT_8_BIT,
+        .samples = ctx.sampleCount,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -353,7 +359,7 @@ void DefaultRenderer::createAttachments(Context &ctx) noexcept {
 
     ctx.attachments.data[2] = VkAttachmentDescription {
         .format = ctx.depthFormat,
-        .samples = VK_SAMPLE_COUNT_8_BIT,
+        .samples = ctx.sampleCount,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -370,7 +376,7 @@ void DefaultRenderer::destroyAttachments(Context &ctx) noexcept {
 
 void DefaultRenderer::createRenderPasses(Context& ctx) noexcept {
     const auto subpass = VkSubpassDescription {
-        .pipelineBindPoint =VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
         .colorAttachmentCount = ctx.attachments.colorAttachmentCount,
         .pColorAttachments = ctx.attachments.colorAttachmentReferences(),
         .pResolveAttachments = ctx.attachments.resolveAttachmentReferences(),
@@ -406,6 +412,127 @@ void DefaultRenderer::createRenderPasses(Context& ctx) noexcept {
 void DefaultRenderer::destroyRenderPasses(Context& ctx) noexcept {
     vkDestroyRenderPass(ctx.device, ctx.renderPass, nullptr);
 }
+
+void DefaultRenderer::createFramebuffers(Context &ctx) noexcept {
+    ctx.framebuffers.resize(ctx.swapchain.size);
+    for (size_t i = 0; i < ctx.swapchain.size; ++i) 
+    {
+        auto& framebufferData = ctx.framebuffers[i];
+        
+        const auto imageCreateInfo = VkImageCreateInfo {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .extent = VkExtent3D{
+                .width = ctx.swapchain.extent.width,
+                .height = ctx.swapchain.extent.height,
+                .depth = 1,
+            },
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+
+        const auto attachmentCount = ctx.attachments.data.size();
+        framebufferData.imageViewAttachments.resize(attachmentCount);
+        framebufferData.images.resize(attachmentCount);
+        framebufferData.imageMemory.resize(attachmentCount);
+        for (size_t attachmentIdx = 0; attachmentIdx < attachmentCount; ++attachmentIdx) 
+        {
+            const auto& attachment = ctx.attachments.data[attachmentIdx];
+            auto& framebufferImage = framebufferData.images[attachmentIdx];
+            auto& framebufferImageMemory = framebufferData.imageMemory[attachmentIdx];
+            auto& framebufferImageViewAttachment = framebufferData.imageViewAttachments[attachmentIdx];
+
+
+            VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            VkFormat format = ctx.swapchain.imageFormat;
+
+            switch (attachment.finalLayout) {
+            case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+                framebufferData.images[attachmentIdx] = VK_NULL_HANDLE;
+                framebufferData.imageViewAttachments[attachmentIdx] = ctx.swapchain.imageViews[attachmentIdx];
+                break;
+            case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+                usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+                goto falltrough;
+            case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+                usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                format = ctx.depthFormat;
+                goto falltrough;
+            default:
+                falltrough:
+                auto createInfo = imageCreateInfo;
+                createInfo.format = format;
+                createInfo.usage = usage;
+                createInfo.samples = ctx.sampleCount;
+                ASSERT(VK_SUCCESS == vkCreateImage(ctx.device, &createInfo, nullptr, &framebufferImage));
+
+                VkMemoryRequirements memoryRequirements;
+                vkGetImageMemoryRequirements(ctx.device, framebufferImage, &memoryRequirements);
+                const auto imageAllocateInfo = VkMemoryAllocateInfo {
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                    .allocationSize = memoryRequirements.size,
+                    .memoryTypeIndex = ctx.physicalDeviceInUse->findMemoryType(
+                        memoryRequirements.memoryTypeBits, 
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                    ),
+                };
+                ASSERT(VK_SUCCESS == vkAllocateMemory(ctx.device, &imageAllocateInfo, nullptr, &framebufferImageMemory));
+                ASSERT(VK_SUCCESS == vkBindImageMemory(ctx.device, framebufferImage, framebufferImageMemory, 0));
+
+                auto imageViewCreateInfo = VkImageViewCreateInfo {
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                    .image = framebufferImage,
+                    .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                    .format = format,
+                    .subresourceRange = VkImageSubresourceRange {
+                        .aspectMask = aspectMask,
+                        .baseMipLevel = 0,
+                        .levelCount = 1,
+                        .baseArrayLayer = 0,
+                        .layerCount = 1,
+                    }
+                };
+                ASSERT(VK_SUCCESS == vkCreateImageView(ctx.device, &imageViewCreateInfo, nullptr, &framebufferImageViewAttachment));
+
+                break;
+            }
+        }
+
+        const auto framebufferCreateInfo = VkFramebufferCreateInfo {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass = ctx.renderPass,
+            .attachmentCount = static_cast<uint32_t>(framebufferData.imageViewAttachments.size()),
+            .pAttachments = framebufferData.imageViewAttachments.data(),
+            .width = ctx.swapchain.extent.width,
+            .height = ctx.swapchain.extent.height,
+            .layers = 1,
+        };
+        vkCreateFramebuffer(ctx.device, &framebufferCreateInfo, nullptr, &ctx.framebuffers[i].handle);
+    }
+}
+
+void DefaultRenderer::destroyFramebuffers(Context& ctx) noexcept {
+    for (const auto& framebufferData : ctx.framebuffers) {
+        
+        for(size_t i = 0; i < framebufferData.images.size(); ++i) {
+            const auto& image = framebufferData.images[i];
+            if (image != VK_NULL_HANDLE) {
+                vkDestroyImageView(ctx.device, framebufferData.imageViewAttachments[i], nullptr);
+                vkFreeMemory(ctx.device, framebufferData.imageMemory[i], nullptr);
+                vkDestroyImage(ctx.device, image, nullptr);
+            } 
+        }
+
+        vkDestroyFramebuffer(ctx.device, framebufferData.handle, nullptr);
+    }
+    ctx.framebuffers.clear();
+}
+
 
 void DefaultRenderer::prepareSwapchain(Context& ctx) noexcept
 {
@@ -521,6 +648,7 @@ DefaultRenderer::Context setupRenderer<Vk, DefaultRenderer>(gapi::GApiContext<Vk
     DefaultRenderer::createSwapchain(result);
     DefaultRenderer::createAttachments(result);
     DefaultRenderer::createRenderPasses(result);
+    DefaultRenderer::createFramebuffers(result);
 
     return result;
 }
@@ -528,6 +656,7 @@ DefaultRenderer::Context setupRenderer<Vk, DefaultRenderer>(gapi::GApiContext<Vk
 template <>
 void teardownRenderer<Vk, DefaultRenderer>(DefaultRenderer::Context& ctx) noexcept
 {
+    DefaultRenderer::destroyFramebuffers(ctx);
     DefaultRenderer::destroyRenderPasses(ctx);
     DefaultRenderer::destroyAttachments(ctx);
     DefaultRenderer::destroySwapchain(ctx);

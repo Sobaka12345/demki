@@ -44,7 +44,12 @@ struct GApiContext<Vk> {
             const std::vector<VkFormat>& candidates,
             VkImageTiling tiling,
             VkFormatFeatureFlags features
-        );
+        ) noexcept;
+
+        [[nodiscard]] uint32_t findMemoryType(
+            uint32_t typeFilter, 
+            VkMemoryPropertyFlags properties
+        ) noexcept;
     };
 
     VkInstance instance;

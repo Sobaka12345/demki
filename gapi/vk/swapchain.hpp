@@ -12,6 +12,7 @@ namespace gapi::__private {
 template<>
 struct Swapchain<Vk> {
     uint32_t size = 0;
+    VkExtent2D extent = {};
     VkFormat imageFormat = VK_FORMAT_UNDEFINED;
     VkSwapchainKHR handle = VK_NULL_HANDLE;
     uint32_t currentImage = 0;

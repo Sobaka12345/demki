@@ -36,6 +36,14 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
             [[nodiscard]] inline VkAttachmentReference* depthStencilAttachmentReference() noexcept { return &references[colorAttachmentCount * 2]; }
         } attachments;
 
+        struct FramebufferData {
+            VkFramebuffer handle;
+            std::vector<VkImageView> imageViewAttachments;
+            std::vector<VkImage> images;
+            std::vector<VkDeviceMemory> imageMemory;
+        };
+        std::vector<FramebufferData> framebuffers;
+
         uint32_t currentFrameInFlight = 0;
         uint32_t maxFramesInFlight = 2;
 
@@ -45,6 +53,7 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
         
         VkDevice device = VK_NULL_HANDLE;
         VkFormat depthFormat = VK_FORMAT_UNDEFINED;
+        VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_8_BIT;
         VkRenderPass renderPass = VK_NULL_HANDLE;
         PhysicalDevice* physicalDeviceInUse = nullptr;
         std::vector<PhysicalDevice> suitablePhysicalDevices;
@@ -68,6 +77,9 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
     
     static void createRenderPasses(Context& ctx) noexcept;
     static void destroyRenderPasses(Context& ctx) noexcept;
+
+    static void createFramebuffers(Context& ctx) noexcept;
+    static void destroyFramebuffers(Context& ctx) noexcept;
     
     // SIRenderer static interface
     static void prepareFrame(Context& ctx) noexcept;

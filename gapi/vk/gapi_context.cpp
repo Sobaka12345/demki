@@ -80,7 +80,7 @@ void GApiContext<Vk>::fetchPhysicalDevices() noexcept {
 VkFormat GApiContext<Vk>::PhysicalDevice::findSupportedFormat(
     const std::vector<VkFormat>& candidates,
     VkImageTiling tiling,
-    VkFormatFeatureFlags features) 
+    VkFormatFeatureFlags features) noexcept
 {
     for (VkFormat format : candidates)
     {
@@ -100,6 +100,26 @@ VkFormat GApiContext<Vk>::PhysicalDevice::findSupportedFormat(
 
     ASSERT(false, "failed to find supported format!");
     return VK_FORMAT_UNDEFINED;
+}
+
+uint32_t GApiContext<Vk>::PhysicalDevice::findMemoryType(
+    uint32_t typeFilter, 
+    VkMemoryPropertyFlags properties) noexcept
+{
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(handle, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+    {
+        if ((typeFilter & (1 << i)) &&
+            (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+        {
+            return i;
+        }
+    }
+
+    ASSERT(false, "failed to find suitable memory type!");
+    return 666;
 }
 
 }

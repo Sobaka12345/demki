@@ -14,7 +14,7 @@ layout(set = 1, binding = 1) uniform UBOMesh {
 // layout(location = 2) in vec2 inTexture;
 
 layout(location = 0) out vec3 fragColor;
-layout(location = 1) out vec2 fragTexture;
+layout(location = 1) out vec2 fragTexture; 
 
 void main() {
     // gl_Position = camera.projection * camera.view * position.model * vec4(inPosition, 1.0);
