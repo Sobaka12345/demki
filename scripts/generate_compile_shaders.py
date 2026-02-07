@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 
 def dir_path(path):
@@ -33,8 +34,12 @@ except OSError as exc:
 
 for shader in args.shader_file:
     _, file = os.path.split(shader[0])
+    _, ext = os.path.splitext(file)
+    if ext not in ["vertex", "vert", "fragment", "frag", "tesscontrol", "tesc", "tesseval", "tese", "geometry", "geom", "compute", "comp"]:
+        sys.exit(-1)
+
     compiled_path = os.path.join(shaders_folder, file + '.spv')
-    script += "glslc " + shader[0] + " -o " + compiled_path + "\n"
+    script += "glslc " + shader[0] + " -fshader-stage " + ext + " -o " + compiled_path + "\n"
 
 with open(
     os.path.join(args.dest_folder, "compile_shaders." + ("bat" if os.name == 'nt' else "sh")),

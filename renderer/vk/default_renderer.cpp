@@ -540,7 +540,7 @@ void DefaultRenderer::destroyFramebuffers(Context& ctx) noexcept {
 void DefaultRenderer::createPipeline(Context& ) noexcept {
     constexpr auto shaderArray = std::to_array(shaders::shader_frag_spv);
     constexpr gapi::Shader<Vk> shader = gapi::parseShader<Vk, shaderArray>();
-    shader.stage;
+    std::cout << "HELO" << shader.stage << std::endl;
     
 }
 
@@ -663,12 +663,18 @@ DefaultRenderer::Context setupRenderer<Vk, DefaultRenderer>(gapi::GApiContext<Vk
     DefaultRenderer::createRenderPasses(result);
     DefaultRenderer::createFramebuffers(result);
 
+    DefaultRenderer::createPipeline(result);
+
+
     return result;
 }
 
 template <>
 void teardownRenderer<Vk, DefaultRenderer>(DefaultRenderer::Context& ctx) noexcept
 {
+
+    DefaultRenderer::destroyPipeline(ctx);
+
     DefaultRenderer::destroyFramebuffers(ctx);
     DefaultRenderer::destroyRenderPasses(ctx);
     DefaultRenderer::destroyAttachments(ctx);

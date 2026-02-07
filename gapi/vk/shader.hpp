@@ -6,6 +6,8 @@
 #include <array>
 #include <concepts>
 #include <cstdint>
+#include <include/spirv/unified1/spirv.h>
+#include <locale>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -49,7 +51,6 @@ struct Shader<Vk> {
 	bool usesPushConstants{};
 	bool usesDescriptorArray{};
 };
-
 
 consteval void consteval_assert(bool condition)
 {
@@ -106,8 +107,8 @@ inline constexpr VkDescriptorType getDescriptorType(SpvOp op)
 		| ((std::uint32_t)p[3] << 24);
 	}
 
-	inline consteval std::uint32_t read_u16(const uint8_t* p) {
-		return (std::uint32_t)p[0] | ((std::uint32_t)p[1] << 8);
+	inline consteval std::uint16_t read_u16(const uint8_t* p) {
+		return (std::uint16_t)p[0] | ((std::uint16_t)p[1] << 8);
 	}
 #elif defined(BIG_ENDIAN)
 	inline consteval std::uint32_t read_u32(const uint8_t* p) {
@@ -117,8 +118,8 @@ inline constexpr VkDescriptorType getDescriptorType(SpvOp op)
 			|  (std::uint32_t)p[3];
 	}
 
-	inline consteval std::uint32_t read_u16(const uint8_t* p) {
-		return ((std::uint32_t)p[0] << 8) | (std::uint32_t)p[1];
+	inline consteval std::uint16_t read_u16(const uint8_t* p) {
+		return ((std::uint16_t)p[0] << 8) | (std::uint16_t)p[1];
 	}
 #endif
 
@@ -139,19 +140,22 @@ constexpr auto static_for(F f)
 {
 	std::array<Shader<Vk>::Id, IdBound> ids{};
 	Shader<Vk>::LocalSizeIds localSizeIds = {-1, -1, -1};
+	VkShaderStageFlagBits stage{};
 
 	if constexpr (I < Count) 
 	{
-		constexpr ParseStepData parseStepData = f.template operator()<I, IdBound>();
+		constexpr ParseStepData parseStepData = f.template operator()<I, Count, IdBound>();
 
 		constexpr auto prevResultArrays = static_for<I + parseStepData.step, Count, IdBound>(f);
 		constexpr std::array<Shader<Vk>::Id, IdBound> prevIds = std::get<0>(prevResultArrays);
 		constexpr Shader<Vk>::LocalSizeIds prevLocalSizeIds = std::get<1>(prevResultArrays);
+		constexpr auto prevStage = std::get<2>(prevResultArrays);
 
 		std::copy(prevIds.cbegin(), prevIds.cend(), ids.begin());
 		localSizeIds.x = prevLocalSizeIds.x;
 		localSizeIds.y = prevLocalSizeIds.y;
 		localSizeIds.z = prevLocalSizeIds.z;
+		stage = prevStage;
 
 		if constexpr (parseStepData.idData.has_value()) {
 			constexpr size_t idx = parseStepData.idData.value().idx;
@@ -169,9 +173,13 @@ constexpr auto static_for(F f)
 			localSizeIds.z = parseStepData.localSizeIds.value().z;
 		}
 
+		if constexpr (parseStepData.stage.has_value()) {
+			stage = parseStepData.stage.value();
+		}
+
 	}
 	
-	return std::tuple{ids, localSizeIds};
+	return std::tuple{ids, localSizeIds, stage};
 }
 
 template <typename T>
@@ -194,24 +202,22 @@ consteval Shader<Vk> parseShader() noexcept
 	constexpr auto mult = sizeof(uint32_t);
 	constexpr uint32_t idBound = read_u32(code.data() + 3 * mult);
 
-	constexpr auto resultTuple = static_for<5 * mult, code.size(), idBound>([]<size_t I, size_t idBound>()
+	constexpr auto resultTuple = static_for<5 * mult, code.size(), idBound>([]<size_t I, size_t Count, size_t idBound>()
 	{
 		ParseStepData result{};
 		constexpr size_t mult = sizeof(uint32_t); 
 		constexpr size_t offset = I;
-		constexpr uint16_t wordCount = read_u16(code.data() + offset);
-		constexpr uint16_t opcode = read_u16(code.data()  + offset + 2);
+		
+		constexpr uint16_t opcode = read_u16(code.data()  + offset);
+		constexpr uint16_t wordCount = read_u16(code.data() + offset + 2);
 		result.step = wordCount * mult;
+		consteval_assert(offset + wordCount * mult <= Count);
 
-		switch (opcode)
-		{
-		case SpvOpEntryPoint:
+		if constexpr (opcode == SpvOpEntryPoint) 
 		{
 			consteval_assert(wordCount >= 2);
 			result.stage = getShaderStage(SpvExecutionModel(read_u32(code.data()  + offset + 1 * mult)));
-		}
-		break;
-		case SpvOpExecutionMode:
+		} else if constexpr (opcode == SpvOpExecutionMode) 
 		{
 			consteval_assert(wordCount >= 3);
 			constexpr uint32_t mode = read_u32(code.data()  + offset + 2 * mult);
@@ -225,12 +231,8 @@ consteval Shader<Vk> parseShader() noexcept
 					static_cast<int32_t>(read_u32(code.data() + offset + 4 * mult)),
 					static_cast<int32_t>(read_u32(code.data() + offset + 5 * mult)),
 				};
-
-				break;
 			}
-		}
-		break;
-		case SpvOpExecutionModeId:
+		} else if constexpr (opcode == SpvOpExecutionModeId) 
 		{
 			consteval_assert(wordCount >= 3);
 			constexpr uint32_t mode = read_u32(code.data() + offset + 2 * mult);
@@ -244,10 +246,9 @@ consteval Shader<Vk> parseShader() noexcept
 					static_cast<int32_t>(read_u32(code.data() + offset + 4 * mult)),
 					static_cast<int32_t>(read_u32(code.data() + offset + 5 * mult)),
 				};
+				break;
 			}
-		}
-		break;
-		case SpvOpDecorate:
+		} else if constexpr (opcode == SpvOpDecorate)
 		{
 			consteval_assert(wordCount >= 3);
 
@@ -264,7 +265,7 @@ consteval Shader<Vk> parseShader() noexcept
 						.set = read_u32(code.data() + offset + 3 * mult)
 					}
 				};
-			break;
+				break;
 			case SpvDecorationBinding:
 				consteval_assert(wordCount == 4);
 				result.idData = ParseStepData::IdData {
@@ -275,13 +276,13 @@ consteval Shader<Vk> parseShader() noexcept
 				};
 				break;
 			}
-		}
-		break;
-		case SpvOpTypeStruct:
-		case SpvOpTypeImage:
-		case SpvOpTypeSampler:
-		case SpvOpTypeSampledImage:
-		case SpvOpTypeAccelerationStructureKHR:
+		} else if constexpr (
+			opcode == SpvOpTypeStruct ||
+			opcode == SpvOpTypeImage ||
+			opcode == SpvOpTypeSampler ||
+			opcode == SpvOpTypeSampledImage ||
+			opcode == SpvOpTypeAccelerationStructureKHR
+		)
 		{
 			consteval_assert(wordCount >= 2);
 
@@ -294,9 +295,7 @@ consteval Shader<Vk> parseShader() noexcept
 					.opcode = opcode
 				}
 			};
-		}
-		break;
-		case SpvOpTypePointer:
+		} else if constexpr (opcode == SpvOpTypePointer)
 		{
 			consteval_assert(wordCount == 4);
 
@@ -311,9 +310,7 @@ consteval Shader<Vk> parseShader() noexcept
 					.storageClass = read_u32(code.data() + offset + 2 * mult),
 				}
 			};
-		}
-		break;
-		case SpvOpConstant:
+		} else if constexpr (opcode == SpvOpConstant)
 		{
 			consteval_assert(wordCount >= 4); // we currently only correctly handle 32-bit integer constants
 
@@ -328,9 +325,7 @@ consteval Shader<Vk> parseShader() noexcept
 					.constant = read_u32(code.data() + offset + 3 * mult), // note: this is the value, not the id of the constant
 				} 
 			};
-		}
-		break;
-		case SpvOpVariable:
+		} else if constexpr (opcode == SpvOpVariable)
 		{
 			consteval_assert(wordCount >= 4);
 
@@ -346,14 +341,13 @@ consteval Shader<Vk> parseShader() noexcept
 				}
 			};
 		}
-		}
 
 		return result;
 	});
 
 	constexpr std::array<Shader<Vk>::Id, idBound> ids = std::get<0>(resultTuple);
 	constexpr Shader<Vk>::LocalSizeIds localSizeIds = std::get<1>(resultTuple);
-
+	result.stage = std::get<2>(resultTuple);
 
 	for (auto& id : ids)
 	{
