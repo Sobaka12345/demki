@@ -1,7 +1,7 @@
 #ifndef GAPI_PIPELINE_HPP
 #define GAPI_PIPELINE_HPP
 
-#include "vk/pipeline.hpp"
+#include "../vk/pipeline.hpp"
 
 namespace gapi {
 

@@ -6,6 +6,7 @@ add_library(${PROJECT_NAME} STATIC
     include/gapi_context.hpp
     include/gapi.hpp
     include/surface.hpp
+    include/shader.hpp
     include/swapchain.hpp
 
     ogl/gapi_context.hpp
@@ -16,6 +17,7 @@ add_library(${PROJECT_NAME} STATIC
     vk/buffer.hpp
     vk/gapi_context.cpp
     vk/gapi_context.hpp
+    vk/shader.hpp
     vk/swapchain.hpp
     vk/surface.hpp
 

@@ -80,6 +80,9 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
 
     static void createFramebuffers(Context& ctx) noexcept;
     static void destroyFramebuffers(Context& ctx) noexcept;
+
+    static void createPipeline(Context& ctx) noexcept;
+    static void destroyPipeline(Context& ctx) noexcept;
     
     // SIRenderer static interface
     static void prepareFrame(Context& ctx) noexcept;

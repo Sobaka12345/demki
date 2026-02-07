@@ -29,8 +29,8 @@ class Bin2HeaderConan(ConanFile):
         layout_folder = f"bin2header-{self.version}"
         cmake_layout(self, src_folder=layout_folder, build_folder=layout_folder)
 
-    def export_sources(self):
-        export_conandata_patches(self)
+    #def export_sources(self):
+        #export_conandata_patches(self)
 
     def source(self):
         git = Git(self)

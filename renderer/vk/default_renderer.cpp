@@ -1,14 +1,18 @@
 #include "renderer.hpp"
 #include "renderer_fwd.hpp"
 
+#include <array>
 #include <cstring>
 #include <surface.hpp>
+#include <shader.hpp>
 
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+namespace renderer::shaders {
 #include "shaders_hpp/shader.frag.spv.hpp"
 #include "shaders_hpp/shader.vert.spv.hpp"
+}
 
 namespace renderer::__private {
 
@@ -533,6 +537,15 @@ void DefaultRenderer::destroyFramebuffers(Context& ctx) noexcept {
     ctx.framebuffers.clear();
 }
 
+void DefaultRenderer::createPipeline(Context& ) noexcept {
+    constexpr auto shaderArray = std::to_array(shaders::shader_frag_spv);
+    constexpr gapi::Shader<Vk> shader = gapi::parseShader<Vk, shaderArray>();
+    shader.stage;
+    
+}
+
+void DefaultRenderer::destroyPipeline(Context& ) noexcept {
+}
 
 void DefaultRenderer::prepareSwapchain(Context& ctx) noexcept
 {
@@ -626,14 +639,14 @@ void DefaultRenderer::presentFrame(Context& ctx) noexcept
     presentSwapchain(ctx);
 }
 
-void DefaultRenderer::prepareRenderPass(Context& ctx) noexcept
+void DefaultRenderer::prepareRenderPass(Context& ) noexcept
 {
     
 }
 
-void DefaultRenderer::presentRenderPass(Context& ctx) noexcept
+void DefaultRenderer::presentRenderPass(Context& ) noexcept
 {
-
+ 
 }
 
 
