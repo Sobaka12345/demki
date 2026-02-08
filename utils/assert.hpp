@@ -51,3 +51,9 @@ inline void realAssert(std::string assertType,
 #	define DASSERT(...) ASSERT_WITH_TYPE("DEBUG_ASSERT", __VA_ARGS__)
 
 #endif
+
+
+inline consteval void CONSTEVAL_ASSERT(bool condition)
+{
+    if (!condition) std::ignore = 1 / condition;
+}

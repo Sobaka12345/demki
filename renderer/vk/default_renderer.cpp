@@ -538,10 +538,12 @@ void DefaultRenderer::destroyFramebuffers(Context& ctx) noexcept {
 }
 
 void DefaultRenderer::createPipeline(Context& ) noexcept {
-    constexpr auto shaderArray = std::to_array(shaders::shader_frag_spv);
-    constexpr gapi::Shader<Vk> shader = gapi::parseShader<Vk, shaderArray>();
-    std::cout << "HELO" << shader.stage << std::endl;
-    
+    constexpr auto shaderVertArray = std::to_array(shaders::shader_vert_spv);
+    constexpr auto shaderFragArray = std::to_array(shaders::shader_frag_spv);
+    constexpr gapi::Shader<Vk> shader1 = gapi::parseShader<Vk, shaderVertArray>();
+    constexpr gapi::Shader<Vk> shader2 = gapi::parseShader<Vk, shaderFragArray>();
+    std::cout << "HELO" << shader1.stage << std::endl;
+    std::cout << "HELO" << shader2.stage << std::endl;
 }
 
 void DefaultRenderer::destroyPipeline(Context& ) noexcept {
