@@ -542,6 +542,12 @@ void DefaultRenderer::createPipeline(Context& ) noexcept {
     constexpr auto shaderFragArray = std::to_array(shaders::shader_frag_spv);
     constexpr gapi::Shader<Vk> shader1 = gapi::parseShader<Vk, shaderVertArray>();
     constexpr gapi::Shader<Vk> shader2 = gapi::parseShader<Vk, shaderFragArray>();
+    constexpr auto res = gapi::__private::getOffsetsForBatches<shaderFragArray, 256, 5*4, 0, 4>();
+    auto s1 = res[0];
+    auto s2 = res[1];
+    auto s3 = res[2];
+    auto s4 = res[3];
+
     std::cout << "HELO" << shader1.stage << std::endl;
     std::cout << "HELO" << shader2.stage << std::endl;
 }
