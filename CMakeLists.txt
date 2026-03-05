@@ -3,7 +3,6 @@ set(QT_CREATOR_SKIP_CONAN_SETUP ON)
 project(demki VERSION 0.1 LANGUAGES CXX)
 
 include(cmake_utils/project.cmake)
-include(cmake_utils/glslc.cmake)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

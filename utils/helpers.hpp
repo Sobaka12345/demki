@@ -40,11 +40,11 @@ struct stdArrayWrapper {
 
 constexpr inline void copy(auto& dst, const auto& src) noexcept
 {
-	if constexpr (isStdOptional<decltype(src)>::value) {
-		if constexpr (src.has_value()) {
+	if constexpr (isStdOptional<std::remove_cvref_t<decltype(src)>>::value) {
+		if (src.has_value()) {
 			dst = src.value();
 		}
-	} else if constexpr (std::is_convertible_v<decltype(src), decltype(dst)>) 
+	} else
     {
 		dst = src;
 	}

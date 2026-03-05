@@ -5,7 +5,7 @@ layout(location = 0) out vec4 outColor;
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 fragTexture;
 
-layout(set = 1, binding = 2) uniform sampler2D textureSampler;
+layout(set = 0, binding = 2) uniform sampler2D textureSampler;
 
 void main() {
     //outColor = vec4(fragTexture, 0.0, 1.0);

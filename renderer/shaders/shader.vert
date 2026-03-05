@@ -5,7 +5,7 @@ layout(set = 0, binding = 0) uniform UBOViewProjection {
     mat4 projection;
 } camera;
 
-layout(set = 1, binding = 1) uniform UBOMesh {
+layout(set = 0, binding = 1) uniform UBOMesh {
     mat4 model;
 } position;
 

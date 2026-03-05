@@ -17,7 +17,7 @@
 #include <spirv_reflect.h>
 #include <utility>
 #include <vulkan/vulkan_core.h>
-
+#include <numeric>
 #include <array>
 
 namespace gapi::__private {
@@ -125,7 +125,7 @@ struct ParseStepData {
 
 template <size_t IdBound>
 struct ParseBatchData {
-	std::array<MetaShader::Id, IdBound> ids{};
+	std::array<MetaShader::IdOptional, IdBound> ids{};
 	std::optional<MetaShader::LocalSizeIds> localSizeIds{};
 	std::optional<VkShaderStageFlagBits> stage{};
 
@@ -133,9 +133,8 @@ struct ParseBatchData {
 	{
 		replaceOptional(stage, other.stage);
 		replaceOptional(localSizeIds, other.localSizeIds);
-
 		std::transform(other.ids.begin(), other.ids.end(), ids.begin(), ids.begin(), [](const auto& otherVal, const auto& val) {
-			MetaShader::Id res{};
+			MetaShader::IdOptional res{};
 			MetaShader::copyIdT(res, val);
 			MetaShader::copyIdT(res, otherVal);
 			return res;
@@ -165,7 +164,7 @@ private:
 };
 
 template<size_t Begin, size_t End, size_t IdBound, class F>
-constexpr auto static_for(F f) 
+consteval auto static_for(F f) 
 {
 	ParseBatchData<IdBound> result{};
 
@@ -176,6 +175,9 @@ constexpr auto static_for(F f)
 
 		result.overwrite(prevBatchData);
 		result.overwrite(parseStepData);
+		// if constexpr (parseStepData.idData.has_value()) {
+		// 	static_assert(parseStepData.idx == 0);
+		// }
 	}
 	
 	return result;
@@ -341,7 +343,6 @@ consteval auto parseShaderInBatches() {
 
 			return result;
 		});
-
 		result.overwrite(parseShaderInBatches<code, offsets, I + 1, IdBound>());
 	}
 
@@ -378,18 +379,20 @@ consteval Shader<Vk, std::integral_constant<size_t, code.size()>> parseShader() 
 	
 	result.localSizeIds = parsedData.localSizeIds.value_or(MetaShader::LocalSizeIds{});
 	result.stage = parsedData.stage.value_or(VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM);
-	
 	constexpr auto ids = parsedData.ids;
-	for (auto& id : ids)
+	for (auto& idOpt : ids)
 	{
+		MetaShader::Id id{};
+		MetaShader::copyIdT(id, idOpt);
 		// set 0 is reserved for push descriptors
 		if (id.opcode == SpvOpVariable && (id.storageClass == SpvStorageClassUniform || id.storageClass == SpvStorageClassUniformConstant || id.storageClass == SpvStorageClassStorageBuffer) && id.set == 0)
 		{
 			CONSTEVAL_ASSERT(id.binding < 32);
 			CONSTEVAL_ASSERT(ids[id.typeId].opcode == SpvOpTypePointer);
 
-			uint32_t typeKind = ids[ids[id.typeId].typeId].opcode;
+			uint32_t typeKind = ids[ids[id.typeId].typeId.value()].opcode.value();
 			VkDescriptorType resourceType = getDescriptorType(SpvOp(typeKind));
+			CONSTEVAL_ASSERT(resourceType);
 
 			CONSTEVAL_ASSERT((result.resourceMask & (1 << id.binding)) == 0 || result.resourceTypes[id.binding] == resourceType);
 
@@ -412,20 +415,20 @@ consteval Shader<Vk, std::integral_constant<size_t, code.size()>> parseShader() 
 	{
 		if (result.localSizeIds.x >= 0)
 		{
-			CONSTEVAL_ASSERT(ids[result.localSizeIds.x].opcode == SpvOpConstant);
-			result.localSizeIds.x = ids[result.localSizeIds.x].constant;
+			CONSTEVAL_ASSERT(ids[result.localSizeIds.x].opcode.value() == SpvOpConstant);
+			result.localSizeIds.x = ids[result.localSizeIds.x].constant.value();
 		}
 
 		if (result.localSizeIds.y >= 0)
 		{
-			CONSTEVAL_ASSERT(ids[result.localSizeIds.y].opcode == SpvOpConstant);
-			result.localSizeIds.y = ids[result.localSizeIds.y].constant;
+			CONSTEVAL_ASSERT(ids[result.localSizeIds.y].opcode.value() == SpvOpConstant);
+			result.localSizeIds.y = ids[result.localSizeIds.y].constant.value();
 		}
 
 		if (result.localSizeIds.z >= 0)
 		{
-			CONSTEVAL_ASSERT(ids[result.localSizeIds.z].opcode == SpvOpConstant);
-			result.localSizeIds.z = ids[result.localSizeIds.z].constant;
+			CONSTEVAL_ASSERT(ids[result.localSizeIds.z].opcode.value() == SpvOpConstant);
+			result.localSizeIds.z = ids[result.localSizeIds.z].constant.value();
 		}
 
 		CONSTEVAL_ASSERT(result.localSizeIds.x && result.localSizeIds.y && result.localSizeIds.z);

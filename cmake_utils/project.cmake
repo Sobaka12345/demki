@@ -40,25 +40,39 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
     set(${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES
         ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES} ${__BEGIN_PROJECT_EXTRA_SHADER_SOURCES})
 
-	include(${CMAKE_SOURCE_DIR}/cmake_utils/glslc.cmake)
-	generate_glslc_script(PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR} SHADER_PATHS "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES}")
+    set(${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+    set(${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders_hpp)
+    file(MAKE_DIRECTORY ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_BIN_DIR})
+    file(MAKE_DIRECTORY ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR})
 
-	file(GLOB_RECURSE "${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_BINARIES" ABSOLUTE "${CMAKE_CURRENT_BINARY_DIR}/shaders/*.spv")
-	set(${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders_hpp)
-	file(MAKE_DIRECTORY ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR})
-	foreach(shader_bin ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_BINARIES})
-		get_filename_component(file_base_name ${shader_bin} NAME)
-		set(generated_header ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR}/${file_base_name}.hpp)
-		add_custom_command(OUTPUT ${generated_header}
-			COMMAND ${BIN2HEADER_EXECUTABLE}
-			    --output ${generated_header}
-				${shader_bin}
-			DEPENDS ${shader_bin}
-			VERBATIM
-		)
+    foreach(shader_source ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES})
+        get_filename_component(file_base_name ${shader_source} NAME)
+        get_filename_component(shader_extension ${shader_source} EXT)
+        string(TOLOWER "${shader_extension}" shader_stage)
+        string(REGEX REPLACE "^\\." "" shader_stage "${shader_stage}")
 
-	    set (${_CURRENT_PROJECT_NAME_TO_UPPER}_GENERATED_SHADER_SOURCES ${generated_header} ${${_CURRENT_PROJECT_NAME_TO_UPPER}_GENERATED_SHADER_SOURCES})
-	endforeach()
+        set(shader_bin ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_BIN_DIR}/${file_base_name}.spv)
+        add_custom_command(OUTPUT ${shader_bin}
+            COMMAND glslc
+                ${shader_source}
+                -fshader-stage=${shader_stage}
+                -o ${shader_bin}
+            DEPENDS ${shader_source}
+            VERBATIM
+        )
+
+        set(generated_header ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_HPP_DIR}/${file_base_name}.spv.hpp)
+        add_custom_command(OUTPUT ${generated_header}
+            COMMAND ${BIN2HEADER_EXECUTABLE}
+                --output ${generated_header}
+                ${shader_bin}
+            DEPENDS ${shader_bin}
+            VERBATIM
+        )
+
+        set(${_CURRENT_PROJECT_NAME_TO_UPPER}_GENERATED_SHADER_SOURCES
+            ${generated_header} ${${_CURRENT_PROJECT_NAME_TO_UPPER}_GENERATED_SHADER_SOURCES})
+    endforeach()
 
 	set (${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES
 		${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES} ${${_CURRENT_PROJECT_NAME_TO_UPPER}_GENERATED_SHADER_SOURCES})
