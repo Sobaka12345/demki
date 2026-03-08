@@ -18,24 +18,17 @@ namespace renderer::__private {
 
 VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, const gapi::ISurface* surface)
 {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-    {
-        return capabilities.currentExtent;
-    }
-    else
-    {
-        const auto [width, height] = surface->framebufferSize();
-        VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+    const auto [width, height] = surface->framebufferSize();
+    VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
-        actualExtent.width = std::clamp(actualExtent.width,
-            capabilities.minImageExtent.width,
-            capabilities.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height,
-            capabilities.minImageExtent.height,
-            capabilities.maxImageExtent.height);
+    actualExtent.width = std::clamp(actualExtent.width,
+        capabilities.minImageExtent.width,
+        capabilities.maxImageExtent.width);
+    actualExtent.height = std::clamp(actualExtent.height,
+        capabilities.minImageExtent.height,
+        capabilities.maxImageExtent.height);
 
-        return actualExtent;
-    }
+    return actualExtent;
 }
 
 VkSurfaceFormatKHR chooseSurfaceFormat(
@@ -163,11 +156,21 @@ void DefaultRenderer::recreateSwapchain(Context& ctx) noexcept
     }
     vkDeviceWaitIdle(ctx.device);
 
+    destroySynchronization(ctx);
+    destroyPipeline(ctx);
     destroyFramebuffers(ctx);
+    destroyRenderPasses(ctx);
+    destroyAttachments(ctx);
     destroySwapchain(ctx);
 
+    ctx.physicalDeviceInUse->fetchSurfaceInfo(ctx.surface);
+
     createSwapchain(ctx);
+    createSynchronization(ctx);
+    createAttachments(ctx);
+    createRenderPasses(ctx);
     createFramebuffers(ctx);
+    createPipeline(ctx);
 }
     
 void DefaultRenderer::pickSuitablePhysicalDevices(DefaultRenderer::Context& ctx) noexcept
@@ -301,24 +304,42 @@ void DefaultRenderer::createSynchronization(Context& ctx) noexcept {
     ctx.inFlightFences.resize(ctx.maxFramesInFlight);
     ctx.imageAvailableSemaphores.resize(ctx.maxFramesInFlight);
     ctx.renderWaitSemaphores.resize(ctx.maxFramesInFlight);
-    ctx.renderFinishedSemaphores.resize(ctx.maxFramesInFlight);
+    ctx.renderFinishedSemaphores.resize(ctx.swapchain.size);
     for (size_t i = 0; i < ctx.maxFramesInFlight; ++i)
     {
-        vkCreateFence(ctx.device, &fenceInfo, nullptr, &ctx.inFlightFences[i]);
-        vkCreateSemaphore(ctx.device, &semaphoreInfo, nullptr, &ctx.imageAvailableSemaphores[i]);
-        vkCreateSemaphore(ctx.device, &semaphoreInfo, nullptr, &ctx.renderWaitSemaphores[i]);
-        vkCreateSemaphore(ctx.device, &semaphoreInfo, nullptr, &ctx.renderFinishedSemaphores[i]);
+        ASSERT(VK_SUCCESS == vkCreateFence(ctx.device, &fenceInfo, nullptr, &ctx.inFlightFences[i]));
+        ASSERT(VK_SUCCESS == vkCreateSemaphore(ctx.device, &semaphoreInfo, nullptr, &ctx.imageAvailableSemaphores[i]));
+        ASSERT(VK_SUCCESS == vkCreateSemaphore(ctx.device, &semaphoreInfo, nullptr, &ctx.renderWaitSemaphores[i]));
+    }
+
+    for (size_t i = 0; i < ctx.swapchain.size; ++i)
+    {
+        ASSERT(VK_SUCCESS == vkCreateSemaphore(ctx.device, &semaphoreInfo, nullptr, &ctx.renderFinishedSemaphores[i]));
     }
 }
 
 void DefaultRenderer::destroySynchronization(Context& ctx) noexcept {
-    for (size_t i = 0; i < ctx.maxFramesInFlight; ++i)
+    for (const auto& fence : ctx.inFlightFences)
     {
-        vkDestroyFence(ctx.device, ctx.inFlightFences[i], nullptr);
-        vkDestroySemaphore(ctx.device, ctx.imageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(ctx.device, ctx.renderWaitSemaphores[i], nullptr);
-        vkDestroySemaphore(ctx.device, ctx.renderFinishedSemaphores[i], nullptr);
+        vkDestroyFence(ctx.device, fence, nullptr);
     }
+    for (const auto& semaphore : ctx.imageAvailableSemaphores)
+    {
+        vkDestroySemaphore(ctx.device, semaphore, nullptr);
+    }
+    for (const auto& semaphore : ctx.renderWaitSemaphores)
+    {
+        vkDestroySemaphore(ctx.device, semaphore, nullptr);
+    }
+    for (const auto& semaphore : ctx.renderFinishedSemaphores)
+    {
+        vkDestroySemaphore(ctx.device, semaphore, nullptr);
+    }
+
+    ctx.inFlightFences.clear();
+    ctx.imageAvailableSemaphores.clear();
+    ctx.renderWaitSemaphores.clear();
+    ctx.renderFinishedSemaphores.clear();
 }
 
 void DefaultRenderer::createAttachments(Context &ctx) noexcept {
@@ -457,7 +478,7 @@ void DefaultRenderer::createFramebuffers(Context &ctx) noexcept {
             switch (attachment.finalLayout) {
             case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
                 framebufferData.images[attachmentIdx] = VK_NULL_HANDLE;
-                framebufferData.imageViewAttachments[attachmentIdx] = ctx.swapchain.imageViews[attachmentIdx];
+                framebufferData.imageViewAttachments[attachmentIdx] = ctx.swapchain.imageViews[i];
                 break;
             case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
                 usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -537,35 +558,247 @@ void DefaultRenderer::destroyFramebuffers(Context& ctx) noexcept {
     ctx.framebuffers.clear();
 }
 
-void DefaultRenderer::createPipeline(Context& ) noexcept {
-    constexpr auto shaderVertArray = std::to_array(shaders::shader_vert_spv);
-    constexpr auto shaderFragArray = std::to_array(shaders::shader_frag_spv);
-    constexpr gapi::Shader<Vk> shader1 = gapi::parseShader<Vk, shaderVertArray>();
-    constexpr gapi::Shader<Vk> shader2 = gapi::parseShader<Vk, shaderFragArray>();
-    constexpr auto t =  shader1.resourceTypes[0];
-    t;
-    std::cout << "HELO" << shader1.stage << std::endl;
-    std::cout << "HELO" << shader2.stage << std::endl;
+template <int type>
+void printShaderType();
+
+template <>
+void printShaderType<VK_SHADER_STAGE_FRAGMENT_BIT>()
+{
+    std::cout << "FRAGMENT" << std::endl;
 }
 
-void DefaultRenderer::destroyPipeline(Context& ) noexcept {
+template <>
+void printShaderType<VK_SHADER_STAGE_VERTEX_BIT>()
+{
+    std::cout << "VERTEX" << std::endl;
+}
+
+void DefaultRenderer::createPipeline(Context& ctx) noexcept {
+    constexpr auto shaderVertArray = std::to_array(shaders::shader_vert_spv);
+    constexpr auto shaderFragArray = std::to_array(shaders::shader_frag_spv);
+    constexpr auto vertexShaderMeta = gapi::Shader<Vk, shaderVertArray>{};
+    constexpr auto fragmentShaderMeta = gapi::Shader<Vk, shaderFragArray>{};
+    
+    printShaderType<fragmentShaderMeta.stage>();
+    printShaderType<vertexShaderMeta.stage>();
+
+
+    const auto createShaderModule = [&ctx](const auto& shader) {
+        const auto shaderModuleCreateInfo = VkShaderModuleCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .codeSize = shader.spirv.size() * 4,
+            .pCode = shader.spirv.data(),
+        };
+
+        VkShaderModule shaderModule = VK_NULL_HANDLE;
+        ASSERT(VK_SUCCESS == vkCreateShaderModule(ctx.device, &shaderModuleCreateInfo, nullptr, &shaderModule),
+            "failed to create shader module");
+
+        return shaderModule;
+    };
+
+    const VkShaderModule vertexShaderModule = createShaderModule(vertexShaderMeta);
+    const VkShaderModule fragmentShaderModule = createShaderModule(fragmentShaderMeta);
+
+    std::array<VkDescriptorType, 32> descriptorTypes{};
+    std::array<VkShaderStageFlags, 32> descriptorStageFlags{};
+    uint32_t descriptorMask = 0;
+
+    const auto mergeShaderResources = [&](const auto& shaderMeta) {
+        for (uint32_t binding = 0; binding < descriptorTypes.size(); ++binding)
+        {
+            const uint32_t bindingMask = 1u << binding;
+            if ((shaderMeta.resourceMask & bindingMask) == 0)
+            {
+                continue;
+            }
+
+            if ((descriptorMask & bindingMask) != 0)
+            {
+                ASSERT(descriptorTypes[binding] == shaderMeta.resourceTypes[binding],
+                    "descriptor binding type mismatch between shader stages");
+            }
+            else
+            {
+                descriptorTypes[binding] = shaderMeta.resourceTypes[binding];
+                descriptorMask |= bindingMask;
+            }
+
+            descriptorStageFlags[binding] |= shaderMeta.stage;
+        }
+    };
+
+    mergeShaderResources(vertexShaderMeta);
+    mergeShaderResources(fragmentShaderMeta);
+
+    std::vector<VkDescriptorSetLayoutBinding> setBindings;
+    for (uint32_t binding = 0; binding < descriptorTypes.size(); ++binding)
+    {
+        const uint32_t bindingMask = 1u << binding;
+        if ((descriptorMask & bindingMask) == 0)
+        {
+            continue;
+        }
+
+        setBindings.push_back(VkDescriptorSetLayoutBinding{
+            .binding = binding,
+            .descriptorType = descriptorTypes[binding],
+            .descriptorCount = 1,
+            .stageFlags = descriptorStageFlags[binding],
+            .pImmutableSamplers = nullptr,
+        });
+    }
+
+    if (!setBindings.empty())
+    {
+        const auto descriptorSetLayoutCreateInfo = VkDescriptorSetLayoutCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = static_cast<uint32_t>(setBindings.size()),
+            .pBindings = setBindings.data(),
+        };
+        ASSERT(VK_SUCCESS == vkCreateDescriptorSetLayout(ctx.device, &descriptorSetLayoutCreateInfo, nullptr, &ctx.descriptorSetLayout),
+            "failed to create descriptor set layout");
+    }
+
+    const auto pipelineLayoutCreateInfo = VkPipelineLayoutCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = ctx.descriptorSetLayout != VK_NULL_HANDLE ? 1u : 0u,
+        .pSetLayouts = ctx.descriptorSetLayout != VK_NULL_HANDLE ? &ctx.descriptorSetLayout : nullptr,
+    };
+    ASSERT(VK_SUCCESS == vkCreatePipelineLayout(ctx.device, &pipelineLayoutCreateInfo, nullptr, &ctx.pipelineLayout),
+        "failed to create pipeline layout");
+
+    const std::array shaderStages = {
+        VkPipelineShaderStageCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = vertexShaderMeta.stage,
+            .module = vertexShaderModule,
+            .pName = "main",
+        },
+        VkPipelineShaderStageCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = fragmentShaderMeta.stage,
+            .module = fragmentShaderModule,
+            .pName = "main",
+        },
+    };
+
+    const auto vertexInputState = VkPipelineVertexInputStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+    };
+
+    const auto inputAssemblyState = VkPipelineInputAssemblyStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .primitiveRestartEnable = VK_FALSE,
+    };
+
+    const auto viewport = VkViewport{
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<float>(ctx.swapchain.extent.width),
+        .height = static_cast<float>(ctx.swapchain.extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+
+    const auto scissor = VkRect2D{
+        .offset = { 0, 0 },
+        .extent = ctx.swapchain.extent,
+    };
+
+    const auto viewportState = VkPipelineViewportStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .viewportCount = 1,
+        .pViewports = &viewport,
+        .scissorCount = 1,
+        .pScissors = &scissor,
+    };
+
+    const auto rasterizationState = VkPipelineRasterizationStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .depthClampEnable = VK_FALSE,
+        .rasterizerDiscardEnable = VK_FALSE,
+        .polygonMode = VK_POLYGON_MODE_FILL,
+        .cullMode = VK_CULL_MODE_NONE,
+        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .depthBiasEnable = VK_FALSE,
+        .lineWidth = 1.0f,
+    };
+
+    const auto multisampleState = VkPipelineMultisampleStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .rasterizationSamples = ctx.sampleCount,
+        .sampleShadingEnable = VK_TRUE,
+        .minSampleShading = 0.2f,
+    };
+
+    const auto depthStencilState = VkPipelineDepthStencilStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .depthTestEnable = VK_TRUE,
+        .depthWriteEnable = VK_TRUE,
+        .depthCompareOp = VK_COMPARE_OP_LESS,
+        .depthBoundsTestEnable = VK_FALSE,
+        .stencilTestEnable = VK_FALSE,
+    };
+
+    const auto colorBlendAttachment = VkPipelineColorBlendAttachmentState{
+        .blendEnable = VK_FALSE,
+        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    };
+
+    const auto colorBlendState = VkPipelineColorBlendStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .logicOpEnable = VK_FALSE,
+        .attachmentCount = 1,
+        .pAttachments = &colorBlendAttachment,
+    };
+
+    const auto graphicsPipelineCreateInfo = VkGraphicsPipelineCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .stageCount = static_cast<uint32_t>(shaderStages.size()),
+        .pStages = shaderStages.data(),
+        .pVertexInputState = &vertexInputState,
+        .pInputAssemblyState = &inputAssemblyState,
+        .pViewportState = &viewportState,
+        .pRasterizationState = &rasterizationState,
+        .pMultisampleState = &multisampleState,
+        .pDepthStencilState = &depthStencilState,
+        .pColorBlendState = &colorBlendState,
+        .layout = ctx.pipelineLayout,
+        .renderPass = ctx.renderPass,
+        .subpass = 0,
+    };
+
+    ASSERT(VK_SUCCESS == vkCreateGraphicsPipelines(ctx.device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &ctx.pipeline),
+        "failed to create graphics pipeline");
+
+    vkDestroyShaderModule(ctx.device, fragmentShaderModule, nullptr);
+    vkDestroyShaderModule(ctx.device, vertexShaderModule, nullptr);
+}
+
+void DefaultRenderer::destroyPipeline(Context& ctx) noexcept {
+    vkDestroyPipeline(ctx.device, ctx.pipeline, nullptr);
+    vkDestroyPipelineLayout(ctx.device, ctx.pipelineLayout, nullptr);
+    vkDestroyDescriptorSetLayout(ctx.device, ctx.descriptorSetLayout, nullptr);
 }
 
 void DefaultRenderer::prepareSwapchain(Context& ctx) noexcept
 {
-    vkWaitForFences(ctx.device, 1, ctx.inFlightFences.data(), VK_TRUE, UINT64_MAX);
+    ctx.swapchain.currentImage = UINT32_MAX;
+    vkWaitForFences(ctx.device, 1, &ctx.inFlightFences[ctx.currentFrameInFlight], VK_TRUE, UINT64_MAX);
     
     VkResult result = vkAcquireNextImageKHR(ctx.device, ctx.swapchain.handle, UINT64_MAX,
         ctx.imageAvailableSemaphores[ctx.currentFrameInFlight], VK_NULL_HANDLE, &ctx.swapchain.currentImage);
-
-    ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR,
-        "failed to acquire swap chain image!");
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         recreateSwapchain(ctx);
         return;
     }
+    ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR,
+        "failed to acquire swap chain image!");
 
     vkResetFences(ctx.device, 1, &ctx.inFlightFences[ctx.currentFrameInFlight]);
     
@@ -591,7 +824,7 @@ void DefaultRenderer::presentSwapchain(Context& ctx) noexcept
             .commandBufferCount = 1,
             .pCommandBuffers = &commandBuffer,
             .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &ctx.renderFinishedSemaphores[ctx.currentFrameInFlight]
+            .pSignalSemaphores = &ctx.renderFinishedSemaphores[ctx.swapchain.currentImage]
         };
 
     const std::array<VkPipelineStageFlags, 1> waitStages = {
@@ -605,21 +838,22 @@ void DefaultRenderer::presentSwapchain(Context& ctx) noexcept
     submitInfo.pWaitSemaphores = waitSemaphores.data();
     submitInfo.pWaitDstStageMask = waitStages.data();
 
-    const auto queue = ctx.queues[Context::QueueFamily::GRAPHICS_COMPUTE];
+    const auto graphicsQueue = ctx.queues[Context::QueueFamily::GRAPHICS_COMPUTE];
 
-    ASSERT(vkQueueSubmit(queue, 1, &submitInfo, ctx.inFlightFences[ctx.currentFrameInFlight]) == VK_SUCCESS,
+    ASSERT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, ctx.inFlightFences[ctx.currentFrameInFlight]) == VK_SUCCESS,
         "failed to submit draw command buffer!");
 
     const auto queuePresentInfo = VkPresentInfoKHR {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &ctx.renderFinishedSemaphores[ctx.currentFrameInFlight],
+        .pWaitSemaphores = &ctx.renderFinishedSemaphores[ctx.swapchain.currentImage],
         .swapchainCount = 1,
         .pSwapchains = &ctx.swapchain.handle,
         .pImageIndices = &ctx.swapchain.currentImage,
     };
 
-    VkResult result = vkQueuePresentKHR(queue, &queuePresentInfo);
+    const auto presentQueue = ctx.queues[Context::QueueFamily::PRESENT];
+    VkResult result = vkQueuePresentKHR(presentQueue, &queuePresentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || /*m_needRecreate ||*/
         !ctx.iSurface->available())
@@ -636,21 +870,47 @@ void DefaultRenderer::presentSwapchain(Context& ctx) noexcept
 
 void DefaultRenderer::prepareFrame(Context& ctx) noexcept {
     prepareSwapchain(ctx);
+    if (ctx.swapchain.currentImage == UINT32_MAX) return;
+    prepareRenderPass(ctx);
 }
 
 void DefaultRenderer::presentFrame(Context& ctx) noexcept
 {
+    if (ctx.swapchain.currentImage == UINT32_MAX) return;
+    presentRenderPass(ctx);
     presentSwapchain(ctx);
 }
 
-void DefaultRenderer::prepareRenderPass(Context& ) noexcept
+void DefaultRenderer::prepareRenderPass(Context& ctx) noexcept
 {
-    
+    auto commandBuffer = ctx.commandBuffers[Context::QueueFamily::GRAPHICS_COMPUTE][ctx.currentFrameInFlight];
+    const std::array clearValues = {
+        VkClearValue{ .color = { .float32 = { 0.05f, 0.07f, 0.10f, 1.0f } } },
+        VkClearValue{ .color = { .float32 = { 0.05f, 0.07f, 0.10f, 1.0f } } },
+        VkClearValue{ .depthStencil = { 1.0f, 0 } },
+    };
+
+    const auto renderPassBeginInfo = VkRenderPassBeginInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = ctx.renderPass,
+        .framebuffer = ctx.framebuffers[ctx.swapchain.currentImage].handle,
+        .renderArea = {
+            .offset = { 0, 0 },
+            .extent = ctx.swapchain.extent,
+        },
+        .clearValueCount = static_cast<uint32_t>(clearValues.size()),
+        .pClearValues = clearValues.data(),
+    };
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipeline);
+    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
-void DefaultRenderer::presentRenderPass(Context& ) noexcept
+void DefaultRenderer::presentRenderPass(Context& ctx) noexcept
 {
- 
+    auto commandBuffer = ctx.commandBuffers[Context::QueueFamily::GRAPHICS_COMPUTE][ctx.currentFrameInFlight];
+    vkCmdEndRenderPass(commandBuffer);
 }
 
 
@@ -661,8 +921,8 @@ DefaultRenderer::Context setupRenderer<Vk, DefaultRenderer>(gapi::GApiContext<Vk
     DefaultRenderer::pickSuitablePhysicalDevices(result);
 
     DefaultRenderer::createDevice(result);
-    DefaultRenderer::createSynchronization(result);
     DefaultRenderer::createSwapchain(result);
+    DefaultRenderer::createSynchronization(result);
     DefaultRenderer::createAttachments(result);
     DefaultRenderer::createRenderPasses(result);
     DefaultRenderer::createFramebuffers(result);
@@ -676,6 +936,7 @@ DefaultRenderer::Context setupRenderer<Vk, DefaultRenderer>(gapi::GApiContext<Vk
 template <>
 void teardownRenderer<Vk, DefaultRenderer>(DefaultRenderer::Context& ctx) noexcept
 {
+    vkDeviceWaitIdle(ctx.device);
 
     DefaultRenderer::destroyPipeline(ctx);
 

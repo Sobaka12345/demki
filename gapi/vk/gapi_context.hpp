@@ -40,6 +40,8 @@ struct GApiContext<Vk> {
             std::vector<VkPresentModeKHR> presentModes;
         } surfaceInfo;
 
+        void fetchSurfaceInfo(VkSurfaceKHR surface) noexcept;
+
         [[nodiscard]] VkFormat findSupportedFormat(
             const std::vector<VkFormat>& candidates,
             VkImageTiling tiling,

@@ -55,6 +55,9 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
         VkFormat depthFormat = VK_FORMAT_UNDEFINED;
         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_8_BIT;
         VkRenderPass renderPass = VK_NULL_HANDLE;
+        VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+        VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+        VkPipeline pipeline = VK_NULL_HANDLE;
         PhysicalDevice* physicalDeviceInUse = nullptr;
         std::vector<PhysicalDevice> suitablePhysicalDevices;
         gapi::Swapchain<Vk> swapchain;

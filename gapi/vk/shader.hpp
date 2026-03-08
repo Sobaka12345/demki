@@ -15,13 +15,50 @@
 #include <type_traits>
 
 #include <spirv_reflect.h>
-#include <utility>
 #include <vulkan/vulkan_core.h>
-#include <numeric>
 #include <array>
 
 namespace gapi::__private {
 
+inline constexpr VkShaderStageFlagBits getShaderStage(SpvExecutionModel executionModel)
+{
+	switch (executionModel)
+	{
+	case SpvExecutionModelVertex:
+		return VK_SHADER_STAGE_VERTEX_BIT;
+	case SpvExecutionModelGeometry:
+		return VK_SHADER_STAGE_GEOMETRY_BIT;
+	case SpvExecutionModelFragment:
+		return VK_SHADER_STAGE_FRAGMENT_BIT;
+	case SpvExecutionModelGLCompute:
+		return VK_SHADER_STAGE_COMPUTE_BIT;
+	case SpvExecutionModelTaskNV:
+		return VK_SHADER_STAGE_TASK_BIT_EXT;
+	case SpvExecutionModelMeshNV:
+		return VK_SHADER_STAGE_MESH_BIT_EXT;
+	default:
+		return VkShaderStageFlagBits(0);
+	}
+}
+
+inline constexpr VkDescriptorType getDescriptorType(SpvOp op)
+{
+	switch (op)
+	{
+	case SpvOpTypeStruct:
+		return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	case SpvOpTypeImage:
+		return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	case SpvOpTypeSampler:
+		return VK_DESCRIPTOR_TYPE_SAMPLER;
+	case SpvOpTypeSampledImage:
+		return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	case SpvOpTypeAccelerationStructureKHR:
+		return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+	default:
+		return VkDescriptorType(0);
+	}
+}
 
 struct MetaShader 
 {
@@ -65,377 +102,313 @@ struct MetaShader
 	VkShaderStageFlagBits stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
 };
 
-template <size_t codeSize>
-struct Shader<Vk, std::integral_constant<size_t, codeSize>> : MetaShader {
-	std::array<uint8_t, codeSize> spirv;
+template <auto code>
+struct Shader<Vk, code> : MetaShader {
+	constexpr static auto mult = sizeof(uint32_t);
+	constexpr static uint32_t IdBound = read_u32(code.data() + 3 * mult);
+	constexpr static auto spirv = std::bit_cast<std::array<uint32_t, code.size() / mult>>(code);
+
+private:	
+	struct ParseStepData {
+		size_t step{};
+		size_t idx{};
+		std::optional<VkShaderStageFlagBits> stage{};
+		std::optional<MetaShader::IdOptional> idData{};
+		std::optional<MetaShader::LocalSizeIds> localSizeIds{};
+	};
+
+	struct ParseBatchData {
+		std::array<MetaShader::IdOptional, IdBound> ids{};
+		std::optional<MetaShader::LocalSizeIds> localSizeIds{};
+		std::optional<VkShaderStageFlagBits> stage{};
+
+		consteval void overwrite(const ParseBatchData& other)
+		{
+			utils::copy(stage, other.stage);
+			utils::copy(localSizeIds, other.localSizeIds);
+			std::transform(other.ids.begin(), other.ids.end(), ids.begin(), ids.begin(), [](const auto& otherVal, const auto& val) {
+				MetaShader::IdOptional res{};
+				MetaShader::copyIdT(res, val);
+				MetaShader::copyIdT(res, otherVal);
+				return res;
+			});
+		}
+
+		consteval void overwrite(const ParseStepData& parseStepData)
+		{
+			if (parseStepData.idData.has_value()) {
+				MetaShader::copyIdT(
+					ids[parseStepData.idx], 
+					parseStepData.idData.value()
+				);
+			}
+
+			utils::copy(localSizeIds, parseStepData.localSizeIds);
+			utils::copy(stage, parseStepData.stage);
+		}
+	};
+
+	template<size_t Begin, size_t End, class F>
+	consteval auto static_for(F f) 
+	{
+		ParseBatchData result{};
+
+		if constexpr (Begin < End) 
+		{
+			constexpr ParseStepData parseStepData = f.template operator()<Begin, End>();
+			constexpr auto prevBatchData = static_for<Begin + parseStepData.step, End>(f);
+
+			result.overwrite(prevBatchData);
+			result.overwrite(parseStepData);
+			// if constexpr (parseStepData.idData.has_value()) {
+			// 	static_assert(parseStepData.idx == 0);
+			// }
+		}
+		
+		return result;
+	}
+
+
+	template <size_t Begin, size_t End>
+	consteval auto getOffsetForBatch() {
+		if constexpr (Begin < End) {
+			constexpr uint16_t wordCount = read_u16(code.data() + Begin + 2);
+			CONSTEVAL_ASSERT(wordCount > 0);
+			return getOffsetForBatch<Begin + wordCount * 4, End>();
+		}
+		return Begin;
+	}
+
+	template <size_t batchSize, size_t startOffset, size_t Begin, size_t End>
+	consteval auto getOffsetsForBatches() {
+		std::array<size_t, End> result{};
+
+		if constexpr (Begin < End) {
+			constexpr size_t begin = startOffset;
+			constexpr size_t end = std::min(startOffset + batchSize, code.size());
+			result[Begin] = startOffset;
+			
+			constexpr size_t newOffset = getOffsetForBatch<begin, end>();
+			constexpr auto offsets = getOffsetsForBatches<batchSize, newOffset, Begin + 1, End>();
+			std::copy(offsets.cbegin() + Begin + 1, offsets.cend(), result.begin() + Begin + 1);
+		}
+
+		return result;
+	}
+
+	template <auto offsets, size_t I>
+	consteval auto parseShaderInBatches() {
+		ParseBatchData result{};
+
+		if constexpr (I < offsets.size()) {
+			constexpr size_t offsetRangeEnd = I == offsets.size() - 1 ? code.size() : offsets[I + 1];
+
+			result = static_for<offsets[I], offsetRangeEnd>([]<size_t Offset, size_t End>()
+			{
+				ParseStepData result{};
+				constexpr size_t offset = Offset;
+
+				constexpr uint16_t opcode = read_u16(code.data() + offset);
+				constexpr uint16_t wordCount = read_u16(code.data() + offset + 2);
+				result.step = wordCount * mult;
+				CONSTEVAL_ASSERT(offset + wordCount * mult <= End);
+
+				if constexpr (opcode == SpvOpEntryPoint) 
+				{
+					CONSTEVAL_ASSERT(wordCount >= 2);
+					result.stage = getShaderStage(SpvExecutionModel(read_u32(code.data()  + offset + 1 * mult)));
+				} else if constexpr (opcode == SpvOpExecutionMode) 
+				{
+					CONSTEVAL_ASSERT(wordCount >= 3);
+					constexpr uint32_t mode = read_u32(code.data()  + offset + 2 * mult);
+
+					if constexpr (mode == SpvExecutionModeLocalSize)
+					{
+						CONSTEVAL_ASSERT(wordCount == 6);
+						result.localSizeIds = MetaShader::LocalSizeIds {
+							static_cast<int32_t>(read_u32(code.data() + offset + 3 * mult)),
+							static_cast<int32_t>(read_u32(code.data() + offset + 4 * mult)),
+							static_cast<int32_t>(read_u32(code.data() + offset + 5 * mult)),
+						};
+					}
+				} else if constexpr (opcode == SpvOpExecutionModeId) 
+				{
+					CONSTEVAL_ASSERT(wordCount >= 3);
+					constexpr uint32_t mode = read_u32(code.data() + offset + 2 * mult);
+
+					if constexpr (mode == SpvExecutionModeLocalSizeId) {
+						CONSTEVAL_ASSERT(wordCount == 6);
+						result.localSizeIds = MetaShader::LocalSizeIds {
+							static_cast<int32_t>(read_u32(code.data() + offset + 3 * mult)),
+							static_cast<int32_t>(read_u32(code.data() + offset + 4 * mult)),
+							static_cast<int32_t>(read_u32(code.data() + offset + 5 * mult)),
+						};
+					}
+				} else if constexpr (opcode == SpvOpDecorate)
+				{
+					CONSTEVAL_ASSERT(wordCount >= 3);
+
+					constexpr uint32_t id = read_u32(code.data() + offset + 1 * mult);
+					CONSTEVAL_ASSERT(id < IdBound);
+
+					constexpr uint32_t decoration = read_u32(code.data() + offset + 2 * mult); 
+					if constexpr (decoration == SpvDecorationDescriptorSet)
+					{
+						CONSTEVAL_ASSERT(wordCount == 4);
+						result.idx = id;
+						result.idData = MetaShader::IdOptional{
+							.set = read_u32(code.data() + offset + 3 * mult)
+						};
+					} else if (decoration == SpvDecorationBinding) 
+					{
+						CONSTEVAL_ASSERT(wordCount == 4);
+						result.idx = id;
+						result.idData = MetaShader::IdOptional{
+							.binding = read_u32(code.data() + offset + 3 * mult)
+						};
+					}
+				} else if constexpr (
+					opcode == SpvOpTypeStruct ||
+					opcode == SpvOpTypeImage ||
+					opcode == SpvOpTypeSampler ||
+					opcode == SpvOpTypeSampledImage ||
+					opcode == SpvOpTypeAccelerationStructureKHR
+				)
+				{
+					CONSTEVAL_ASSERT(wordCount >= 2);
+
+					constexpr uint32_t id = read_u32(code.data() + offset + 1 * mult);
+					CONSTEVAL_ASSERT(id < IdBound);
+
+					result.idx = id;
+					result.idData = MetaShader::IdOptional{
+						.opcode = opcode
+					};
+				} else if constexpr (opcode == SpvOpTypePointer)
+				{
+					CONSTEVAL_ASSERT(wordCount == 4);
+
+					constexpr uint32_t id = read_u32(code.data() + offset + 1 * mult);
+					CONSTEVAL_ASSERT(id < IdBound);
+
+					result.idx = id;
+					result.idData = MetaShader::IdOptional{
+						.opcode = opcode,
+						.typeId = read_u32(code.data() + offset + 3 * mult),
+						.storageClass = read_u32(code.data() + offset + 2 * mult),
+					};
+				} else if constexpr (opcode == SpvOpConstant)
+				{
+					CONSTEVAL_ASSERT(wordCount >= 4); // we currently only correctly handle 32-bit integer constants
+
+					constexpr uint32_t id = read_u32(code.data() + offset + 2 * mult);
+					CONSTEVAL_ASSERT(id < IdBound);
+
+					result.idx = id;
+					result.idData = MetaShader::IdOptional{
+						.opcode = opcode,
+						.typeId = read_u32(code.data() + offset + 1 * mult),
+						.constant = read_u32(code.data() + offset + 3 * mult), // note: this is the value, not the id of the constant
+					};
+				} else if constexpr (opcode == SpvOpVariable)
+				{
+					CONSTEVAL_ASSERT(wordCount >= 4);
+
+					constexpr uint32_t id = read_u32(code.data() + offset + 2 * mult);
+					CONSTEVAL_ASSERT(id < IdBound);
+
+					result.idx = id;
+					result.idData = MetaShader::IdOptional{
+						.opcode = opcode,
+						.typeId = read_u32(code.data() + offset + 1 * mult),
+						.storageClass = read_u32(code.data() + offset + 3 * mult),
+					};
+				}
+
+				return result;
+			});
+			result.overwrite(parseShaderInBatches<offsets, I + 1>());
+		}
+
+		return result;
+	}
+
+public:
+	consteval Shader()
+	{
+		constexpr uint32_t magicNumber = read_u32(code.data());
+		CONSTEVAL_ASSERT(magicNumber == SpvMagicNumber);
+		
+		constexpr size_t maxTemplateRecursionDepth = 256;
+		constexpr size_t batchCount = std::max(code.size() / maxTemplateRecursionDepth, static_cast<size_t>(1));
+		constexpr std::array<size_t, batchCount> offsets = getOffsetsForBatches<maxTemplateRecursionDepth, 5 * mult, 0, batchCount>();
+
+		constexpr auto parsedData = parseShaderInBatches<offsets, 0>();
+		
+		localSizeIds = parsedData.localSizeIds.value_or(MetaShader::LocalSizeIds{});
+		stage = parsedData.stage.value_or(VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM);
+		constexpr auto ids = parsedData.ids;
+		for (auto& idOpt : ids)
+		{
+			MetaShader::Id id{};
+			MetaShader::copyIdT(id, idOpt);
+			// set 0 is reserved for push descriptors
+			if (id.opcode == SpvOpVariable && (id.storageClass == SpvStorageClassUniform || id.storageClass == SpvStorageClassUniformConstant || id.storageClass == SpvStorageClassStorageBuffer) && id.set == 0)
+			{
+				CONSTEVAL_ASSERT(id.binding < 32);
+				CONSTEVAL_ASSERT(ids[id.typeId].opcode == SpvOpTypePointer);
+
+				uint32_t typeKind = ids[ids[id.typeId].typeId.value()].opcode.value();
+				VkDescriptorType resourceType = getDescriptorType(SpvOp(typeKind));
+				CONSTEVAL_ASSERT(resourceType);
+
+				CONSTEVAL_ASSERT((resourceMask & (1 << id.binding)) == 0 || resourceTypes[id.binding] == resourceType);
+
+				resourceTypes[id.binding] = resourceType;
+				resourceMask |= 1 << id.binding;
+			}
+
+			if (id.opcode == SpvOpVariable && id.storageClass == SpvStorageClassUniformConstant && id.set == 1)
+			{
+				usesDescriptorArray = true;
+			}
+
+			if (id.opcode == SpvOpVariable && id.storageClass == SpvStorageClassPushConstant)
+			{
+				usesPushConstants = true;
+			}
+		}
+
+		if (stage == VK_SHADER_STAGE_COMPUTE_BIT)
+		{
+			if (localSizeIds.x >= 0)
+			{
+				CONSTEVAL_ASSERT(ids[localSizeIds.x].opcode.value() == SpvOpConstant);
+				localSizeIds.x = ids[localSizeIds.x].constant.value();
+			}
+
+			if (localSizeIds.y >= 0)
+			{
+				CONSTEVAL_ASSERT(ids[localSizeIds.y].opcode.value() == SpvOpConstant);
+				localSizeIds.y = ids[localSizeIds.y].constant.value();
+			}
+
+			if (localSizeIds.z >= 0)
+			{
+				CONSTEVAL_ASSERT(ids[localSizeIds.z].opcode.value() == SpvOpConstant);
+				localSizeIds.z = ids[localSizeIds.z].constant.value();
+			}
+
+			CONSTEVAL_ASSERT(localSizeIds.x && localSizeIds.y && localSizeIds.z);
+		}
+	}
+
 };
 
 template <>
 struct Shader<Vk> : MetaShader {
-	std::vector<uint8_t> spirv;
 };
 
-inline constexpr VkShaderStageFlagBits getShaderStage(SpvExecutionModel executionModel)
-{
-	switch (executionModel)
-	{
-	case SpvExecutionModelVertex:
-		return VK_SHADER_STAGE_VERTEX_BIT;
-	case SpvExecutionModelGeometry:
-		return VK_SHADER_STAGE_GEOMETRY_BIT;
-	case SpvExecutionModelFragment:
-		return VK_SHADER_STAGE_FRAGMENT_BIT;
-	case SpvExecutionModelGLCompute:
-		return VK_SHADER_STAGE_COMPUTE_BIT;
-	case SpvExecutionModelTaskNV:
-		return VK_SHADER_STAGE_TASK_BIT_EXT;
-	case SpvExecutionModelMeshNV:
-		return VK_SHADER_STAGE_MESH_BIT_EXT;
-	default:
-		return VkShaderStageFlagBits(0);
-	}
-}
-
-inline constexpr VkDescriptorType getDescriptorType(SpvOp op)
-{
-	switch (op)
-	{
-	case SpvOpTypeStruct:
-		return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	case SpvOpTypeImage:
-		return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	case SpvOpTypeSampler:
-		return VK_DESCRIPTOR_TYPE_SAMPLER;
-	case SpvOpTypeSampledImage:
-		return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	case SpvOpTypeAccelerationStructureKHR:
-		return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-	default:
-		return VkDescriptorType(0);
-	}
-}
-
-struct ParseStepData {
-	size_t step{};
-	size_t idx{};
-	std::optional<VkShaderStageFlagBits> stage{};
-	std::optional<MetaShader::IdOptional> idData{};
-	std::optional<MetaShader::LocalSizeIds> localSizeIds{};
-};
-
-template <size_t IdBound>
-struct ParseBatchData {
-	std::array<MetaShader::IdOptional, IdBound> ids{};
-	std::optional<MetaShader::LocalSizeIds> localSizeIds{};
-	std::optional<VkShaderStageFlagBits> stage{};
-
-	consteval void overwrite(const ParseBatchData& other)
-	{
-		replaceOptional(stage, other.stage);
-		replaceOptional(localSizeIds, other.localSizeIds);
-		std::transform(other.ids.begin(), other.ids.end(), ids.begin(), ids.begin(), [](const auto& otherVal, const auto& val) {
-			MetaShader::IdOptional res{};
-			MetaShader::copyIdT(res, val);
-			MetaShader::copyIdT(res, otherVal);
-			return res;
-		});
-	}
-
-	consteval void overwrite(const ParseStepData& parseStepData)
-	{
-		if (parseStepData.idData.has_value()) {
-			MetaShader::copyIdT(
-				ids[parseStepData.idx], 
-				parseStepData.idData.value()
-			);
-		}
-
-		replaceOptional(localSizeIds, parseStepData.localSizeIds);
-		replaceOptional(stage, parseStepData.stage);
-	}
-
-private:
-	template <typename T>
-	static consteval void replaceOptional(T& dst, const T& src) noexcept
-	{
-		if (src.has_value())
-			dst = src.value();
-	}
-};
-
-template<size_t Begin, size_t End, size_t IdBound, class F>
-consteval auto static_for(F f) 
-{
-	ParseBatchData<IdBound> result{};
-
-	if constexpr (Begin < End) 
-	{
-		constexpr ParseStepData parseStepData = f.template operator()<Begin, End, IdBound>();
-		constexpr auto prevBatchData = static_for<Begin + parseStepData.step, End, IdBound>(f);
-
-		result.overwrite(prevBatchData);
-		result.overwrite(parseStepData);
-		// if constexpr (parseStepData.idData.has_value()) {
-		// 	static_assert(parseStepData.idx == 0);
-		// }
-	}
-	
-	return result;
-}
-
-template <auto code, size_t Begin, size_t End>
-consteval auto getOffsetForBatch() {
-	if constexpr (Begin < End) {
-		constexpr uint16_t wordCount = read_u16(code.data() + Begin + 2);
-		CONSTEVAL_ASSERT(wordCount > 0);
-		return getOffsetForBatch<code, Begin + wordCount * 4, End>();
-	}
-	return Begin;
-}
-
-template <auto code, size_t batchSize, size_t startOffset, size_t Begin, size_t End>
-consteval auto getOffsetsForBatches() {
-	std::array<size_t, End> result{};
-
-	if constexpr (Begin < End) {
-		constexpr size_t begin = startOffset;
-		constexpr size_t end = std::min(startOffset + batchSize, code.size());
-		result[Begin] = startOffset;
-		
-		constexpr size_t newOffset = getOffsetForBatch<code, begin, end>();
-		constexpr auto offsets = getOffsetsForBatches<code, batchSize, newOffset, Begin + 1, End>();
-		std::copy(offsets.cbegin() + Begin + 1, offsets.cend(), result.begin() + Begin + 1);
-    }
-
-	return result;
-}
-
-template <auto code, auto offsets, size_t I, size_t IdBound>
-consteval auto parseShaderInBatches() {
-	ParseBatchData<IdBound> result{};
-
-	if constexpr (I < offsets.size()) {
-		constexpr size_t offsetRangeEnd = I == offsets.size() - 1 ? code.size() : offsets[I + 1];
-
-		result = static_for<offsets[I], offsetRangeEnd, IdBound>([]<size_t Offset, size_t End, size_t _IdBound>()
-		{
-			ParseStepData result{};
-			constexpr size_t mult = sizeof(uint32_t); 
-			constexpr size_t offset = Offset;
-			constexpr size_t idBound = _IdBound;
-
-			constexpr uint16_t opcode = read_u16(code.data() + offset);
-			constexpr uint16_t wordCount = read_u16(code.data() + offset + 2);
-			result.step = wordCount * mult;
-			CONSTEVAL_ASSERT(offset + wordCount * mult <= End);
-
-			if constexpr (opcode == SpvOpEntryPoint) 
-			{
-				CONSTEVAL_ASSERT(wordCount >= 2);
-				result.stage = getShaderStage(SpvExecutionModel(read_u32(code.data()  + offset + 1 * mult)));
-			} else if constexpr (opcode == SpvOpExecutionMode) 
-			{
-				CONSTEVAL_ASSERT(wordCount >= 3);
-				constexpr uint32_t mode = read_u32(code.data()  + offset + 2 * mult);
-
-				if constexpr (mode == SpvExecutionModeLocalSize)
-				{
-					CONSTEVAL_ASSERT(wordCount == 6);
-					result.localSizeIds = MetaShader::LocalSizeIds {
-						static_cast<int32_t>(read_u32(code.data() + offset + 3 * mult)),
-						static_cast<int32_t>(read_u32(code.data() + offset + 4 * mult)),
-						static_cast<int32_t>(read_u32(code.data() + offset + 5 * mult)),
-					};
-				}
-			} else if constexpr (opcode == SpvOpExecutionModeId) 
-			{
-				CONSTEVAL_ASSERT(wordCount >= 3);
-				constexpr uint32_t mode = read_u32(code.data() + offset + 2 * mult);
-
-				if constexpr (mode == SpvExecutionModeLocalSizeId) {
-					CONSTEVAL_ASSERT(wordCount == 6);
-					result.localSizeIds = MetaShader::LocalSizeIds {
-						static_cast<int32_t>(read_u32(code.data() + offset + 3 * mult)),
-						static_cast<int32_t>(read_u32(code.data() + offset + 4 * mult)),
-						static_cast<int32_t>(read_u32(code.data() + offset + 5 * mult)),
-					};
-				}
-			} else if constexpr (opcode == SpvOpDecorate)
-			{
-				CONSTEVAL_ASSERT(wordCount >= 3);
-
-				constexpr uint32_t id = read_u32(code.data() + offset + 1 * mult);
-				CONSTEVAL_ASSERT(id < idBound);
-
-				constexpr uint32_t decoration = read_u32(code.data() + offset + 2 * mult); 
-				if constexpr (decoration == SpvDecorationDescriptorSet)
-				{
-					CONSTEVAL_ASSERT(wordCount == 4);
-					result.idx = id;
-					result.idData = MetaShader::IdOptional{
-						.set = read_u32(code.data() + offset + 3 * mult)
-					};
-				} else if (decoration == SpvDecorationBinding) 
-				{
-					CONSTEVAL_ASSERT(wordCount == 4);
-					result.idx = id;
-					result.idData = MetaShader::IdOptional{
-						.binding = read_u32(code.data() + offset + 3 * mult)
-					};
-				}
-			} else if constexpr (
-				opcode == SpvOpTypeStruct ||
-				opcode == SpvOpTypeImage ||
-				opcode == SpvOpTypeSampler ||
-				opcode == SpvOpTypeSampledImage ||
-				opcode == SpvOpTypeAccelerationStructureKHR
-			)
-			{
-				CONSTEVAL_ASSERT(wordCount >= 2);
-
-				constexpr uint32_t id = read_u32(code.data() + offset + 1 * mult);
-				CONSTEVAL_ASSERT(id < idBound);
-
-				result.idx = id;
-				result.idData = MetaShader::IdOptional{
-					.opcode = opcode
-				};
-			} else if constexpr (opcode == SpvOpTypePointer)
-			{
-				CONSTEVAL_ASSERT(wordCount == 4);
-
-				constexpr uint32_t id = read_u32(code.data() + offset + 1 * mult);
-				CONSTEVAL_ASSERT(id < idBound);
-
-				result.idx = id;
-				result.idData = MetaShader::IdOptional{
-					.opcode = opcode,
-					.typeId = read_u32(code.data() + offset + 3 * mult),
-					.storageClass = read_u32(code.data() + offset + 2 * mult),
-				};
-			} else if constexpr (opcode == SpvOpConstant)
-			{
-				CONSTEVAL_ASSERT(wordCount >= 4); // we currently only correctly handle 32-bit integer constants
-
-				constexpr uint32_t id = read_u32(code.data() + offset + 2 * mult);
-				CONSTEVAL_ASSERT(id < idBound);
-
-				result.idx = id;
-				result.idData = MetaShader::IdOptional{
-					.opcode = opcode,
-					.typeId = read_u32(code.data() + offset + 1 * mult),
-					.constant = read_u32(code.data() + offset + 3 * mult), // note: this is the value, not the id of the constant
-				};
-			} else if constexpr (opcode == SpvOpVariable)
-			{
-				CONSTEVAL_ASSERT(wordCount >= 4);
-
-				constexpr uint32_t id = read_u32(code.data() + offset + 2 * mult);
-				CONSTEVAL_ASSERT(id < idBound);
-
-				result.idx = id;
-				result.idData = MetaShader::IdOptional{
-					.opcode = opcode,
-					.typeId = read_u32(code.data() + offset + 1 * mult),
-					.storageClass = read_u32(code.data() + offset + 3 * mult),
-				};
-			}
-
-			return result;
-		});
-		result.overwrite(parseShaderInBatches<code, offsets, I + 1, IdBound>());
-	}
-
-	return result;
-}
-
-template <auto code>
-consteval auto split_static_for() 
-{
-	constexpr uint32_t magicNumber = read_u32(code.data());
-	CONSTEVAL_ASSERT(magicNumber == SpvMagicNumber);
-	
-	constexpr auto mult = sizeof(uint32_t);
-	constexpr uint32_t idBound = read_u32(code.data() + 3 * mult);
-	
-	constexpr size_t maxTemplateRecursionDepth = 256;
-	constexpr size_t batchCount = std::max(code.size() / maxTemplateRecursionDepth, static_cast<size_t>(1));
-	constexpr std::array<size_t, batchCount> offsets = getOffsetsForBatches<code, maxTemplateRecursionDepth, 5 * mult, 0, batchCount>();
-
-	return parseShaderInBatches<code, offsets, 0, idBound>();
-}
-
-template <auto code>
-	requires utils::isStdArray<std::remove_reference_t<decltype(code)>>::value
-consteval Shader<Vk, std::integral_constant<size_t, code.size()>> parseShader() noexcept
-{
-	Shader<Vk, std::integral_constant<size_t, code.size()>> result;
-	std::copy(code.begin(), code.end(), result.spirv.begin());
-
-	constexpr uint32_t magicNumber = read_u32(code.data());
-	CONSTEVAL_ASSERT(magicNumber == SpvMagicNumber);
-
-	constexpr auto parsedData = split_static_for<code>();
-	
-	result.localSizeIds = parsedData.localSizeIds.value_or(MetaShader::LocalSizeIds{});
-	result.stage = parsedData.stage.value_or(VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM);
-	constexpr auto ids = parsedData.ids;
-	for (auto& idOpt : ids)
-	{
-		MetaShader::Id id{};
-		MetaShader::copyIdT(id, idOpt);
-		// set 0 is reserved for push descriptors
-		if (id.opcode == SpvOpVariable && (id.storageClass == SpvStorageClassUniform || id.storageClass == SpvStorageClassUniformConstant || id.storageClass == SpvStorageClassStorageBuffer) && id.set == 0)
-		{
-			CONSTEVAL_ASSERT(id.binding < 32);
-			CONSTEVAL_ASSERT(ids[id.typeId].opcode == SpvOpTypePointer);
-
-			uint32_t typeKind = ids[ids[id.typeId].typeId.value()].opcode.value();
-			VkDescriptorType resourceType = getDescriptorType(SpvOp(typeKind));
-			CONSTEVAL_ASSERT(resourceType);
-
-			CONSTEVAL_ASSERT((result.resourceMask & (1 << id.binding)) == 0 || result.resourceTypes[id.binding] == resourceType);
-
-			result.resourceTypes[id.binding] = resourceType;
-			result.resourceMask |= 1 << id.binding;
-		}
-
-		if (id.opcode == SpvOpVariable && id.storageClass == SpvStorageClassUniformConstant && id.set == 1)
-		{
-			result.usesDescriptorArray = true;
-		}
-
-		if (id.opcode == SpvOpVariable && id.storageClass == SpvStorageClassPushConstant)
-		{
-			result.usesPushConstants = true;
-		}
-	}
-
-	if (result.stage == VK_SHADER_STAGE_COMPUTE_BIT)
-	{
-		if (result.localSizeIds.x >= 0)
-		{
-			CONSTEVAL_ASSERT(ids[result.localSizeIds.x].opcode.value() == SpvOpConstant);
-			result.localSizeIds.x = ids[result.localSizeIds.x].constant.value();
-		}
-
-		if (result.localSizeIds.y >= 0)
-		{
-			CONSTEVAL_ASSERT(ids[result.localSizeIds.y].opcode.value() == SpvOpConstant);
-			result.localSizeIds.y = ids[result.localSizeIds.y].constant.value();
-		}
-
-		if (result.localSizeIds.z >= 0)
-		{
-			CONSTEVAL_ASSERT(ids[result.localSizeIds.z].opcode.value() == SpvOpConstant);
-			result.localSizeIds.z = ids[result.localSizeIds.z].constant.value();
-		}
-
-		CONSTEVAL_ASSERT(result.localSizeIds.x && result.localSizeIds.y && result.localSizeIds.z);
-	}
-
-	return result;
-}
 
 }
 

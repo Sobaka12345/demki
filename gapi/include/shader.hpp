@@ -14,15 +14,9 @@ concept SIShader = requires(
 };
 
 
-template <typename GApiT>
-    requires SIShader<__private::Shader<GApiT>>
-using Shader = __private::Shader<GApiT>;
-
-template <typename GApiT, auto code>
-consteval Shader<GApiT> parseShader() noexcept
-{
-    return Shader<GApiT>{__private::parseShader<code>()};
-}
+template <typename GApiT, auto ... Args>
+    requires SIShader<__private::Shader<GApiT, Args...>>
+using Shader = __private::Shader<GApiT, Args...>;
 
 }
 

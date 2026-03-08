@@ -4,6 +4,34 @@
 
 namespace gapi::__private {
 
+void GApiContext<Vk>::PhysicalDevice::fetchSurfaceInfo(VkSurfaceKHR surface) noexcept
+{
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(handle, surface, &surfaceInfo.capabilities);
+
+    uint32_t formatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(handle, surface, &formatCount, nullptr);
+    if (formatCount)
+    {
+        surfaceInfo.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(handle, surface, &formatCount,
+            surfaceInfo.formats.data());
+    } else {
+        surfaceInfo.formats.clear();
+    }
+
+    uint32_t presentModeCount = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(handle, surface, &presentModeCount,
+        nullptr);
+    if (presentModeCount)
+    {
+        surfaceInfo.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(handle, surface, &presentModeCount, 
+            surfaceInfo.presentModes.data());
+    } else {
+        surfaceInfo.presentModes.clear();
+    }
+}
+
 void GApiContext<Vk>::fetchPhysicalDevices() noexcept {
     uint32_t physicalDeviceCount = 0;
     ASSERT(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr) == VK_SUCCESS);
@@ -22,32 +50,13 @@ void GApiContext<Vk>::fetchPhysicalDevices() noexcept {
         vkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDevice.properties);
         vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &physicalDevice.memoryProperties);
 
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice, surface, &physicalDevice.surfaceInfo.capabilities);
-
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(vkPhysicalDevice, nullptr, &extensionCount, nullptr);
         physicalDevice.availableExtensions.resize(extensionCount);
         vkEnumerateDeviceExtensionProperties(vkPhysicalDevice, nullptr, &extensionCount,
             physicalDevice.availableExtensions.data());
 
-        uint32_t formatCount = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice, surface, &formatCount, nullptr);
-        if (formatCount)
-        {
-            physicalDevice.surfaceInfo.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice, surface, &formatCount,
-                physicalDevice.surfaceInfo.formats.data());
-        }
-
-        uint32_t presentModeCount = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice, surface, &presentModeCount,
-            nullptr);
-        if (presentModeCount)
-        {
-            physicalDevice.surfaceInfo.presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice, surface, &presentModeCount,
-                physicalDevice.surfaceInfo.presentModes.data());
-        }
+        physicalDevice.fetchSurfaceInfo(surface);
 
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice, &queueFamilyCount, nullptr);
