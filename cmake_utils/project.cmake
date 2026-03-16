@@ -36,7 +36,21 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
         set(${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
     ")
 
-    file(GLOB_RECURSE "${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES" ABSOLUTE "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR}/*")
+    set(shader_header_template "${CMAKE_SOURCE_DIR}/templates/shared_types.hpp.in")
+    set(shader_header_output   "${CMAKE_CURRENT_SOURCE_DIR}/shaders/shared_types.hpp")
+    if (EXISTS "${shader_header_template}")
+        configure_file("${shader_header_template}" "${shader_header_output}" @ONLY)
+    endif()
+
+    file(GLOB_RECURSE "${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES" ABSOLUTE
+        "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR}/*.vert"
+        "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR}/*.frag"
+        "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR}/*.comp"
+        "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR}/*.geom"
+        "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR}/*.tesc"
+        "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR}/*.tese"
+        "${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADERS_DIR}/*.mesh"
+    )
     set(${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES
         ${${_CURRENT_PROJECT_NAME_TO_UPPER}_SHADER_SOURCES} ${__BEGIN_PROJECT_EXTRA_SHADER_SOURCES})
 
@@ -66,7 +80,7 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
             COMMAND ${BIN2HEADER_EXECUTABLE}
                 --output ${generated_header}
                 ${shader_bin}
-            DEPENDS ${shader_bin}
+            DEPENDS ${shader_bin} ${shader_header_template} ${shader_header_output}
             VERBATIM
         )
 
@@ -81,6 +95,11 @@ endif()
 endmacro(begin_project)
 
 macro (end_project)
+
+if (EXISTS "${shader_header_output}")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GLSL_HOST)
+    target_precompile_headers(${PROJECT_NAME} PUBLIC ${shader_header_output})
+endif()
 
 if (DEFINED "${_CURRENT_PROJECT_NAME_TO_UPPER}_MODELS_DIR")
 	message(${PROJECT_NAME} " models exist")

@@ -1,7 +1,6 @@
 begin_project()
 
 add_library(${PROJECT_NAME} STATIC
-	include/renderer.hpp
 	vk/default_renderer.cpp
 	vk/renderer.hpp
 	

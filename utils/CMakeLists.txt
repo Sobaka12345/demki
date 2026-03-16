@@ -6,8 +6,6 @@ add_library(${PROJECT_NAME} INTERFACE
 	constraints.hpp
 	crtp.hpp
 	helpers.hpp
-	glsl_defs.hpp
-	glsl_defs.cpp
 	hierarchy.hpp
 	type_list.hpp
 	pch.hpp

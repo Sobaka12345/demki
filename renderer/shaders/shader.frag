@@ -1,5 +1,7 @@
 #version 450
 
+#include "shared_types.hpp"
+
 layout(location = 0) out vec4 outColor;
 
 layout(location = 0) in vec3 fragColor;

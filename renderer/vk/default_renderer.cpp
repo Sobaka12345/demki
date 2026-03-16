@@ -578,7 +578,7 @@ void DefaultRenderer::createPipeline(Context& ctx) noexcept {
     constexpr auto shaderFragArray = std::to_array(shaders::shader_frag_spv);
     constexpr auto vertexShaderMeta = gapi::Shader<Vk, shaderVertArray>{};
     constexpr auto fragmentShaderMeta = gapi::Shader<Vk, shaderFragArray>{};
-    
+
     printShaderType<fragmentShaderMeta.stage>();
     printShaderType<vertexShaderMeta.stage>();
 
@@ -586,7 +586,7 @@ void DefaultRenderer::createPipeline(Context& ctx) noexcept {
     const auto createShaderModule = [&ctx](const auto& shader) {
         const auto shaderModuleCreateInfo = VkShaderModuleCreateInfo{
             .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            .codeSize = shader.spirv.size() * 4,
+            .codeSize = shader.spirv.size() * sizeof(typename decltype(shader.spirv)::value_type),
             .pCode = shader.spirv.data(),
         };
 
@@ -870,13 +870,15 @@ void DefaultRenderer::presentSwapchain(Context& ctx) noexcept
 
 void DefaultRenderer::prepareFrame(Context& ctx) noexcept {
     prepareSwapchain(ctx);
-    if (ctx.swapchain.currentImage == UINT32_MAX) return;
     prepareRenderPass(ctx);
+
+    auto commandBuffer = ctx.commandBuffers[Context::QueueFamily::GRAPHICS_COMPUTE][ctx.currentFrameInFlight];
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipeline);
+    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
 void DefaultRenderer::presentFrame(Context& ctx) noexcept
 {
-    if (ctx.swapchain.currentImage == UINT32_MAX) return;
     presentRenderPass(ctx);
     presentSwapchain(ctx);
 }
@@ -903,8 +905,6 @@ void DefaultRenderer::prepareRenderPass(Context& ctx) noexcept
     };
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipeline);
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
 void DefaultRenderer::presentRenderPass(Context& ctx) noexcept

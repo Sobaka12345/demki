@@ -1,6 +1,6 @@
 #version 450
 
-#include "../glsl_types.hpp"
+#include "shared_types.hpp"
 
 // layout(location = 0) in vec2 inPosition;
 // layout(location = 1) in vec2 velocity;
