@@ -66,6 +66,19 @@ STRUCT(DrawCommand)
     float scale;
 };
 
+
+struct MeshView
+{
+	vec3 center;
+	float radius;
+
+	uint vertexOffset;
+	uint vertexCount;
+
+    uint indexOffset;
+    uint indexCount;
+};
+
 #ifdef GLSL_HOST
 
 #include <glm/gtx/hash.hpp>

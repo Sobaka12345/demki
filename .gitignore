@@ -8,3 +8,4 @@ CMakeUserPresets.json
 CMakeLists.txt.user
 
 **/shaders_hpp/
+**/shaders/*.hpp

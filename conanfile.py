@@ -13,9 +13,10 @@ class DemkiConan(ConanFile):
 				"spirv-reflect/1.3.239.0",
 				"glad/0.1.36",
 				"glm/0.9.9.8",
-				"stb/cci.20220909",
+				"stb/cci.20230920",
 				"pfr/2.1.0",
-				"tclap/1.2.5"
+				"tclap/1.2.5",
+				"assimp/6.0.2",
 				#"spirv-cross/cci.20211113"
 		]
 	generators = "CMakeDeps"
