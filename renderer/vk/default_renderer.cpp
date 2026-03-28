@@ -7,21 +7,143 @@
 #include <cstring>
 #include <surface.hpp>
 #include <shader.hpp>
+#include "shaders/shared_types.hpp"
 
 #include <numeric>
 #include <vector>
 #include <map>
 #include <vulkan/vulkan_core.h>
 
-namespace renderer::shaders {
-#include "shaders_hpp/shader.frag.spv.hpp"
-#include "shaders_hpp/shader.vert.spv.hpp"
-}
-
 namespace renderer::__private {
 
+namespace shaders {
+#include "shaders_hpp/shader.frag.spv.hpp"
+#include "shaders_hpp/shader.vert.spv.hpp"
+
+
+
+struct DescriptorSetBindings {
+    uint32_t setId{};
+    uint32_t bindingCount{};
+    std::array<VkDescriptorSetLayoutBinding, 32> bindings{};
+};
+
+struct ShaderDescriptorSet {
+    std::array<VkDescriptorType, 32> types{};
+    std::array<VkShaderStageFlags, 32> flags{};
+    uint32_t mask{};
+};
+
+template <auto ...ShaderValue>
+consteval auto mergeShaderResources()
+{
+    std::array<ShaderDescriptorSet, GLSL_SET_COUNT> descriptorSets{};
+
+    const auto res = [&](const auto& shaderMeta) {
+        for (size_t setId = 0; setId < descriptorSets.size(); ++setId) 
+        {
+            for (uint32_t binding = 0; binding < descriptorSets[setId].types.size(); ++binding)
+            {
+                const uint32_t bindingMask = 1u << binding;
+                if ((shaderMeta.resourceMasks[setId] & bindingMask) == 0)
+                {
+                    continue;
+                }
+    
+                if ((descriptorSets[setId].mask & bindingMask) != 0)
+                {
+                    CONSTEVAL_ASSERT(descriptorSets[setId].types[binding] == shaderMeta.resources[setId][binding]);
+                }
+                else
+                {
+                    descriptorSets[setId].types[binding] = shaderMeta.resources[setId][binding];
+                    descriptorSets[setId].mask |= bindingMask;
+                }
+    
+                descriptorSets[setId].flags[binding] |= shaderMeta.stage;
+            }
+        }
+    };
+
+    (res(ShaderValue), ...);
+
+    return descriptorSets;
+}
+
+template <auto ...ShaderValue>
+consteval auto descriptorSetBindings()
+{
+    constexpr std::array<ShaderDescriptorSet, GLSL_SET_COUNT> descriptorSets = mergeShaderResources<ShaderValue...>();
+    std::array<DescriptorSetBindings, GLSL_SET_COUNT> setBindings;
+    size_t resSetBindingId = 0;
+    for (size_t setId = 0; setId < descriptorSets.size(); ++setId)
+    {
+        for (uint32_t binding = 0; binding < descriptorSets[setId].types.size(); ++binding)
+        {
+            const uint32_t bindingMask = 1u << binding;
+            if ((descriptorSets[setId].mask & bindingMask) == 0)
+            {
+                continue;
+            }
+
+            setBindings[resSetBindingId].bindings[setBindings[resSetBindingId].bindingCount] = VkDescriptorSetLayoutBinding {
+                .binding = binding,
+                .descriptorType = descriptorSets[setId].types[binding],
+                .descriptorCount = 1,
+                .stageFlags = descriptorSets[setId].flags[binding],
+                .pImmutableSamplers = nullptr,
+            };
+            setBindings[resSetBindingId].bindingCount += 1;
+        }
+        if (setBindings[resSetBindingId].bindingCount) {
+            setBindings[resSetBindingId].setId = setId;
+            ++resSetBindingId;
+        }
+    }
+
+    return setBindings;
+}
+
+template <auto ... ShaderValue>
+consteval auto shaderModuleCreateInfos()
+{
+    std::array<VkShaderModuleCreateInfo, sizeof...(ShaderValue)> result = {
+        VkShaderModuleCreateInfo {
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .codeSize = ShaderValue.spirv.size() * sizeof(typename decltype(ShaderValue.spirv)::value_type),
+            .pCode = ShaderValue.spirv.data(),
+        }...
+    };
+
+    return result;
+}
+
+template <auto ...ShaderValue>
+consteval auto parseShaders()
+{
+    struct ResultType {
+        size_t shaderCount = sizeof...(ShaderValue);
+        std::array<VkShaderStageFlagBits, sizeof...(ShaderValue)> stages = { ShaderValue.stage... };
+        std::array<DescriptorSetBindings, GLSL_SET_COUNT> descriptorSetBindings{};
+        std::array<VkShaderModuleCreateInfo, sizeof...(ShaderValue)> moduleCreateInfos{};
+    } result;
+
+    result.descriptorSetBindings = descriptorSetBindings<ShaderValue...>();
+    result.moduleCreateInfos = shaderModuleCreateInfos<ShaderValue...>();
+    
+    return result;
+}
+
+constexpr static auto MetaData = parseShaders<
+    gapi::Shader<Vk, std::to_array(shaders::shader_vert_spv)>{},
+    gapi::Shader<Vk, std::to_array(shaders::shader_frag_spv)>{}
+>();
+
+}
 
 namespace {
+
+constexpr VkDeviceSize staticMeshBufferSize = 1024ull * 1024ull * 20ull;
 
 constexpr VkMemoryPropertyFlags staticMeshBufferMemoryProperties =
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
@@ -65,6 +187,56 @@ void allocateAndBindBufferMemory(
 
     buffer.byteSize = requirements.size;
     buffer.memoryProperties = staticMeshBufferMemoryProperties;
+}
+
+void destroyBuffer(gapi::Buffer<Vk>& buffer) noexcept
+{
+    if (buffer.mappedMemory != nullptr)
+    {
+        vkUnmapMemory(buffer.device, buffer.memory);
+        buffer.mappedMemory = nullptr;
+    }
+
+    if (buffer.handle != VK_NULL_HANDLE)
+    {
+        vkDestroyBuffer(buffer.device, buffer.handle, nullptr);
+        buffer.handle = VK_NULL_HANDLE;
+    }
+
+    if (buffer.memory != VK_NULL_HANDLE)
+    {
+        vkFreeMemory(buffer.device, buffer.memory, nullptr);
+        buffer.memory = VK_NULL_HANDLE;
+    }
+
+    buffer.device = VK_NULL_HANDLE;
+    buffer.byteSize = 0;
+    buffer.memoryProperties = 0;
+}
+
+void writeDefaultStaticMeshData(DefaultRenderer::Context& ctx) noexcept
+{
+    constexpr auto vertices = std::to_array<Vertex3DColoredTextured>({
+        Vertex3DColoredTextured {
+            .pos = vec3 { 0.0f, -0.5f, 0.0f },
+            .color = vec3 { 1.0f, 0.2f, 0.2f },
+            .texture = vec2 { 0.0f, 0.0f },
+        },
+        Vertex3DColoredTextured {
+            .pos = vec3 { 0.5f, 0.5f, 0.0f },
+            .color = vec3 { 0.2f, 1.0f, 0.2f },
+            .texture = vec2 { 1.0f, 0.0f },
+        },
+        Vertex3DColoredTextured {
+            .pos = vec3 { -0.5f, 0.5f, 0.0f },
+            .color = vec3 { 0.2f, 0.4f, 1.0f },
+            .texture = vec2 { 0.0f, 1.0f },
+        },
+    });
+    constexpr auto indices = std::to_array<IndexType>({ 0u, 1u, 2u });
+
+    ctx.staticVertexBuffer.buffer.write(vertices.data(), sizeof(vertices), 0);
+    ctx.staticIndexBuffer.buffer.write(indices.data(), sizeof(indices), 0);
 }
 
 } // namespace
@@ -210,6 +382,7 @@ void DefaultRenderer::recreateSwapchain(Context& ctx) noexcept
     vkDeviceWaitIdle(ctx.device);
 
     destroySynchronization(ctx);
+    destroyStaticMeshDescriptors(ctx);
     destroyPipeline(ctx);
     destroyFramebuffers(ctx);
     destroyRenderPasses(ctx);
@@ -224,6 +397,7 @@ void DefaultRenderer::recreateSwapchain(Context& ctx) noexcept
     createRenderPasses(ctx);
     createFramebuffers(ctx);
     createPipeline(ctx);
+    createStaticMeshDescriptors(ctx);
 }
     
 void DefaultRenderer::pickSuitablePhysicalDevices(DefaultRenderer::Context& ctx) noexcept
@@ -611,147 +785,15 @@ void DefaultRenderer::destroyFramebuffers(Context& ctx) noexcept {
     ctx.framebuffers.clear();
 }
 
-template <int type>
-void printShaderType();
-
-template <>
-void printShaderType<VK_SHADER_STAGE_FRAGMENT_BIT>()
-{
-    std::cout << "FRAGMENT" << std::endl;
-}
-
-template <>
-void printShaderType<VK_SHADER_STAGE_VERTEX_BIT>()
-{
-    std::cout << "VERTEX" << std::endl;
-}
-
-struct DescriptorSetBindings {
-    uint32_t setId{};
-    uint32_t bindingCount{};
-    std::array<VkDescriptorSetLayoutBinding, 32> bindings{};
-};
-
-struct ShaderDescriptorSet {
-    std::array<VkDescriptorType, 32> types{};
-    std::array<VkShaderStageFlags, 32> flags{};
-    uint32_t mask{};
-};
-
-template <auto ...ShaderValue>
-consteval auto mergeShaderResources()
-{
-    std::array<ShaderDescriptorSet, GLSL_SET_COUNT> descriptorSets{};
-
-    const auto res = [&](const auto& shaderMeta) {
-        for (size_t setId = 0; setId < descriptorSets.size(); ++setId) 
-        {
-            for (uint32_t binding = 0; binding < descriptorSets[setId].types.size(); ++binding)
-            {
-                const uint32_t bindingMask = 1u << binding;
-                if ((shaderMeta.resourceMasks[setId] & bindingMask) == 0)
-                {
-                    continue;
-                }
-    
-                if ((descriptorSets[setId].mask & bindingMask) != 0)
-                {
-                    CONSTEVAL_ASSERT(descriptorSets[setId].types[binding] == shaderMeta.resources[setId][binding]);
-                }
-                else
-                {
-                    descriptorSets[setId].types[binding] = shaderMeta.resources[setId][binding];
-                    descriptorSets[setId].mask |= bindingMask;
-                }
-    
-                descriptorSets[setId].flags[binding] |= shaderMeta.stage;
-            }
-        }
-    };
-
-    (res(ShaderValue), ...);
-
-    return descriptorSets;
-}
-
-template <auto ...ShaderValue>
-consteval auto descriptorSetBindings()
-{
-    constexpr std::array<ShaderDescriptorSet, GLSL_SET_COUNT> descriptorSets = mergeShaderResources<ShaderValue...>();
-    std::array<DescriptorSetBindings, GLSL_SET_COUNT> setBindings;
-    size_t resSetBindingId = 0;
-    for (size_t setId = 0; setId < descriptorSets.size(); ++setId)
-    {
-        for (uint32_t binding = 0; binding < descriptorSets[setId].types.size(); ++binding)
-        {
-            const uint32_t bindingMask = 1u << binding;
-            if ((descriptorSets[setId].mask & bindingMask) == 0)
-            {
-                continue;
-            }
-
-            setBindings[resSetBindingId].bindings[setBindings[resSetBindingId].bindingCount] = VkDescriptorSetLayoutBinding {
-                .binding = binding,
-                .descriptorType = descriptorSets[setId].types[binding],
-                .descriptorCount = 1,
-                .stageFlags = descriptorSets[setId].flags[binding],
-                .pImmutableSamplers = nullptr,
-            };
-            setBindings[resSetBindingId].bindingCount += 1;
-        }
-        if (setBindings[resSetBindingId].bindingCount) {
-            setBindings[resSetBindingId].setId = setId;
-            ++resSetBindingId;
-        }
-    }
-
-    return setBindings;
-}
-
-template <auto ... ShaderValue>
-consteval auto shaderModuleCreateInfos()
-{
-    std::array<VkShaderModuleCreateInfo, sizeof...(ShaderValue)> result = {
-        VkShaderModuleCreateInfo {
-            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            .codeSize = ShaderValue.spirv.size() * sizeof(typename decltype(ShaderValue.spirv)::value_type),
-            .pCode = ShaderValue.spirv.data(),
-        }...
-    };
-
-    return result;
-}
-
-template <auto ...ShaderValue>
-consteval auto parseShaders()
-{
-    struct ResultType {
-        size_t shaderCount = sizeof...(ShaderValue);
-        std::array<VkShaderStageFlagBits, sizeof...(ShaderValue)> stages = { ShaderValue.stage... };
-        std::array<DescriptorSetBindings, GLSL_SET_COUNT> descriptorSetBindings{};
-        std::array<VkShaderModuleCreateInfo, sizeof...(ShaderValue)> moduleCreateInfos{};
-    } result;
-
-    result.descriptorSetBindings = descriptorSetBindings<ShaderValue...>();
-    result.moduleCreateInfos = shaderModuleCreateInfos<ShaderValue...>();
-    
-    return result;
-}
-
 void DefaultRenderer::createPipeline(Context& ctx) noexcept {
-    constexpr static auto shaderData = parseShaders<
-        gapi::Shader<Vk, std::to_array(shaders::shader_vert_spv)>{}, 
-        gapi::Shader<Vk, std::to_array(shaders::shader_frag_spv)>{}
-    >();
-
-    for (size_t i = 0; i < shaderData.descriptorSetBindings.size(); ++i)
+    for (size_t i = 0; i < shaders::MetaData.descriptorSetBindings.size(); ++i)
     {
-        if (!shaderData.descriptorSetBindings[i].bindingCount) continue;
+        if (!shaders::MetaData.descriptorSetBindings[i].bindingCount) continue;
         
         const auto descriptorSetLayoutCreateInfo = VkDescriptorSetLayoutCreateInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = shaderData.descriptorSetBindings[i].bindingCount,
-            .pBindings = shaderData.descriptorSetBindings[i].bindings.data(),
+            .bindingCount = shaders::MetaData.descriptorSetBindings[i].bindingCount,
+            .pBindings = shaders::MetaData.descriptorSetBindings[i].bindings.data(),
         };
 
         auto& ref = ctx.descriptorSetLayouts.emplace_back(VK_NULL_HANDLE);
@@ -767,18 +809,18 @@ void DefaultRenderer::createPipeline(Context& ctx) noexcept {
     ASSERT(VK_SUCCESS == vkCreatePipelineLayout(ctx.device, &pipelineLayoutCreateInfo, nullptr, &ctx.pipelineLayout),
         "failed to create pipeline layout");
 
-    std::array<VkShaderModule, shaderData.shaderCount> shaderModules{};
-    std::array<VkPipelineShaderStageCreateInfo, shaderData.shaderCount> shaderStages{};
-    for (size_t i = 0; i < shaderData.moduleCreateInfos.size(); ++i) {
+    std::array<VkShaderModule, shaders::MetaData.shaderCount> shaderModules{};
+    std::array<VkPipelineShaderStageCreateInfo, shaders::MetaData.shaderCount> shaderStages{};
+    for (size_t i = 0; i < shaders::MetaData.moduleCreateInfos.size(); ++i) {
         ASSERT(VK_SUCCESS == vkCreateShaderModule(ctx.device, 
-                &shaderData.moduleCreateInfos[i], 
+                &shaders::MetaData.moduleCreateInfos[i], 
                 nullptr, 
                 &shaderModules[i]
             ),
             "failed to create shader module");
 
         shaderStages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[i].stage = shaderData.stages[i];
+        shaderStages[i].stage = shaders::MetaData.stages[i];
         shaderStages[i].module = shaderModules[i];
         shaderStages[i].pName = "main";
     }
@@ -887,25 +929,126 @@ void DefaultRenderer::destroyPipeline(Context& ctx) noexcept {
 
     for (auto layout: ctx.descriptorSetLayouts)
         vkDestroyDescriptorSetLayout(ctx.device, layout, nullptr);
+
+    ctx.pipeline = VK_NULL_HANDLE;
+    ctx.pipelineLayout = VK_NULL_HANDLE;
+    ctx.descriptorSetLayouts.clear();
+}
+
+void DefaultRenderer::createStaticMeshDescriptors(Context& ctx) noexcept
+{
+    DASSERT(!ctx.descriptorSetLayouts.empty(), "missing descriptor set layouts for static mesh buffers");
+
+    std::map<VkDescriptorType, uint32_t> descriptorTypeCounts;
+    for (const auto& setBindings : shaders::MetaData.descriptorSetBindings)
+    {
+        for (uint32_t bindingId = 0; bindingId < setBindings.bindingCount; ++bindingId)
+        {
+            const auto& binding = setBindings.bindings[bindingId];
+            descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
+        }
+    }
+
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    poolSizes.reserve(descriptorTypeCounts.size());
+    for (const auto& [descriptorType, descriptorCount] : descriptorTypeCounts)
+    {
+        poolSizes.push_back(VkDescriptorPoolSize{
+            .type = descriptorType,
+            .descriptorCount = descriptorCount,
+        });
+    }
+
+    const auto descriptorPoolCreateInfo = VkDescriptorPoolCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets = static_cast<uint32_t>(ctx.descriptorSetLayouts.size()),
+        .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
+        .pPoolSizes = poolSizes.data(),
+    };
+    ASSERT(VK_SUCCESS == vkCreateDescriptorPool(ctx.device, &descriptorPoolCreateInfo, nullptr, &ctx.descriptorPool),
+        "failed to create descriptor pool");
+
+    ctx.descriptorSets.resize(ctx.descriptorSetLayouts.size());
+    const auto descriptorSetAllocateInfo = VkDescriptorSetAllocateInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = ctx.descriptorPool,
+        .descriptorSetCount = static_cast<uint32_t>(ctx.descriptorSetLayouts.size()),
+        .pSetLayouts = ctx.descriptorSetLayouts.data(),
+    };
+    ASSERT(VK_SUCCESS == vkAllocateDescriptorSets(ctx.device, &descriptorSetAllocateInfo, ctx.descriptorSets.data()),
+        "failed to allocate descriptor sets");
+
+    ASSERT(!ctx.descriptorSets.empty());
+
+    const VkDescriptorBufferInfo vertexBufferInfo{
+        .buffer = ctx.staticVertexBuffer.buffer.handle,
+        .offset = 0,
+        .range = ctx.staticVertexBuffer.buffer.byteSize,
+    };
+    const VkDescriptorBufferInfo indexBufferInfo{
+        .buffer = ctx.staticIndexBuffer.buffer.handle,
+        .offset = 0,
+        .range = ctx.staticIndexBuffer.buffer.byteSize,
+    };
+
+    const std::array descriptorWrites = {
+        VkWriteDescriptorSet{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = ctx.descriptorSets[0],
+            .dstBinding = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .pBufferInfo = &vertexBufferInfo,
+        },
+        VkWriteDescriptorSet{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = ctx.descriptorSets[0],
+            .dstBinding = 1,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .pBufferInfo = &indexBufferInfo,
+        },
+    };
+
+    vkUpdateDescriptorSets(ctx.device,
+        static_cast<uint32_t>(descriptorWrites.size()),
+        descriptorWrites.data(),
+        0,
+        nullptr);
+}
+
+void DefaultRenderer::destroyStaticMeshDescriptors(Context& ctx) noexcept
+{
+    ctx.descriptorSets.clear();
+
+    if (ctx.descriptorPool != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorPool(ctx.device, ctx.descriptorPool, nullptr);
+        ctx.descriptorPool = VK_NULL_HANDLE;
+    }
 }
 
 void DefaultRenderer::createMeshBuffers(Context &ctx) noexcept {
     
-    VkDeviceSize tmpSize = 1024 * 1024 * 20; // TO DO: calc size based on 
     allocateAndBindBufferMemory(
         ctx,
-        tmpSize,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        staticMeshBufferSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         ctx.staticVertexBuffer.buffer);
     allocateAndBindBufferMemory(
         ctx,
-        tmpSize,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        staticMeshBufferSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         ctx.staticIndexBuffer.buffer);
+
+    writeDefaultStaticMeshData(ctx);
 }
 
-void DefaultRenderer::destroyMeshBuffers(Context &ctx) noexcept {
-    // TO DO
+void DefaultRenderer::destroyMeshBuffers(Context& ctx) noexcept {
+    destroyBuffer(ctx.staticVertexBuffer.buffer);
+    destroyBuffer(ctx.staticIndexBuffer.buffer);
+    ctx.staticVertexBuffer.offset = 0;
+    ctx.staticIndexBuffer.offset = 0;
 }
 
 void DefaultRenderer::prepareSwapchain(Context& ctx) noexcept
@@ -997,7 +1140,16 @@ void DefaultRenderer::prepareFrame(Context& ctx) noexcept {
     prepareRenderPass(ctx);
 
     auto commandBuffer = ctx.commandBuffers[Context::QueueFamily::GRAPHICS_COMPUTE][ctx.currentFrameInFlight];
+    DASSERT(!ctx.descriptorSets.empty(), "static mesh descriptor set was not allocated");
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipeline);
+    vkCmdBindDescriptorSets(commandBuffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        ctx.pipelineLayout,
+        0,
+        static_cast<uint32_t>(ctx.descriptorSets.size()),
+        ctx.descriptorSets.data(),
+        0,
+        nullptr);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
@@ -1053,6 +1205,7 @@ DefaultRenderer::Context setupRenderer<Vk, DefaultRenderer>(gapi::GApiContext<Vk
 
     DefaultRenderer::createPipeline(result);
     DefaultRenderer::createMeshBuffers(result);
+    DefaultRenderer::createStaticMeshDescriptors(result);
 
     return result;
 }
@@ -1062,6 +1215,7 @@ void teardownRenderer<Vk, DefaultRenderer>(DefaultRenderer::Context& ctx) noexce
 {
     vkDeviceWaitIdle(ctx.device);
 
+    DefaultRenderer::destroyStaticMeshDescriptors(ctx);
     DefaultRenderer::destroyMeshBuffers(ctx);
     DefaultRenderer::destroyPipeline(ctx);
 

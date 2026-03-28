@@ -61,7 +61,9 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
         VkFormat depthFormat = VK_FORMAT_UNDEFINED;
         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_8_BIT;
         VkRenderPass renderPass = VK_NULL_HANDLE;
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+        std::vector<VkDescriptorSet> descriptorSets;
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkPipeline pipeline = VK_NULL_HANDLE;
         std::vector<PhysicalDevice> suitablePhysicalDevices;
@@ -91,6 +93,9 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
 
     static void createPipeline(Context& ctx) noexcept;
     static void destroyPipeline(Context& ctx) noexcept;
+
+    static void createStaticMeshDescriptors(Context& ctx) noexcept;
+    static void destroyStaticMeshDescriptors(Context& ctx) noexcept;
     
     static void createMeshBuffers(Context& ctx) noexcept;
     static void destroyMeshBuffers(Context& ctx) noexcept;
