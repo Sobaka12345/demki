@@ -21,6 +21,6 @@ layout(location = 0) out vec3 fragColor;
 
 void main() {
     Vertex3DColoredTextured vertex = vertices[indices[gl_VertexIndex]];
-    gl_Position = vec4(vertex.pos, 1.0);
+    gl_Position = globals.projection * vec4(vertex.pos, 1.0);
     fragColor = vertex.color;
 }

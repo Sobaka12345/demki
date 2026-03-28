@@ -123,6 +123,7 @@ consteval auto parseShaders()
 {
     struct ResultType {
         size_t shaderCount = sizeof...(ShaderValue);
+        VkShaderStageFlags pushConstantStages = ((ShaderValue.usesPushConstants ? ShaderValue.stage : 0) | ...);
         std::array<VkShaderStageFlagBits, sizeof...(ShaderValue)> stages = { ShaderValue.stage... };
         std::array<DescriptorSetBindings, GLSL_SET_COUNT> descriptorSetBindings{};
         std::array<VkShaderModuleCreateInfo, sizeof...(ShaderValue)> moduleCreateInfos{};
@@ -801,11 +802,21 @@ void DefaultRenderer::createPipeline(Context& ctx) noexcept {
             "failed to create descriptor set layout");
     }
 
-    const auto pipelineLayoutCreateInfo = VkPipelineLayoutCreateInfo{
+    // TO DO: abstract this better
+    VkPushConstantRange pushConstantRange{
+        .stageFlags = shaders::MetaData.pushConstantStages,
+        .offset = 0,
+        .size = sizeof(Globals),
+    };
+
+    auto pipelineLayoutCreateInfo = VkPipelineLayoutCreateInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = static_cast<uint32_t>(ctx.descriptorSetLayouts.size()),
         .pSetLayouts = ctx.descriptorSetLayouts.data(),
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &pushConstantRange,
     };
+
     ASSERT(VK_SUCCESS == vkCreatePipelineLayout(ctx.device, &pipelineLayoutCreateInfo, nullptr, &ctx.pipelineLayout),
         "failed to create pipeline layout");
 
@@ -1150,6 +1161,22 @@ void DefaultRenderer::prepareFrame(Context& ctx) noexcept {
         ctx.descriptorSets.data(),
         0,
         nullptr);
+
+    const auto globals = Globals {
+        .projection = mat4x4(1.0f),
+        .screenWidth = static_cast<float>(ctx.swapchain.extent.width),
+        .screenHeight = static_cast<float>(ctx.swapchain.extent.height),
+    };
+
+    vkCmdPushConstants(
+        commandBuffer,
+        ctx.pipelineLayout,
+        shaders::MetaData.pushConstantStages,
+        0,
+        sizeof(Globals),
+        &globals
+    );
+
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 

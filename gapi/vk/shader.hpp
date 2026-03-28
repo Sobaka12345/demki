@@ -12,7 +12,6 @@
 #include <array>
 #include <cstdint>
 #include <optional>
-#include <type_traits>
 
 #include <spirv_reflect.h>
 #include <vulkan/vulkan_core.h>
