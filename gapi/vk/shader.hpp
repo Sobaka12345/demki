@@ -18,6 +18,17 @@
 #include <vulkan/vulkan_core.h>
 #include <array>
 
+// Idea for future:
+// Create meta structures with a structure like
+// struct Set {
+// 	struct Binding{
+//	} Or maybe make Binding a concept and implement it in binding structures like Buffer<>
+// 	Binding b1;
+// 	Binding b2;
+// 	Binding b3;
+// };
+// Make descriptor update template out of this thing somehow, maybe using boost::pfr or modern C++26 reflection.
+
 struct MetaShader 
 {
 	struct LocalSizeIds {
