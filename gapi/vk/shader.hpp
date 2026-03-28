@@ -18,6 +18,23 @@
 #include <vulkan/vulkan_core.h>
 #include <array>
 
+struct MetaShader 
+{
+	struct LocalSizeIds {
+		int32_t x{-1};
+		int32_t y{-1};
+		int32_t z{-1};
+	} localSizeIds{};
+
+	std::array<std::array<VkDescriptorType, 32>, GLSL_SET_COUNT> resources{};
+	std::array<uint32_t, GLSL_SET_COUNT> resourceMasks{};
+
+	bool usesPushConstants{};
+	bool usesDescriptorArray{};
+
+	VkShaderStageFlagBits stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+};
+
 namespace gapi::__private {
 
 inline constexpr VkShaderStageFlagBits getShaderStage(SpvExecutionModel executionModel)
@@ -60,52 +77,37 @@ inline constexpr VkDescriptorType getDescriptorType(SpvOp op)
 	}
 }
 
-struct MetaShader 
+// https://www.khronos.org/registry/spir-v/specs/1.0/SPIRV.pdf
+template <typename T>
+struct IdT
 {
-	// https://www.khronos.org/registry/spir-v/specs/1.0/SPIRV.pdf
-	template <typename T>
-	struct IdT
-	{
-		T opcode{};
-		T typeId{};
-		T storageClass{};
-		T binding{};
-		T set{};
-		T constant{};
-	};
-	using IdOptional = IdT<std::optional<size_t>>;
-	using Id = IdT<size_t>;
-
-	template<typename DstT, typename SrcT>
-	static constexpr void copyIdT(MetaShader::IdT<DstT>& dst, const MetaShader::IdT<SrcT>& src)
-	{
-		utils::copy(dst.opcode, src.opcode);
-		utils::copy(dst.typeId, src.typeId);
-		utils::copy(dst.storageClass, src.storageClass);
-		utils::copy(dst.binding, src.binding);
-		utils::copy(dst.set, src.set);
-		utils::copy(dst.constant, src.constant);
-	}
-
-	struct LocalSizeIds {
-		int32_t x{-1};
-		int32_t y{-1};
-		int32_t z{-1};
-	} localSizeIds{};
-
-	std::array<VkDescriptorType, 32>  resourceTypes{};
-	
-	uint32_t resourceMask{};
-	bool usesPushConstants{};
-	bool usesDescriptorArray{};
-
-	VkShaderStageFlagBits stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+	T opcode{};
+	T typeId{};
+	T storageClass{};
+	T binding{};
+	T set{};
+	T constant{};
 };
+using IdOptional = IdT<std::optional<size_t>>;
+using Id = IdT<size_t>;
+
+
+template<typename DstT, typename SrcT>
+inline constexpr void copyIdT(IdT<DstT>& dst, const IdT<SrcT>& src)
+{
+	utils::copy(dst.opcode, src.opcode);
+	utils::copy(dst.typeId, src.typeId);
+	utils::copy(dst.storageClass, src.storageClass);
+	utils::copy(dst.binding, src.binding);
+	utils::copy(dst.set, src.set);
+	utils::copy(dst.constant, src.constant);
+}
 
 template <auto code>
 struct Shader<Vk, code> : MetaShader {
 	constexpr static auto mult = sizeof(uint32_t);
 	constexpr static uint32_t IdBound = read_u32(code.data() + 3 * mult);
+	// found out about compile-time bit_cast after I already implemented everything with 1-byte layout in mind. Maybe should rewrite later...
 	constexpr static auto spirv = std::bit_cast<std::array<uint32_t, code.size() / mult>>(code);
 
 private:	
@@ -113,12 +115,12 @@ private:
 		size_t step{};
 		size_t idx{};
 		std::optional<VkShaderStageFlagBits> stage{};
-		std::optional<MetaShader::IdOptional> idData{};
+		std::optional<IdOptional> idData{};
 		std::optional<MetaShader::LocalSizeIds> localSizeIds{};
 	};
 
 	struct ParseBatchData {
-		std::array<MetaShader::IdOptional, IdBound> ids{};
+		std::array<IdOptional, IdBound> ids{};
 		std::optional<MetaShader::LocalSizeIds> localSizeIds{};
 		std::optional<VkShaderStageFlagBits> stage{};
 
@@ -127,9 +129,9 @@ private:
 			utils::copy(stage, other.stage);
 			utils::copy(localSizeIds, other.localSizeIds);
 			std::transform(other.ids.begin(), other.ids.end(), ids.begin(), ids.begin(), [](const auto& otherVal, const auto& val) {
-				MetaShader::IdOptional res{};
-				MetaShader::copyIdT(res, val);
-				MetaShader::copyIdT(res, otherVal);
+				IdOptional res{};
+				copyIdT(res, val);
+				copyIdT(res, otherVal);
 				return res;
 			});
 		}
@@ -137,7 +139,7 @@ private:
 		consteval void overwrite(const ParseStepData& parseStepData)
 		{
 			if (parseStepData.idData.has_value()) {
-				MetaShader::copyIdT(
+				copyIdT(
 					ids[parseStepData.idx], 
 					parseStepData.idData.value()
 				);
@@ -256,14 +258,14 @@ private:
 					{
 						CONSTEVAL_ASSERT(wordCount == 4);
 						result.idx = id;
-						result.idData = MetaShader::IdOptional{
+						result.idData = IdOptional{
 							.set = read_u32(code.data() + offset + 3 * mult)
 						};
 					} else if (decoration == SpvDecorationBinding) 
 					{
 						CONSTEVAL_ASSERT(wordCount == 4);
 						result.idx = id;
-						result.idData = MetaShader::IdOptional{
+						result.idData = IdOptional{
 							.binding = read_u32(code.data() + offset + 3 * mult)
 						};
 					}
@@ -281,7 +283,7 @@ private:
 					CONSTEVAL_ASSERT(id < IdBound);
 
 					result.idx = id;
-					result.idData = MetaShader::IdOptional{
+					result.idData = IdOptional{
 						.opcode = opcode
 					};
 				} else if constexpr (opcode == SpvOpTypePointer)
@@ -292,7 +294,7 @@ private:
 					CONSTEVAL_ASSERT(id < IdBound);
 
 					result.idx = id;
-					result.idData = MetaShader::IdOptional{
+					result.idData = IdOptional{
 						.opcode = opcode,
 						.typeId = read_u32(code.data() + offset + 3 * mult),
 						.storageClass = read_u32(code.data() + offset + 2 * mult),
@@ -305,7 +307,7 @@ private:
 					CONSTEVAL_ASSERT(id < IdBound);
 
 					result.idx = id;
-					result.idData = MetaShader::IdOptional{
+					result.idData = IdOptional{
 						.opcode = opcode,
 						.typeId = read_u32(code.data() + offset + 1 * mult),
 						.constant = read_u32(code.data() + offset + 3 * mult), // note: this is the value, not the id of the constant
@@ -318,7 +320,7 @@ private:
 					CONSTEVAL_ASSERT(id < IdBound);
 
 					result.idx = id;
-					result.idData = MetaShader::IdOptional{
+					result.idData = IdOptional{
 						.opcode = opcode,
 						.typeId = read_u32(code.data() + offset + 1 * mult),
 						.storageClass = read_u32(code.data() + offset + 3 * mult),
@@ -350,10 +352,10 @@ public:
 		constexpr auto ids = parsedData.ids;
 		for (auto& idOpt : ids)
 		{
-			MetaShader::Id id{};
-			MetaShader::copyIdT(id, idOpt);
-			// set 0 is reserved for push descriptors
-			if (id.opcode == SpvOpVariable && (id.storageClass == SpvStorageClassUniform || id.storageClass == SpvStorageClassUniformConstant || id.storageClass == SpvStorageClassStorageBuffer) && id.set == 0)
+			Id id{};
+			copyIdT(id, idOpt);
+			if (id.opcode == SpvOpVariable && (id.storageClass == SpvStorageClassUniform || id.storageClass == SpvStorageClassUniformConstant || id.storageClass == SpvStorageClassStorageBuffer) 
+				&& (id.set == GLSL_SET_STATIC || id.set == GLSL_SET_DYNAMIC))
 			{
 				CONSTEVAL_ASSERT(id.binding < 32);
 				CONSTEVAL_ASSERT(ids[id.typeId].opcode == SpvOpTypePointer);
@@ -362,13 +364,13 @@ public:
 				VkDescriptorType resourceType = getDescriptorType(SpvOp(typeKind));
 				CONSTEVAL_ASSERT(resourceType);
 
-				CONSTEVAL_ASSERT((resourceMask & (1 << id.binding)) == 0 || resourceTypes[id.binding] == resourceType);
+				CONSTEVAL_ASSERT((resourceMasks[id.set] & (1 << id.binding)) == 0 || resources[id.set][id.binding] == resourceType);
 
-				resourceTypes[id.binding] = resourceType;
-				resourceMask |= 1 << id.binding;
+				resources[id.set][id.binding] = resourceType;
+				resourceMasks[id.set] |= 1 << id.binding;
 			}
 
-			if (id.opcode == SpvOpVariable && id.storageClass == SpvStorageClassUniformConstant && id.set == 1)
+			if (id.opcode == SpvOpVariable && id.storageClass == SpvStorageClassUniformConstant && id.set == GLSL_SET_DESCRIPTOR_ARRAY)
 			{
 				usesDescriptorArray = true;
 			}

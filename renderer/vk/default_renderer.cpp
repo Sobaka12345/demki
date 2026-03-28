@@ -1,12 +1,16 @@
 #include "renderer.hpp"
 #include "renderer_fwd.hpp"
 
+#include <buffer.hpp>
+
 #include <array>
 #include <cstring>
 #include <surface.hpp>
 #include <shader.hpp>
 
+#include <numeric>
 #include <vector>
+#include <map>
 #include <vulkan/vulkan_core.h>
 
 namespace renderer::shaders {
@@ -15,6 +19,55 @@ namespace renderer::shaders {
 }
 
 namespace renderer::__private {
+
+
+namespace {
+
+constexpr VkMemoryPropertyFlags staticMeshBufferMemoryProperties =
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+void allocateAndBindBufferMemory(
+    gapi::GApiContext<Vk>& ctx,
+    VkDeviceSize size,
+    VkBufferUsageFlags usage,
+    gapi::Buffer<Vk>& buffer) noexcept
+{
+    buffer.device = ctx.device;
+
+    VkBufferCreateInfo bci = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .flags = 0,
+        .size = size,
+        .usage = usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices = nullptr,
+    };
+
+    ASSERT(VK_SUCCESS == vkCreateBuffer(ctx.device, &bci, nullptr, &buffer.handle));
+
+    VkMemoryRequirements requirements {};
+    vkGetBufferMemoryRequirements(ctx.device, buffer.handle, &requirements);
+
+    VkMemoryAllocateInfo mai {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = requirements.size,
+        .memoryTypeIndex = ctx.physicalDeviceInUse->findMemoryType(
+            requirements.memoryTypeBits, 
+            staticMeshBufferMemoryProperties)
+    };
+
+    ASSERT(VK_SUCCESS == vkAllocateMemory(ctx.device, &mai, nullptr, &buffer.memory));
+    ASSERT(VK_SUCCESS == vkBindBufferMemory(ctx.device, buffer.handle, buffer.memory, 0));
+    ASSERT(VK_SUCCESS == vkMapMemory(ctx.device, buffer.memory, 0, VK_WHOLE_SIZE, 0, &buffer.mappedMemory));
+
+    buffer.byteSize = requirements.size;
+    buffer.memoryProperties = staticMeshBufferMemoryProperties;
+}
+
+} // namespace
 
 VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, const gapi::ISurface* surface)
 {
@@ -573,115 +626,163 @@ void printShaderType<VK_SHADER_STAGE_VERTEX_BIT>()
     std::cout << "VERTEX" << std::endl;
 }
 
-void DefaultRenderer::createPipeline(Context& ctx) noexcept {
-    constexpr auto shaderVertArray = std::to_array(shaders::shader_vert_spv);
-    constexpr auto shaderFragArray = std::to_array(shaders::shader_frag_spv);
-    constexpr auto vertexShaderMeta = gapi::Shader<Vk, shaderVertArray>{};
-    constexpr auto fragmentShaderMeta = gapi::Shader<Vk, shaderFragArray>{};
+struct DescriptorSetBindings {
+    uint32_t setId{};
+    uint32_t bindingCount{};
+    std::array<VkDescriptorSetLayoutBinding, 32> bindings{};
+};
 
-    printShaderType<fragmentShaderMeta.stage>();
-    printShaderType<vertexShaderMeta.stage>();
+struct ShaderDescriptorSet {
+    std::array<VkDescriptorType, 32> types{};
+    std::array<VkShaderStageFlags, 32> flags{};
+    uint32_t mask{};
+};
 
+template <auto ...ShaderValue>
+consteval auto mergeShaderResources()
+{
+    std::array<ShaderDescriptorSet, GLSL_SET_COUNT> descriptorSets{};
 
-    const auto createShaderModule = [&ctx](const auto& shader) {
-        const auto shaderModuleCreateInfo = VkShaderModuleCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            .codeSize = shader.spirv.size() * sizeof(typename decltype(shader.spirv)::value_type),
-            .pCode = shader.spirv.data(),
-        };
-
-        VkShaderModule shaderModule = VK_NULL_HANDLE;
-        ASSERT(VK_SUCCESS == vkCreateShaderModule(ctx.device, &shaderModuleCreateInfo, nullptr, &shaderModule),
-            "failed to create shader module");
-
-        return shaderModule;
+    const auto res = [&](const auto& shaderMeta) {
+        for (size_t setId = 0; setId < descriptorSets.size(); ++setId) 
+        {
+            for (uint32_t binding = 0; binding < descriptorSets[setId].types.size(); ++binding)
+            {
+                const uint32_t bindingMask = 1u << binding;
+                if ((shaderMeta.resourceMasks[setId] & bindingMask) == 0)
+                {
+                    continue;
+                }
+    
+                if ((descriptorSets[setId].mask & bindingMask) != 0)
+                {
+                    CONSTEVAL_ASSERT(descriptorSets[setId].types[binding] == shaderMeta.resources[setId][binding]);
+                }
+                else
+                {
+                    descriptorSets[setId].types[binding] = shaderMeta.resources[setId][binding];
+                    descriptorSets[setId].mask |= bindingMask;
+                }
+    
+                descriptorSets[setId].flags[binding] |= shaderMeta.stage;
+            }
+        }
     };
 
-    const VkShaderModule vertexShaderModule = createShaderModule(vertexShaderMeta);
-    const VkShaderModule fragmentShaderModule = createShaderModule(fragmentShaderMeta);
+    (res(ShaderValue), ...);
 
-    std::array<VkDescriptorType, 32> descriptorTypes{};
-    std::array<VkShaderStageFlags, 32> descriptorStageFlags{};
-    uint32_t descriptorMask = 0;
+    return descriptorSets;
+}
 
-    const auto mergeShaderResources = [&](const auto& shaderMeta) {
-        for (uint32_t binding = 0; binding < descriptorTypes.size(); ++binding)
+template <auto ...ShaderValue>
+consteval auto descriptorSetBindings()
+{
+    constexpr std::array<ShaderDescriptorSet, GLSL_SET_COUNT> descriptorSets = mergeShaderResources<ShaderValue...>();
+    std::array<DescriptorSetBindings, GLSL_SET_COUNT> setBindings;
+    size_t resSetBindingId = 0;
+    for (size_t setId = 0; setId < descriptorSets.size(); ++setId)
+    {
+        for (uint32_t binding = 0; binding < descriptorSets[setId].types.size(); ++binding)
         {
             const uint32_t bindingMask = 1u << binding;
-            if ((shaderMeta.resourceMask & bindingMask) == 0)
+            if ((descriptorSets[setId].mask & bindingMask) == 0)
             {
                 continue;
             }
 
-            if ((descriptorMask & bindingMask) != 0)
-            {
-                ASSERT(descriptorTypes[binding] == shaderMeta.resourceTypes[binding],
-                    "descriptor binding type mismatch between shader stages");
-            }
-            else
-            {
-                descriptorTypes[binding] = shaderMeta.resourceTypes[binding];
-                descriptorMask |= bindingMask;
-            }
-
-            descriptorStageFlags[binding] |= shaderMeta.stage;
+            setBindings[resSetBindingId].bindings[setBindings[resSetBindingId].bindingCount] = VkDescriptorSetLayoutBinding {
+                .binding = binding,
+                .descriptorType = descriptorSets[setId].types[binding],
+                .descriptorCount = 1,
+                .stageFlags = descriptorSets[setId].flags[binding],
+                .pImmutableSamplers = nullptr,
+            };
+            setBindings[resSetBindingId].bindingCount += 1;
         }
-    };
-
-    mergeShaderResources(vertexShaderMeta);
-    mergeShaderResources(fragmentShaderMeta);
-
-    std::vector<VkDescriptorSetLayoutBinding> setBindings;
-    for (uint32_t binding = 0; binding < descriptorTypes.size(); ++binding)
-    {
-        const uint32_t bindingMask = 1u << binding;
-        if ((descriptorMask & bindingMask) == 0)
-        {
-            continue;
+        if (setBindings[resSetBindingId].bindingCount) {
+            setBindings[resSetBindingId].setId = setId;
+            ++resSetBindingId;
         }
-
-        setBindings.push_back(VkDescriptorSetLayoutBinding{
-            .binding = binding,
-            .descriptorType = descriptorTypes[binding],
-            .descriptorCount = 1,
-            .stageFlags = descriptorStageFlags[binding],
-            .pImmutableSamplers = nullptr,
-        });
     }
 
-    if (!setBindings.empty())
+    return setBindings;
+}
+
+template <auto ... ShaderValue>
+consteval auto shaderModuleCreateInfos()
+{
+    std::array<VkShaderModuleCreateInfo, sizeof...(ShaderValue)> result = {
+        VkShaderModuleCreateInfo {
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .codeSize = ShaderValue.spirv.size() * sizeof(typename decltype(ShaderValue.spirv)::value_type),
+            .pCode = ShaderValue.spirv.data(),
+        }...
+    };
+
+    return result;
+}
+
+template <auto ...ShaderValue>
+consteval auto parseShaders()
+{
+    struct ResultType {
+        size_t shaderCount = sizeof...(ShaderValue);
+        std::array<VkShaderStageFlagBits, sizeof...(ShaderValue)> stages = { ShaderValue.stage... };
+        std::array<DescriptorSetBindings, GLSL_SET_COUNT> descriptorSetBindings{};
+        std::array<VkShaderModuleCreateInfo, sizeof...(ShaderValue)> moduleCreateInfos{};
+    } result;
+
+    result.descriptorSetBindings = descriptorSetBindings<ShaderValue...>();
+    result.moduleCreateInfos = shaderModuleCreateInfos<ShaderValue...>();
+    
+    return result;
+}
+
+void DefaultRenderer::createPipeline(Context& ctx) noexcept {
+    constexpr static auto shaderData = parseShaders<
+        gapi::Shader<Vk, std::to_array(shaders::shader_vert_spv)>{}, 
+        gapi::Shader<Vk, std::to_array(shaders::shader_frag_spv)>{}
+    >();
+
+    for (size_t i = 0; i < shaderData.descriptorSetBindings.size(); ++i)
     {
+        if (!shaderData.descriptorSetBindings[i].bindingCount) continue;
+        
         const auto descriptorSetLayoutCreateInfo = VkDescriptorSetLayoutCreateInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = static_cast<uint32_t>(setBindings.size()),
-            .pBindings = setBindings.data(),
+            .bindingCount = shaderData.descriptorSetBindings[i].bindingCount,
+            .pBindings = shaderData.descriptorSetBindings[i].bindings.data(),
         };
-        ASSERT(VK_SUCCESS == vkCreateDescriptorSetLayout(ctx.device, &descriptorSetLayoutCreateInfo, nullptr, &ctx.descriptorSetLayout),
+
+        auto& ref = ctx.descriptorSetLayouts.emplace_back(VK_NULL_HANDLE);
+        ASSERT(VK_SUCCESS == vkCreateDescriptorSetLayout(ctx.device, &descriptorSetLayoutCreateInfo, nullptr, &ref),
             "failed to create descriptor set layout");
     }
 
     const auto pipelineLayoutCreateInfo = VkPipelineLayoutCreateInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = ctx.descriptorSetLayout != VK_NULL_HANDLE ? 1u : 0u,
-        .pSetLayouts = ctx.descriptorSetLayout != VK_NULL_HANDLE ? &ctx.descriptorSetLayout : nullptr,
+        .setLayoutCount = static_cast<uint32_t>(ctx.descriptorSetLayouts.size()),
+        .pSetLayouts = ctx.descriptorSetLayouts.data(),
     };
     ASSERT(VK_SUCCESS == vkCreatePipelineLayout(ctx.device, &pipelineLayoutCreateInfo, nullptr, &ctx.pipelineLayout),
         "failed to create pipeline layout");
 
-    const std::array shaderStages = {
-        VkPipelineShaderStageCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage = vertexShaderMeta.stage,
-            .module = vertexShaderModule,
-            .pName = "main",
-        },
-        VkPipelineShaderStageCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage = fragmentShaderMeta.stage,
-            .module = fragmentShaderModule,
-            .pName = "main",
-        },
-    };
+    std::array<VkShaderModule, shaderData.shaderCount> shaderModules{};
+    std::array<VkPipelineShaderStageCreateInfo, shaderData.shaderCount> shaderStages{};
+    for (size_t i = 0; i < shaderData.moduleCreateInfos.size(); ++i) {
+        ASSERT(VK_SUCCESS == vkCreateShaderModule(ctx.device, 
+                &shaderData.moduleCreateInfos[i], 
+                nullptr, 
+                &shaderModules[i]
+            ),
+            "failed to create shader module");
+
+        shaderStages[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStages[i].stage = shaderData.stages[i];
+        shaderStages[i].module = shaderModules[i];
+        shaderStages[i].pName = "main";
+    }
+
 
     const auto vertexInputState = VkPipelineVertexInputStateCreateInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -774,14 +875,37 @@ void DefaultRenderer::createPipeline(Context& ctx) noexcept {
     ASSERT(VK_SUCCESS == vkCreateGraphicsPipelines(ctx.device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &ctx.pipeline),
         "failed to create graphics pipeline");
 
-    vkDestroyShaderModule(ctx.device, fragmentShaderModule, nullptr);
-    vkDestroyShaderModule(ctx.device, vertexShaderModule, nullptr);
+        
+    for (size_t i = 0; i < shaderModules.size(); ++i) {
+        vkDestroyShaderModule(ctx.device, shaderModules[i], nullptr);
+    }
 }
 
 void DefaultRenderer::destroyPipeline(Context& ctx) noexcept {
     vkDestroyPipeline(ctx.device, ctx.pipeline, nullptr);
     vkDestroyPipelineLayout(ctx.device, ctx.pipelineLayout, nullptr);
-    vkDestroyDescriptorSetLayout(ctx.device, ctx.descriptorSetLayout, nullptr);
+
+    for (auto layout: ctx.descriptorSetLayouts)
+        vkDestroyDescriptorSetLayout(ctx.device, layout, nullptr);
+}
+
+void DefaultRenderer::createMeshBuffers(Context &ctx) noexcept {
+    
+    VkDeviceSize tmpSize = 1024 * 1024 * 20; // TO DO: calc size based on 
+    allocateAndBindBufferMemory(
+        ctx,
+        tmpSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        ctx.staticVertexBuffer.buffer);
+    allocateAndBindBufferMemory(
+        ctx,
+        tmpSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        ctx.staticIndexBuffer.buffer);
+}
+
+void DefaultRenderer::destroyMeshBuffers(Context &ctx) noexcept {
+    // TO DO
 }
 
 void DefaultRenderer::prepareSwapchain(Context& ctx) noexcept
@@ -928,7 +1052,7 @@ DefaultRenderer::Context setupRenderer<Vk, DefaultRenderer>(gapi::GApiContext<Vk
     DefaultRenderer::createFramebuffers(result);
 
     DefaultRenderer::createPipeline(result);
-
+    DefaultRenderer::createMeshBuffers(result);
 
     return result;
 }
@@ -938,6 +1062,7 @@ void teardownRenderer<Vk, DefaultRenderer>(DefaultRenderer::Context& ctx) noexce
 {
     vkDeviceWaitIdle(ctx.device);
 
+    DefaultRenderer::destroyMeshBuffers(ctx);
     DefaultRenderer::destroyPipeline(ctx);
 
     DefaultRenderer::destroyFramebuffers(ctx);

@@ -1,6 +1,11 @@
 #ifndef SHARED_TYPES
 #define SHARED_TYPES
 
+#define GLSL_SET_STATIC 0
+#define GLSL_SET_DYNAMIC 1
+#define GLSL_SET_DESCRIPTOR_ARRAY 2
+#define GLSL_SET_COUNT 3
+
 #ifdef GLSL_HOST
     #include <glm/ext/scalar_uint_sized.hpp>
     #include <glm/ext/matrix_float4x4.hpp>
@@ -13,12 +18,19 @@
     using vec4 = glm::vec4;
     using mat4x4 = glm::mat4x4;
     using IndexType = uint;
-    #define STRUCT(T) struct alignas(16) T
+#   define STRUCT(T) struct alignas(16) T
 #else
 #   define alignas(T)
 #   define IndexType uint
 #   define STRUCT(T) struct alignas(16) T
 #endif
+
+STRUCT(Globals)
+{
+	mat4x4 projection;
+	//CullData cullData;
+	float screenWidth, screenHeight;
+};
 
 STRUCT(Vertex3D)
 {

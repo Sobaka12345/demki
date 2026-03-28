@@ -1,4 +1,7 @@
-#pragma once
+#ifndef RESOURCES_HPP
+#define RESOURCES_HPP
+
+#include "plain_view.hpp"
 
 #include <buffer.hpp>
 
@@ -34,28 +37,39 @@ struct MeshData {
     std::filesystem::path path;
     std::vector<Vertex> vertices;
     std::vector<Index> indices;
+    vec3 center = vec3 { 0.0f, 0.0f, 0.0f };
+    float radius = 0.0f;
 };
 
-bool loadObjFile(std::filesystem::path path, MeshData& md) noexcept;
+bool loadObjFile(MeshData& md) noexcept;
 
-template<typename GApiT>
-struct Resource
+struct ResourcesBase
 {
-    using MeshHandle = std::list<MeshData>::const_iterator;
-    
-    explicit Resource(gapi::GApiContext<GApiT>& ctx, std::filesystem::path rootPath);
-    
-    [[nodiscard]] MeshHandle addMesh(std::filesystem::path filePath) noexcept;
-    [[nodiscard]] MeshView mapBundleToGPU(MeshHandle handle) noexcept;
-    
-private:
-    Resource(std::filesystem::path rootPath)
+    ResourcesBase(std::filesystem::path rootPath)
         : _rootPath{std::move(rootPath)}
     {}
+    
+    using MeshHandle = std::list<MeshData>::const_iterator;
+    [[nodiscard]] MeshHandle addMesh(std::filesystem::path filePath) noexcept;
 
-private:
+protected:
     std::filesystem::path _rootPath;
     std::list<MeshData> _meshes;
 };
 
+template<typename GApiT>
+struct Resources : ResourcesBase
+{
+    explicit Resources(gapi::GApiContext<GApiT>& ctx, std::filesystem::path rootPath) noexcept;
+
+    [[nodiscard]] MeshView mapToGPU(MeshHandle handle) noexcept;
+   
+private:
+    resources::PlainView<gapi::Buffer<GApiT>> _gStaticIndexBuffer;
+    resources::PlainView<gapi::Buffer<GApiT>> _gStaticVertexBuffer;
+};
+
 } // namespace resources
+
+
+#endif // RESOURCES_HPP

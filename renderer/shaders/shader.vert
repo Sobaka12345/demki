@@ -1,5 +1,17 @@
 #version 450
 
+#include "shared_types.hpp"
+
+layout(push_constant) uniform block
+{
+	Globals globals;
+};
+
+layout(set = 0, binding = 0) readonly buffer Vertices
+{
+    Vertex3DColoredTextured vertices[];
+};
+
 layout(location = 0) out vec3 fragColor;
 
 const vec2 positions[3] = vec2[](

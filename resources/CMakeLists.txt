@@ -1,8 +1,10 @@
 begin_project()
 
 add_library(${PROJECT_NAME} STATIC
-	resource.hpp
-	resource.cpp
+	resources.hpp
+	resources_vk.cpp
+	resources.cpp
+	plain_view.hpp
 )
 
 target_include_directories(${PROJECT_NAME}

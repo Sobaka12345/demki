@@ -11,19 +11,9 @@ struct Buffer<Vk> {
     VkBuffer handle = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkDevice device = VK_NULL_HANDLE;
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     uint64_t byteSize = 0;
     VkMemoryPropertyFlags memoryProperties = 0;
     mutable void* mappedMemory = nullptr;
-
-    [[nodiscard]] bool create(
-        VkDevice inDevice,
-        VkPhysicalDevice inPhysicalDevice,
-        uint64_t inSize,
-        VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties) noexcept;
-
-    void destroy() noexcept;
 
     void write(const void *data, uint64_t size, uint64_t offset) noexcept;
     [[nodiscard]] const void* read(uint64_t size, uint64_t offset) const noexcept;

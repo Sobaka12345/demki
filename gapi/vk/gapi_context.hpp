@@ -25,7 +25,7 @@ struct GApiContext<Vk> {
 
     struct PhysicalDevice
     {
-        VkPhysicalDevice handle;
+        VkPhysicalDevice handle = VK_NULL_HANDLE;
 
         std::array<QueueFamily, QueueFamily::Type::COUNT> queueFamilies;
 
@@ -52,10 +52,11 @@ struct GApiContext<Vk> {
             uint32_t typeFilter, 
             VkMemoryPropertyFlags properties
         ) noexcept;
-    };
+    } *physicalDeviceInUse = nullptr;
 
-    VkInstance instance;
-    VkSurfaceKHR surface;
+    VkInstance instance = VK_NULL_HANDLE;
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    VkDevice device = VK_NULL_HANDLE;
 
     std::vector<PhysicalDevice> physicalDevices;
     void fetchPhysicalDevices() noexcept;

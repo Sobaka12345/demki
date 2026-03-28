@@ -13,3 +13,5 @@ target_precompile_headers(${PROJECT_NAME} INTERFACE pch.hpp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ./include/)
 target_include_directories(${PROJECT_NAME} PRIVATE .)
+
+end_project()

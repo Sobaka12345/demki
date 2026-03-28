@@ -3,6 +3,10 @@
 
 #include "../renderer_fwd.hpp"
 
+
+#include <buffer.hpp>
+#include <plain_view.hpp>
+
 #include <array>
 #include <gapi_context.hpp>
 #include <swapchain.hpp>
@@ -51,14 +55,15 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
         std::array<VkCommandPool, QueueFamily::Type::COUNT> commandPools;
         std::array<std::vector<VkCommandBuffer>, QueueFamily::Type::COUNT> commandBuffers;
         
-        VkDevice device = VK_NULL_HANDLE;
+        resources::PlainView<gapi::Buffer<Vk>> staticVertexBuffer;
+        resources::PlainView<gapi::Buffer<Vk>> staticIndexBuffer;
+
         VkFormat depthFormat = VK_FORMAT_UNDEFINED;
         VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_8_BIT;
         VkRenderPass renderPass = VK_NULL_HANDLE;
-        VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkPipeline pipeline = VK_NULL_HANDLE;
-        PhysicalDevice* physicalDeviceInUse = nullptr;
         std::vector<PhysicalDevice> suitablePhysicalDevices;
         gapi::Swapchain<Vk> swapchain;
     };
@@ -87,6 +92,9 @@ struct Renderer<Vk, std::integral_constant<RendererType, RendererType::DEFAULT>>
     static void createPipeline(Context& ctx) noexcept;
     static void destroyPipeline(Context& ctx) noexcept;
     
+    static void createMeshBuffers(Context& ctx) noexcept;
+    static void destroyMeshBuffers(Context& ctx) noexcept;
+
     // SIRenderer static interface
     static void prepareFrame(Context& ctx) noexcept;
     static void presentFrame(Context& ctx) noexcept;
